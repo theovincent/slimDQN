@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from rl.environments.finite_mdp import FiniteMDP
+from slimRL.environments.finite_mdp import FiniteMDP
 
 
 def generate_simple_chain(state_n, goal_states, prob, rew, mu=None, gamma=.9,

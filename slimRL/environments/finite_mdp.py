@@ -2,8 +2,8 @@
 
 import numpy as np
 
-from rl.environments.environment import Environment, MDPInfo
-from rl.rl_utils import spaces
+from slimRL.environments.environment import Environment, MDPInfo
+from slimRL.rl_utils import spaces
 
 
 class FiniteMDP(Environment):

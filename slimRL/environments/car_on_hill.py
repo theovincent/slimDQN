@@ -3,9 +3,8 @@
 import numpy as np
 from scipy.integrate import odeint
 
-from rl.environments.environment import Environment, MDPInfo
-from rl.rl_utils import spaces
-from rl.utils.viewer import Viewer
+from slimRL.environments.environment import Environment
+from slimRL.utils.viewer import Viewer
 
 
 class CarOnHill(Environment):
@@ -14,6 +13,7 @@ class CarOnHill(Environment):
     "Tree-Based Batch Mode Reinforcement Learning". Ernst D. et al.. 2005.
 
     """
+
     def __init__(self, horizon=100, gamma=.95):
         """
         Constructor.
@@ -26,21 +26,17 @@ class CarOnHill(Environment):
         # MDP parameters
         self.max_pos = 1.
         self.max_velocity = 3.
-        high = np.array([self.max_pos, self.max_velocity])
         self._g = 9.81
         self._m = 1.
         self._discrete_actions = [-4., 4.]
 
         # MDP properties
-        dt = .1
-        observation_space = spaces.Box(low=-high, high=high)
-        action_space = spaces.Discrete(2)
-        mdp_info = MDPInfo(observation_space, action_space, gamma, horizon, dt)
+        self._dt = .1
 
         # Visualization
         self._viewer = Viewer(1, 1)
-
-        super().__init__(mdp_info)
+        self._state = None
+        super().__init__((2, ), 3)
 
     def reset(self, state=None):
         if state is None:
@@ -53,7 +49,7 @@ class CarOnHill(Environment):
     def step(self, action):
         action = self._discrete_actions[action[0]]
         sa = np.append(self._state, action)
-        new_state = odeint(self._dpds, sa, [0, self.info.dt])
+        new_state = odeint(self._dpds, sa, [0, self._dt])
 
         self._state = new_state[-1, :-1]
 
@@ -93,7 +89,7 @@ class CarOnHill(Environment):
 
         frame = self._viewer.get_frame() if record else None
 
-        self._viewer.display(self.info.dt)
+        self._viewer.display(self._dt)
 
         return frame
 
@@ -105,14 +101,14 @@ class CarOnHill(Environment):
         if x < 0.5:
             m = 4 * x - 1
         else:
-            m = 1 / ((20 * x**2 - 20 * x + 6) ** 1.5)
+            m = 1 / ((20 * x ** 2 - 20 * x + 6) ** 1.5)
 
         return np.arctan(m)
 
     @staticmethod
     def _height(x):
-        y_neg = 4 * x**2 - 2 * x
-        y_pos = (2 * x - 1) / np.sqrt(5 * (2 * x - 1)**2 + 1)
+        y_neg = 4 * x ** 2 - 2 * x
+        y_pos = (2 * x - 1) / np.sqrt(5 * (2 * x - 1) ** 2 + 1)
         y = np.zeros_like(x)
 
         mask = x < .5
