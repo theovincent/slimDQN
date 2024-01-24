@@ -1,4 +1,4 @@
-import torch as nn
+import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 from ..dqn import DQN
@@ -6,19 +6,19 @@ from ...environments.environment import Environment
 
 
 class DQNNet(nn.Module):
-    env: Environment
-
-    def setup(self):
+    def __init__(self, env: Environment):
+        super().__init__()
+        self.env = env
         self.network = nn.Sequential(
             nn.Linear(np.array(self.env.state_shape).prod(), 120),
             nn.ReLU(),
             nn.Linear(120, 84),
             nn.ReLU(),
-            nn.Linear(84, self.env.action_dim),
+            nn.Linear(84, env.action_dim),
         )
 
-    def __call__(self, state):
-        return self.network(state)
+    def forward(self, x):
+        return self.network(x)
 
 
 class BasicDQN(DQN):
@@ -28,7 +28,6 @@ class BasicDQN(DQN):
             device,
             gamma: float,
             tau: float,
-            seed: int,
             lr: float,
             loss_type: str,
             train_frequency: int,
@@ -54,5 +53,3 @@ class BasicDQN(DQN):
             target_update_frequency,
             save_model,
         )
-
-

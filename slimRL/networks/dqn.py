@@ -22,7 +22,7 @@ class DQN:
         self.tau = tau
         self.target_network = target_network
         self.q_network = q_network
-        self.optimizer = optimizer,
+        self.optimizer = optimizer
         self.loss_type = loss_type
         self.train_frequency = train_frequency
         self.target_update_frequency = target_update_frequency
@@ -45,9 +45,10 @@ class DQN:
             batch_samples
     ):
         target = self.compute_target(batch_samples)
-        curr_estimate = self.compute_qval(self.q_network, batch_samples['observations'])
+        curr_estimate = self.compute_curr_estimate(batch_samples)
         loss = self.loss_on_batch(target, curr_estimate)
 
+        print(self.optimizer)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -61,7 +62,8 @@ class DQN:
         return td_target
 
     def compute_curr_estimate(self, data):
-        q_val = self.compute_qval(self.q_network, data['observations']).gather(1, data['actions']).squeeze()
+        q_val = self.compute_qval(self.q_network, data['observations']).gather(1, data['actions'][:, None]).squeeze()
+        print(q_val)
         return q_val
 
     @staticmethod
@@ -90,5 +92,6 @@ class DQN:
     def best_action(self,
                     state: torch.tensor):
         with torch.no_grad():
-            action = torch.argmax(self.compute_qval(self.q_network, torch.Tensor(state)), dim=1).cpu().numpy()
+            # print(torch.argmax(self.compute_qval(self.q_network, torch.Tensor(state))))
+            action = torch.argmax(self.compute_qval(self.q_network, torch.Tensor(state))).cpu().numpy()
         return action

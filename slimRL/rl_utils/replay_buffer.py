@@ -2,6 +2,7 @@ import collections
 import math
 
 import numpy as np
+import torch
 
 # Defines a type describing part of the tuple returned by the replay
 # memory. Each element of the tuple is a tensor of shape [batch, ...] where
@@ -261,8 +262,7 @@ class ReplayBuffer(object):
     """
         if self.is_full():
             # add_count >= self._replay_capacity > self._stack_size
-            # min_id = self.cursor() - self._replay_capacity
-            min_id = self.cursor()
+            min_id = self.cursor() - self._replay_capacity
             max_id = self.cursor() - self._update_horizon
         else:
             # add_count < self._replay_capacity
@@ -359,5 +359,10 @@ class ReplayBuffer(object):
                     element[batch_element] = is_terminal_transition
 
                 # We assume the other elements are filled in by the subclass.
+
+        sampled_batch['observations'] = torch.tensor(sampled_batch['observations'], dtype=torch.float32)
+        sampled_batch['next_observations'] = torch.tensor(sampled_batch['next_observations'], dtype=torch.float32)
+        sampled_batch['rewards'] = torch.tensor(sampled_batch['rewards'], dtype=torch.float32)
+        sampled_batch['actions'] = torch.tensor(sampled_batch['actions'], dtype=torch.int64)
 
         return sampled_batch

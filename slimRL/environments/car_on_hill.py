@@ -36,7 +36,11 @@ class CarOnHill(Environment):
         # Visualization
         self._viewer = Viewer(1, 1)
         self._state = None
-        super().__init__((2, ), 3)
+        self.observation_shape = (2, )
+        self.action_shape = ()
+        self.action_dim = 2
+        self.single_action_space = list(range(self.action_dim))
+        super().__init__(self.observation_shape, self.action_dim)
 
     def reset(self, state=None):
         if state is None:
@@ -47,7 +51,7 @@ class CarOnHill(Environment):
         return self._state, {}
 
     def step(self, action):
-        action = self._discrete_actions[action[0]]
+        action = self._discrete_actions[action]
         sa = np.append(self._state, action)
         new_state = odeint(self._dpds, sa, [0, self._dt])
 
