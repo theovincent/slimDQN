@@ -23,7 +23,7 @@ def generate_simple_chain(state_n, goal_states, prob, rew, mu=None, gamma=.9,
         A FiniteMDP object built with the provided parameters.
 
     """
-    p = compute_probabilities(state_n, prob)
+    p = compute_probabilities(state_n, prob, go)
     r = compute_reward(state_n, goal_states, rew)
 
     assert mu is None or len(mu) == state_n

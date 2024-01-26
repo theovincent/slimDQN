@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import json
 import matplotlib.pyplot as plt
-from slimRL.environments.car_on_hill import CarOnHill
+from slimRL.environments.chain import generate_simple_chain
 from slimRL.networks.architectures.dqn import BasicDQN
 from slimRL.rl_utils.replay_buffer import ReplayBuffer
 
@@ -12,7 +12,7 @@ from slimRL.rl_utils.misc import linear_schedule
 
 
 def train(**kwargs):
-    env_id = "car_on_hill"
+    env_id = "chain"
     agent_type = "dqn"
     seed = kwargs.get("seed", 42)
     use_gpu = kwargs.get("use_gpu", True)
@@ -43,7 +43,7 @@ def train(**kwargs):
     device = torch.device("cuda" if torch.cuda.is_available() and use_gpu else "cpu")
 
     # env setup
-    env = CarOnHill()
+    env = generate_simple_chain(4, [0], 1.0, 1)
     agent = BasicDQN(env,
                      device=device,
                      gamma=gamma,
@@ -102,7 +102,7 @@ def train(**kwargs):
 
 
 if __name__ == "__main__":
-    hyperparams_file = "../hyperparams/car_on_hill_dqn.json"
+    hyperparams_file = "../hyperparams/default.json"
     params = json.load(open(hyperparams_file, "r"))
     rew_list = train(**params)
     plt.plot(rew_list)

@@ -48,7 +48,7 @@ class DQN:
         curr_estimate = self.compute_curr_estimate(batch_samples)
         loss = self.loss_on_batch(target, curr_estimate)
 
-        print(self.optimizer)
+        # print(self.optimizer)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -63,7 +63,7 @@ class DQN:
 
     def compute_curr_estimate(self, data):
         q_val = self.compute_qval(self.q_network, data['observations']).gather(1, data['actions'][:, None]).squeeze()
-        print(q_val)
+        # print(q_val)
         return q_val
 
     @staticmethod
