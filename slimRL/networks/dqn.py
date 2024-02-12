@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from ..rl_utils.replay_buffer import ReplayBuffer
+from slimRL.sample_collection.replay_buffer import ReplayBuffer
 
 
 class DQN:

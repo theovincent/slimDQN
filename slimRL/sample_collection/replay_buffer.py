@@ -157,6 +157,7 @@ class ReplayBuffer(object):
         else:
             self.episode_end_indices.discard(self.cursor())  # If present
 
+        action = action[0]
         self._add(observation, action, reward, terminal)
 
     def _add(self, *args):

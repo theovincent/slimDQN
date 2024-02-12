@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 from ..dqn import DQN
-from ...environments.environment import Environment
+from slimRL.environments.environment import Environment
 
 
 class DQNNet(nn.Module):

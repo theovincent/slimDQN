@@ -4,7 +4,7 @@ import numpy as np
 from scipy.integrate import odeint
 
 from slimRL.environments.environment import Environment
-from slimRL.utils.viewer import Viewer
+from slimRL.environments.viewer import Viewer
 
 
 class CarOnHill(Environment):
@@ -51,6 +51,7 @@ class CarOnHill(Environment):
         return self._state, {}
 
     def step(self, action):
+        action = action[0]
         action = self._discrete_actions[action]
         sa = np.append(self._state, action)
         new_state = odeint(self._dpds, sa, [0, self._dt])

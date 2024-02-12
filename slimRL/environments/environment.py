@@ -10,6 +10,7 @@ class Environment:
                  action_dim):
         self.state_shape = state_shape
         self.action_dim = action_dim
+        self.single_action_space = list(range(self.action_dim))
 
     def reset(self, state=None):
         raise NotImplementedError

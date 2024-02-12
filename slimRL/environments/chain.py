@@ -1,47 +1,27 @@
 # Reference: https://github.com/MushroomRL/mushroom-rl.git
 
 import numpy as np
-
 from slimRL.environments.finite_mdp import FiniteMDP
 
-
-def generate_simple_chain(state_n, goal_states, prob, rew, mu=None, gamma=.9,
+def generate_simple_chain(state_n, goal_states, prob, rew, mu=None,
                           horizon=100):
     """
     Simple chain generator.
-
-    Args:
-        state_n (int): number of states;
-        goal_states (list): list of goal states;
-        prob (float): probability of success of an action;
-        rew (float): reward obtained in goal states;
-        mu (np.ndarray): initial state probability distribution;
-        gamma (float, .9): discount factor;
-        horizon (int, 100): the horizon.
-
-    Returns:
-        A FiniteMDP object built with the provided parameters.
-
     """
-    p = compute_probabilities(state_n, prob, go)
+    p = compute_probabilities(state_n, prob, goal_states)
     r = compute_reward(state_n, goal_states, rew)
+    print(p.shape,'\n', p)
+    print(r.shape, '\n', r)
 
     assert mu is None or len(mu) == state_n
 
-    return FiniteMDP(p, r, mu, gamma, horizon)
+    return FiniteMDP(p, r, mu, horizon)
 
 
-def compute_probabilities(state_n, prob):
+def compute_probabilities(state_n, prob, goal_states):
     """
     Compute the transition probability matrix.
-
-    Args:
-        state_n (int): number of states;
-        prob (float): probability of success of an action.
-
-    Returns:
-        The transition probability matrix;
-
+    0 = right, 1 = left
     """
     p = np.zeros((state_n, 2, state_n))
 
@@ -58,25 +38,17 @@ def compute_probabilities(state_n, prob):
             p[i, 0, i] = 1. - prob
             p[i, 0, i + 1] = prob
 
+    for g in goal_states:
+        p[g, :, :] = 0
+
     return p
 
 
 def compute_reward(state_n, goal_states, rew):
-    """
-    Compute the reward matrix.
-
-    Args:
-        state_n (int): number of states;
-        goal_states (list): list of goal states;
-        rew (float): reward obtained in goal states.
-
-    Returns:
-        The reward matrix.
-
-    """
     r = np.zeros((state_n, 2, state_n))
 
     for g in goal_states:
+        r[g, :, g] = rew
         if g != 0:
             r[g - 1, 0, g] = rew
 
