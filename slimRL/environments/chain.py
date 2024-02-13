@@ -10,8 +10,8 @@ def generate_simple_chain(state_n, goal_states, prob, rew, mu=None,
     """
     p = compute_probabilities(state_n, prob, goal_states)
     r = compute_reward(state_n, goal_states, rew)
-    print(p.shape,'\n', p)
-    print(r.shape, '\n', r)
+    # print(p.shape,'\n', p)
+    # print(r.shape, '\n', r)
 
     assert mu is None or len(mu) == state_n
 

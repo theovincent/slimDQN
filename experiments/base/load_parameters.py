@@ -14,7 +14,7 @@ DEFAULT_PARAMS= {
   "save_model": False,
   "save_path": "",
   "seed": 42,
-  "total_timesteps": 500000,
+  "total_timesteps": 100000,
   "start_epsilon": 1.0,
   "end_epsilon": 0.05,
   "exploration_fraction": 0.2,
