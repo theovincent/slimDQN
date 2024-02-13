@@ -168,11 +168,11 @@ class ReplayBuffer(object):
         if self.is_full():
             # add_count >= self._replay_capacity
             min_id = self.cursor() - self._replay_capacity
-            max_id = self.cursor() - self._update_horizon
+            max_id = self.cursor() - 1
         else:
             # add_count < self._replay_capacity
             min_id = 0
-            max_id = self.cursor() - self._update_horizon
+            max_id = self.cursor() - 1
 
         indices = []
         attempt_count = 0
