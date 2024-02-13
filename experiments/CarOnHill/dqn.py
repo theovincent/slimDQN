@@ -8,7 +8,7 @@ from experiments.base.dqn import train
 def run(param_file):
     p = load_parameters(param_file, "car_on_hill", "dqn")
     device = torch.device("cuda" if torch.cuda.is_available() and p["use_gpu"] else "cpu")
-    env = CarOnHill()
+    env = CarOnHill(horizon=200)
     rb = ReplayBuffer(observation_shape=env.observation_shape,
                       replay_capacity=p["replay_capacity"],
                       batch_size=p["batch_size"],

@@ -3,6 +3,7 @@
 import numpy as np
 from slimRL.environments.environment import Environment
 
+
 class FiniteMDP(Environment):
     """
     Finite Markov Decision Process.
@@ -32,7 +33,7 @@ class FiniteMDP(Environment):
 
         # MDP properties
         self.horizon = horizon
-        self.observation_shape = (1, )
+        self.observation_shape = (1,)
         self.action_shape = ()
         self.action_dim = 2
         self.single_action_space = list(range(self.action_dim))
@@ -57,7 +58,7 @@ class FiniteMDP(Environment):
         action = action[0]
         self.timer += 1
         p = self.p[self._state[0], action, :]
-        if np.sum(p) == 0: # handle the case when agent starts in the goal state
+        if np.sum(p) == 0:  # handle the case when agent starts in the goal state
             next_state = self._state
             absorbing = True
             reward = self.r[self._state[0], action, self._state[0]]
@@ -66,9 +67,10 @@ class FiniteMDP(Environment):
             absorbing = not np.any(self.p[next_state[0]])
             reward = self.r[self._state[0], action, next_state[0]]
 
+        infos = {}
         if self.timer == self.horizon:
-            absorbing = True
+            infos["episode_end"] = True
 
         self._state = next_state
 
-        return self._state, reward, absorbing, {}
+        return self._state, reward, absorbing, infos

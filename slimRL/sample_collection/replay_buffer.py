@@ -58,6 +58,7 @@ class ReplayBuffer(object):
             dtype=np.float32)
         self._next_experience_is_episode_start = True
         self.episode_end_indices = set()
+        self.valid_transition_indices = set()
 
     def _create_storage(self):
         self._store = {}

@@ -4,9 +4,14 @@
   "update_horizon": 1,
   "gamma": 0.99,
   "tau": 1.0,
-  "lr": 2e-5,
+  "lr": 2e-4,
   "loss_type": "huber",
-  "train_frequency": 10,
-  "target_update_frequency": 500,
-  "save_model": false
+  "train_frequency": 5,
+  "target_update_frequency": 50,
+  "save_model": false,
+  "total_timesteps": 100000,
+  "learning_starts": 100,
+  "start_epsilon": 1.0,
+  "end_epsilon": 0.1,
+  "exploration_fraction": 0.5
 }

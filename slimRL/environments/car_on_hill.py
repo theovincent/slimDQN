@@ -14,13 +14,12 @@ class CarOnHill(Environment):
 
     """
 
-    def __init__(self, horizon=100, gamma=.95):
+    def __init__(self, horizon=100):
         """
         Constructor.
 
         Args:
             horizon (int, 100): horizon of the problem;
-            gamma (float, .95): discount factor.
 
         """
         # MDP parameters
@@ -32,6 +31,7 @@ class CarOnHill(Environment):
 
         # MDP properties
         self._dt = .1
+        self.horizon = horizon
 
         # Visualization
         self._viewer = Viewer(1, 1)
@@ -42,16 +42,21 @@ class CarOnHill(Environment):
         self.single_action_space = list(range(self.action_dim))
         super().__init__(self.observation_shape, self.action_dim)
 
+        self.timer = 0
+
     def reset(self, state=None):
         if state is None:
             self._state = np.array([-0.5, 0])
         else:
             self._state = state
 
+        self.timer = 0
+
         return self._state, {}
 
     def step(self, action):
         action = action[0]
+        self.timer += 1
         action = self._discrete_actions[action]
         sa = np.append(self._state, action)
         new_state = odeint(self._dpds, sa, [0, self._dt])
@@ -68,7 +73,11 @@ class CarOnHill(Environment):
             reward = 0.
             absorbing = False
 
-        return self._state, reward, absorbing, {}
+        infos = {}
+        if self.timer == self.horizon:
+            infos["episode_end"] = True
+
+        return self._state, reward, absorbing, infos
 
     def render(self, record=False):
         # Slope

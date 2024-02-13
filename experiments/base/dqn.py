@@ -44,18 +44,19 @@ def train(
             action = [agent.best_action(obs)]
 
         # TRY NOT TO MODIFY: execute the game and log data.
-        next_obs, reward, termination, _ = env.step(action)
+        next_obs, reward, termination, infos = env.step(action)
+        episode_end = "episode_end" in infos.keys() and infos["episode_end"]
         curr_episode_rew += (p["gamma"]**episode_step) * reward
         episode_step += 1
 
-        if termination:
+        if termination or episode_end:
             print(f"Step = {global_step}, Reward = {curr_episode_rew}")
             all_episodes_rew.append(curr_episode_rew)
             curr_episode_rew = 0
             episode_step = 0
             next_obs, _ = env.reset()
 
-        rb.add(obs, action, reward, termination)
+        rb.add(obs, action, reward, termination, episode_end)
 
         obs = next_obs
 
@@ -66,3 +67,16 @@ def train(
     plt.plot(all_episodes_rew)
     plt.show()
     print(all_episodes_rew)
+
+    obs, _ = env.reset()
+    for global_step in range(total_timesteps//10):
+        env.render()
+        action = [agent.best_action(obs)]
+        next_obs, reward, termination, infos = env.step(action)
+        episode_end = "episode_end" in infos.keys() and infos["episode_end"]
+
+        if termination or episode_end:
+            next_obs, _ = env.reset()
+
+        obs = next_obs
+
