@@ -12,10 +12,13 @@ class Env:
 ```
 Sufficient functions needed to run various algorithms on specific environments:
 ## 1. CarOnHill
+
 ###DQN
+
 Above definition is sufficient
 
 ## 2. ChainWalk
 
 ###DQN
+
 Above definition is sufficient
