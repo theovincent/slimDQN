@@ -3,7 +3,6 @@ import random
 import numpy as np
 import torch
 
-from slimRL.environments.environment import Environment
 from slimRL.networks.architectures.dqn import BasicDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.utils.misc import linear_schedule
@@ -12,7 +11,7 @@ import matplotlib.pyplot as plt
 def train(
     p: dict,
     agent: BasicDQN,
-    env: Environment,
+    env,
     rb: ReplayBuffer,
 ):
     env_id = p["env_id"]
@@ -43,7 +42,6 @@ def train(
         else:
             action = [agent.best_action(obs)]
 
-        # TRY NOT TO MODIFY: execute the game and log data.
         next_obs, reward, termination, infos = env.step(action)
         episode_end = "episode_end" in infos.keys() and infos["episode_end"]
         curr_episode_rew += (p["gamma"]**episode_step) * reward

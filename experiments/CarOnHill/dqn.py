@@ -1,6 +1,6 @@
 import torch
 from experiments.base.load_parameters import load_parameters
-from slimRL.environments.car_on_hill import CarOnHill
+from slimRL.environments.car_on_hill import CarOnHillDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.networks.architectures.dqn import BasicDQN
 from experiments.base.dqn import train
@@ -8,7 +8,7 @@ from experiments.base.dqn import train
 def run(param_file):
     p = load_parameters(param_file, "car_on_hill", "dqn")
     device = torch.device("cuda" if torch.cuda.is_available() and p["use_gpu"] else "cpu")
-    env = CarOnHill(horizon=200)
+    env = CarOnHillDQN(horizon=200)
     rb = ReplayBuffer(observation_shape=env.observation_shape,
                       replay_capacity=p["replay_capacity"],
                       batch_size=p["batch_size"],
@@ -27,6 +27,19 @@ def run(param_file):
                      )
     train(p, agent, env, rb)
 
+    obs, _ = env.reset()
+    for global_step in range(10000//10):
+        env.render()
+        action = [agent.best_action(obs)]
+        next_obs, reward, termination, infos = env.step(action)
+        episode_end = "episode_end" in infos.keys() and infos["episode_end"]
+
+        if termination or episode_end:
+            next_obs, _ = env.reset()
+
+        obs = next_obs
+
+
 if __name__ == "__main__":
-    param_file = "./car_on_hill_dqn.json"
+    param_file = "/Users/yogeshtripathi/RL/slimRL/experiments/CarOnHill/car_on_hill_dqn.json"
     run(param_file)

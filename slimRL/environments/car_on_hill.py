@@ -3,11 +3,9 @@
 import numpy as np
 from scipy.integrate import odeint
 
-from slimRL.environments.environment import Environment
 from slimRL.environments.viewer import Viewer
-
-
-class CarOnHill(Environment):
+    
+class CarOnHill():
     """
     The Car On Hill environment as presented in:
     "Tree-Based Batch Mode Reinforcement Learning". Ernst D. et al.. 2005.
@@ -40,7 +38,6 @@ class CarOnHill(Environment):
         self.action_shape = ()
         self.action_dim = 2
         self.single_action_space = list(range(self.action_dim))
-        super().__init__(self.observation_shape, self.action_dim)
 
         self.timer = 0
 
@@ -78,37 +75,6 @@ class CarOnHill(Environment):
             infos["episode_end"] = True
 
         return self._state, reward, absorbing, infos
-
-    def render(self, record=False):
-        # Slope
-        self._viewer.function(0, 1, self._height)
-
-        # Car
-        car_body = [
-            [-3e-2, 0],
-            [-3e-2, 2e-2],
-            [-2e-2, 2e-2],
-            [-1e-2, 3e-2],
-            [1e-2, 3e-2],
-            [2e-2, 2e-2],
-            [3e-2, 2e-2],
-            [3e-2, 0]
-        ]
-
-        x_car = (self._state[0] + 1) / 2
-        y_car = self._height(x_car)
-        c_car = [x_car, y_car]
-        angle = self._angle(x_car)
-        self._viewer.polygon(c_car, angle, car_body, color=(32, 193, 54))
-
-        frame = self._viewer.get_frame() if record else None
-
-        self._viewer.display(self._dt)
-
-        return frame
-
-    def stop(self):
-        self._viewer.close()
 
     @staticmethod
     def _angle(x):
@@ -151,3 +117,38 @@ class CarOnHill(Environment):
               diff_hill * diff_2_hill) / (self._m * (1 + diff_hill ** 2))
 
         return dp, ds, 0.
+
+
+class CarOnHillDQN(CarOnHill):
+    """Add functions necessary for running DQN on CarOnHill Environment"""
+
+    def __init__(self, horizon=100):
+        super().__init__(horizon)
+
+    def render(self, record=False):
+        # Slope
+        self._viewer.function(0, 1, self._height)
+
+        # Car
+        car_body = [
+            [-3e-2, 0],
+            [-3e-2, 2e-2],
+            [-2e-2, 2e-2],
+            [-1e-2, 3e-2],
+            [1e-2, 3e-2],
+            [2e-2, 2e-2],
+            [3e-2, 2e-2],
+            [3e-2, 0]
+        ]
+
+        x_car = (self._state[0] + 1) / 2
+        y_car = self._height(x_car)
+        c_car = [x_car, y_car]
+        angle = self._angle(x_car)
+        self._viewer.polygon(c_car, angle, car_body, color=(32, 193, 54))
+
+        frame = self._viewer.get_frame() if record else None
+
+        self._viewer.display(self._dt)
+
+        return frame

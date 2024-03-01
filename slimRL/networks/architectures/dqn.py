@@ -2,15 +2,14 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 from ..dqn import DQN
-from slimRL.environments.environment import Environment
 
 
 class DQNNet(nn.Module):
-    def __init__(self, env: Environment):
+    def __init__(self, env):
         super().__init__()
         self.env = env
         self.network = nn.Sequential(
-            nn.Linear(np.array(self.env.state_shape).prod(), 120),
+            nn.Linear(np.array(self.env.observation_shape).prod(), 120),
             nn.ReLU(),
             nn.Linear(120, 84),
             nn.ReLU(),

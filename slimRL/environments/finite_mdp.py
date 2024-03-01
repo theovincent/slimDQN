@@ -1,10 +1,9 @@
 # Reference: https://github.com/MushroomRL/mushroom-rl.git
 
 import numpy as np
-from slimRL.environments.environment import Environment
 
 
-class FiniteMDP(Environment):
+class FiniteMDP():
     """
     Finite Markov Decision Process.
 
@@ -37,8 +36,7 @@ class FiniteMDP(Environment):
         self.action_shape = ()
         self.action_dim = 2
         self.single_action_space = list(range(self.action_dim))
-        super().__init__(self.observation_shape, self.action_dim)
-
+        
         self.timer = 0
 
     def reset(self, state=None):
