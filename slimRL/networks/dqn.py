@@ -14,8 +14,7 @@ class DQN:
             optimizer: optim.Optimizer,
             loss_type: str,
             train_frequency: int,
-            target_update_frequency: int,
-            save_model: bool,
+            target_update_frequency: int
     ):
 
         self.gamma = gamma
@@ -26,7 +25,6 @@ class DQN:
         self.loss_type = loss_type
         self.train_frequency = train_frequency
         self.target_update_frequency = target_update_frequency
-        self.save_model = save_model
 
     def loss_on_batch(self, td_target, estimate):
         return self.loss(self.loss_type)(td_target, estimate)

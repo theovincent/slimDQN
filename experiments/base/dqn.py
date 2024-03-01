@@ -6,7 +6,9 @@ from tqdm import tqdm
 from slimRL.networks.architectures.dqn import BasicDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.utils.misc import linear_schedule
+from slimRL.utils.logger import save_logs, save_model
 import matplotlib.pyplot as plt
+
 
 def train(
     p: dict,
@@ -17,8 +19,7 @@ def train(
     env_id = p["env_id"]
     agent_type = p["agent"]
     seed = p["seed"]
-    exploration_fraction = p["exploration_fraction"]
-    learning_starts = p["learning_starts"]
+    learning_starts = p["n_initial_samples"]
     run_name = f"{env_id}__{agent_type}__{seed}__{int(time.time())}"
 
     print(run_name)
@@ -27,6 +28,7 @@ def train(
     np.random.seed(seed)
     torch.manual_seed(seed)
 
+    n_training_steps = 0
     obs, _ = env.reset()
     losses = np.zeros((p["n_epochs"], p["n_training_steps_per_epoch"])) * np.nan
     js = np.zeros(p["n_epochs"]) * np.nan
@@ -38,26 +40,32 @@ def train(
         has_reset = False
 
         while idx_training_step < p["n_training_steps_per_epoch"] or not has_reset:
-            epsilon = linear_schedule(p["start_epsilon"], p["end_epsilon"], p["exploration_fraction"] p["duration_epsilon"], n_training_steps)
+            epsilon = linear_schedule(
+                p["start_epsilon"],
+                p["end_epsilon"],
+                p["duration_epsilon"],
+                n_training_steps,
+            )
             if random.random() < epsilon:
                 action = random.sample(env.single_action_space, 1)
             else:
                 action = [agent.best_action(obs)]
 
             next_obs, reward, termination, infos = env.step(action)
-            episode_end = "episode_end" in infos.keys() and infos["episode_end"]
-            rb.add(obs, action, reward, termination, episode_end)
+            has_reset = "episode_end" in infos.keys() and infos["episode_end"]
+            rb.add(obs, action, reward, termination, has_reset)
             obs = next_obs
 
-            if termination or episode_end:
+            if termination or has_reset:
                 next_obs, _ = env.reset()
 
             sum_reward += reward
-            n_episodes += int(episode_end)
+            n_episodes += int(has_reset)
 
             if n_training_steps > learning_starts:
                 losses[
-                idx_epoch, np.minimum(idx_training_step, p["n_training_steps_per_epoch"] - 1)
+                    idx_epoch,
+                    np.minimum(idx_training_step, p["n_training_steps_per_epoch"] - 1),
                 ] = agent.update_online_params(n_training_steps, rb)
                 agent.update_target_params(n_training_steps)
 
@@ -65,5 +73,8 @@ def train(
             n_training_steps += 1
 
         js[idx_epoch] = sum_reward / n_episodes
-        
-        
+        print(f"Epoch: {idx_epoch}, Avg. return = {js[idx_epoch]}")
+
+    if p["log"]:
+        save_logs(p, js, losses)
+        save_model(agent)

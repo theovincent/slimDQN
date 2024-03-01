@@ -1,7 +1,6 @@
 # Reference: https://github.com/MushroomRL/mushroom-rl.git
 
 import numpy as np
-from slimRL.environments.finite_mdp import FiniteMDP
 
 class Chain():
 

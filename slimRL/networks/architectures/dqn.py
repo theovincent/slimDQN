@@ -30,8 +30,7 @@ class BasicDQN(DQN):
             lr: float,
             loss_type: str,
             train_frequency: int,
-            target_update_frequency: int,
-            save_model: bool,
+            target_update_frequency: int
     ):
         self.env = env
         self.device = device
@@ -49,6 +48,5 @@ class BasicDQN(DQN):
             optimizer,
             loss_type,
             train_frequency,
-            target_update_frequency,
-            save_model,
+            target_update_frequency
         )
