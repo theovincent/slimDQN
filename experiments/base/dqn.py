@@ -38,7 +38,7 @@ def train(
         has_reset = False
 
         while idx_training_step < p["n_training_steps_per_epoch"] or not has_reset:
-            epsilon = linear_schedule(p["start_epsilon"], p["end_epsilon"], p["duration_epsilon"], n_training_steps)
+            epsilon = linear_schedule(p["start_epsilon"], p["end_epsilon"], p["exploration_fraction"] p["duration_epsilon"], n_training_steps)
             if random.random() < epsilon:
                 action = random.sample(env.single_action_space, 1)
             else:
