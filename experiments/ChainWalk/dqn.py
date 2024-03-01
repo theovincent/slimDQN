@@ -1,17 +1,44 @@
-import numpy as np
+import sys
+import argparse
 import torch
+import numpy as np
+from experiments.base.parser import addparse
 from experiments.base.load_parameters import load_parameters
 from slimRL.environments.chain import ChainDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.networks.architectures.dqn import BasicDQN
 from experiments.base.dqn import train
 
-def run(param_file):
-    p = load_parameters(param_file, "chain", "dqn")
+def run(argvs=sys.argv[1:]):
+    import warnings
+    warnings.simplefilter(action="ignore", category=FutureWarning)
+
+    parser = argparse.ArgumentParser("Train DQN on CarOnHill.")
+    addparse(parser)
+    parser.add_argument(
+        "-size",
+        "--chain_size",
+        help="Chain size",
+        type=int,
+        required=True,
+    )
+    parser.add_argument(
+        "-pr",
+        "--transition_prob",
+        help="The probability of success of an action (transition probability)",
+        type=float,
+        required=True
+    )
+
+
+    args = parser.parse_args(argvs)
+    param_file = args.params_file
+    p = load_parameters(param_file, "chain", "dqn", args.seed)
+    p["chain_size"] = args.chain_size
+    p["transition_prob"] = args.transition_prob
+    
     device = torch.device("cuda" if torch.cuda.is_available() and p["use_gpu"] else "cpu")
-    mu = np.zeros(p["chain_size"])
-    mu[p["chain_size"]//2] = 1
-    env = ChainDQN(p["chain_size"], [0], 1.0, 1.0, mu=mu, horizon=p["chain_size"]*10)
+    env = ChainDQN(state_n=p["chain_size"], prob=p["transition_prob"])
     rb = ReplayBuffer(observation_shape=env.observation_shape,
                       replay_capacity=p["replay_capacity"],
                       batch_size=p["batch_size"],
@@ -29,7 +56,3 @@ def run(param_file):
                      save_model=p["save_model"],
                      )
     train(p, agent, env, rb)
-
-if __name__ == "__main__":
-    param_file =  "/Users/yogeshtripathi/RL/slimRL/experiments/ChainWalk/chain.json"
-    run(param_file)

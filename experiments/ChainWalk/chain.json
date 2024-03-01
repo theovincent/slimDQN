@@ -1,5 +1,4 @@
 {
-  "chain_size": 30,
   "replay_capacity": 50000,
   "batch_size": 32,
   "update_horizon": 3,

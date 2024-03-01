@@ -1,12 +1,23 @@
+import sys
+import argparse
 import torch
+from experiments.base.parser import addparse
 from experiments.base.load_parameters import load_parameters
 from slimRL.environments.car_on_hill import CarOnHillDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.networks.architectures.dqn import BasicDQN
 from experiments.base.dqn import train
 
-def run(param_file):
-    p = load_parameters(param_file, "car_on_hill", "dqn")
+def run(argvs=sys.argv[1:]):
+    import warnings
+    warnings.simplefilter(action="ignore", category=FutureWarning)
+
+    parser = argparse.ArgumentParser("Train DQN on CarOnHill.")
+    addparse(parser)
+    args = parser.parse_args(argvs)
+    param_file = args.params_file
+
+    p = load_parameters(param_file, "car_on_hill", "dqn", args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() and p["use_gpu"] else "cpu")
     env = CarOnHillDQN(horizon=200)
     rb = ReplayBuffer(observation_shape=env.observation_shape,
@@ -38,8 +49,3 @@ def run(param_file):
             next_obs, _ = env.reset()
 
         obs = next_obs
-
-
-if __name__ == "__main__":
-    param_file = "/Users/yogeshtripathi/RL/slimRL/experiments/CarOnHill/car_on_hill_dqn.json"
-    run(param_file)

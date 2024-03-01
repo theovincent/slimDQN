@@ -12,7 +12,7 @@ class CarOnHill():
 
     """
 
-    def __init__(self, horizon=100):
+    def __init__(self, horizon=200):
         """
         Constructor.
 
@@ -122,7 +122,7 @@ class CarOnHill():
 class CarOnHillDQN(CarOnHill):
     """Add functions necessary for running DQN on CarOnHill Environment"""
 
-    def __init__(self, horizon=100):
+    def __init__(self, horizon=200):
         super().__init__(horizon)
 
     def render(self, record=False):

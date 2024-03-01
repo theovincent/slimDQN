@@ -5,9 +5,9 @@ from slimRL.environments.finite_mdp import FiniteMDP
 
 class Chain(FiniteMDP):
 
-    def __init__(self, state_n, goal_states, prob, rew, mu=None, horizon=100) -> None:
-        self.p = self._compute_probabilities(state_n, prob, goal_states)
-        self.r = self._compute_reward(state_n, goal_states, rew)
+    def __init__(self, state_n, prob, mu=None, horizon=None) -> None:
+        self.p = self._compute_probabilities(state_n, prob, goal_states=[0, -1])
+        self.r = self._compute_reward(state_n, goal_states=[0, -1],rew=1.0)
 
         super().__init__(self.p, self.r, mu, horizon)
 
@@ -52,5 +52,5 @@ class Chain(FiniteMDP):
 
 
 class ChainDQN(Chain):
-    def __init__(self, state_n, goal_states, prob, rew, mu=None, horizon=100) -> None:
-        super().__init__(state_n, goal_states, prob, rew, mu, horizon)
+    def __init__(self, state_n, prob, mu=None, horizon=None) -> None:
+        super().__init__(state_n, prob, mu, horizon)
