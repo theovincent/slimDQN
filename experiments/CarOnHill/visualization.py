@@ -2,6 +2,7 @@ import sys
 import argparse
 import torch
 from slimRL.environments.car_on_hill import CarOnHill
+from slimRL.environments.visualization.car_on_hill import render
 
 def run(argvs=sys.argv[1:]):
     import warnings
@@ -31,7 +32,7 @@ def run(argvs=sys.argv[1:]):
 
     obs, _ = env.reset()
     for _ in range(args.steps):
-        env.render()
+        render(env)
         action = [agent.best_action(obs)]
         next_obs, reward, termination, infos = env.step(action)
         episode_end = "episode_end" in infos.keys() and infos["episode_end"]

@@ -117,38 +117,3 @@ class CarOnHill():
               diff_hill * diff_2_hill) / (self._m * (1 + diff_hill ** 2))
 
         return dp, ds, 0.
-
-
-class CarOnHillDQN(CarOnHill):
-    """Add functions necessary for running DQN on CarOnHill Environment"""
-
-    def __init__(self, horizon=200):
-        super().__init__(horizon)
-
-    def render(self, record=False):
-        # Slope
-        self._viewer.function(0, 1, self._height)
-
-        # Car
-        car_body = [
-            [-3e-2, 0],
-            [-3e-2, 2e-2],
-            [-2e-2, 2e-2],
-            [-1e-2, 3e-2],
-            [1e-2, 3e-2],
-            [2e-2, 2e-2],
-            [3e-2, 2e-2],
-            [3e-2, 0]
-        ]
-
-        x_car = (self._state[0] + 1) / 2
-        y_car = self._height(x_car)
-        c_car = [x_car, y_car]
-        angle = self._angle(x_car)
-        self._viewer.polygon(c_car, angle, car_body, color=(32, 193, 54))
-
-        frame = self._viewer.get_frame() if record else None
-
-        self._viewer.display(self._dt)
-
-        return frame

@@ -3,13 +3,57 @@
 import numpy as np
 from slimRL.environments.finite_mdp import FiniteMDP
 
-class Chain(FiniteMDP):
+class Chain():
 
-    def __init__(self, state_n, prob, mu=None, horizon=None) -> None:
+    def __init__(self, state_n, prob, mu=None, horizon=np.inf) -> None:
+
         self.p = self._compute_probabilities(state_n, prob, goal_states=[0, -1])
         self.r = self._compute_reward(state_n, goal_states=[0, -1],rew=1.0)
+        self.mu = mu
 
-        super().__init__(self.p, self.r, mu, horizon)
+        # MDP properties
+        self.horizon = horizon
+        self.observation_shape = (1,)
+        self.action_shape = ()
+        self.action_dim = 2
+        self.single_action_space = list(range(self.action_dim))
+        
+        self.timer = 0     
+
+    def reset(self, state=None):
+        if state is None:
+            if self.mu is not None:
+                self._state = np.array(
+                    [np.random.choice(self.mu.size, p=self.mu)])
+            else:
+                self._state = np.array([np.random.choice(self.p.shape[0])])
+        else:
+            self._state = state
+        self.timer = 0
+
+        return self._state, {}
+
+    def step(self, action):
+        action = action[0]
+        self.timer += 1
+        p = self.p[self._state[0], action, :]
+        if np.sum(p) == 0:  # handle the case when agent starts in the goal state
+            next_state = self._state
+            absorbing = True
+            reward = self.r[self._state[0], action, self._state[0]]
+        else:
+            next_state = np.array([np.random.choice(p.size, p=p)])
+            absorbing = not np.any(self.p[next_state[0]])
+            reward = self.r[self._state[0], action, next_state[0]]
+
+        infos = {}
+        if self.timer == self.horizon:
+            infos["episode_end"] = True
+
+        self._state = next_state
+
+        return self._state, reward, absorbing, infos
+
 
     def _compute_probabilities(self, state_n, prob, goal_states):
         """
@@ -49,8 +93,3 @@ class Chain(FiniteMDP):
                 r[g + 1, 1, g] = rew
 
         return r
-
-
-class ChainDQN(Chain):
-    def __init__(self, state_n, prob, mu=None, horizon=None) -> None:
-        super().__init__(state_n, prob, mu, horizon)

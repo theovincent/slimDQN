@@ -1,5 +1,4 @@
-Add your custom environment into this folder with the following structure:
-
+All environments mandatorily need the following functions to be implemented:
 ```python
 class Env:
     def __init__(self, ...):
@@ -10,16 +9,13 @@ class Env:
 
     def reset(self):
         # reset env to a random state
-}
 ```
+Sufficient functions needed to run various algorithms on specific environments:
+## 1. CarOnHill
+###DQN
+Above definition is sufficient
 
-For running DQN algorithm on the environment, add:
+## 2. ChainWalk
 
-```python
-class EnvDQN(Env):
-    def __init__(self, ...):
-        super().__init__(self, ...)
-
-    def abc(self, ...):
-        # additional functions you want to add in your DQN run for the environment
-```
+###DQN
+Above definition is sufficient
