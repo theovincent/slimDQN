@@ -4,8 +4,10 @@ import torch
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.environments.visualization.car_on_hill import render
 
+
 def run(argvs=sys.argv[1:]):
     import warnings
+
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
     parser = argparse.ArgumentParser("Visualize DQN performance on CarOnHill.")
@@ -22,13 +24,12 @@ def run(argvs=sys.argv[1:]):
         help="Steps for which agent is visualized.",
         type=int,
         required=False,
-        default=10000
+        default=10000,
     )
     args = parser.parse_args(argvs)
 
     env = CarOnHill()
     agent = torch.load(args.model)
-
 
     obs, _ = env.reset()
     for _ in range(args.steps):
