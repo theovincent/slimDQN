@@ -2,12 +2,11 @@
 
 import numpy as np
 
-class Chain():
 
+class Chain:
     def __init__(self, state_n, prob, mu=None, horizon=np.inf) -> None:
-
         self.p = self._compute_probabilities(state_n, prob, goal_states=[0, -1])
-        self.r = self._compute_reward(state_n, goal_states=[0, -1],rew=1.0)
+        self.r = self._compute_reward(state_n, goal_states=[0, -1], rew=1.0)
         self.mu = mu
 
         # MDP properties
@@ -16,14 +15,13 @@ class Chain():
         self.action_shape = ()
         self.action_dim = 2
         self.single_action_space = list(range(self.action_dim))
-        
-        self.timer = 0     
+
+        self.timer = 0
 
     def reset(self, state=None):
         if state is None:
             if self.mu is not None:
-                self._state = np.array(
-                    [np.random.choice(self.mu.size, p=self.mu)])
+                self._state = np.array([np.random.choice(self.mu.size, p=self.mu)])
             else:
                 self._state = np.array([np.random.choice(self.p.shape[0])])
         else:
@@ -53,7 +51,6 @@ class Chain():
 
         return self._state, reward, absorbing, infos
 
-
     def _compute_probabilities(self, state_n, prob, goal_states):
         """
         Compute the transition probability matrix.
@@ -63,22 +60,21 @@ class Chain():
 
         for i in range(state_n):
             if i == 0:
-                p[i, 1, i] = 1.
+                p[i, 1, i] = 1.0
             else:
-                p[i, 1, i] = 1. - prob
+                p[i, 1, i] = 1.0 - prob
                 p[i, 1, i - 1] = prob
 
             if i == state_n - 1:
-                p[i, 0, i] = 1.
+                p[i, 0, i] = 1.0
             else:
-                p[i, 0, i] = 1. - prob
+                p[i, 0, i] = 1.0 - prob
                 p[i, 0, i + 1] = prob
 
         for g in goal_states:
             p[g, :, :] = 0
 
         return p
-
 
     def _compute_reward(self, state_n, goal_states, rew):
         r = np.zeros((state_n, 2, state_n))

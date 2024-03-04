@@ -22,15 +22,15 @@ class DQNNet(nn.Module):
 
 class BasicDQN(DQN):
     def __init__(
-            self,
-            env,
-            device,
-            gamma: float,
-            tau: float,
-            lr: float,
-            loss_type: str,
-            train_frequency: int,
-            target_update_frequency: int
+        self,
+        env,
+        device,
+        gamma: float,
+        tau: float,
+        lr: float,
+        loss_type: str,
+        train_frequency: int,
+        target_update_frequency: int,
     ):
         self.env = env
         self.device = device
@@ -48,5 +48,5 @@ class BasicDQN(DQN):
             optimizer,
             loss_type,
             train_frequency,
-            target_update_frequency
+            target_update_frequency,
         )

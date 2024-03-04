@@ -11,7 +11,7 @@ def render(env, record=False):
         [1e-2, 3e-2],
         [2e-2, 2e-2],
         [3e-2, 2e-2],
-        [3e-2, 0]
+        [3e-2, 0],
     ]
 
     x_car = (env._state[0] + 1) / 2

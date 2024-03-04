@@ -6,17 +6,16 @@ from slimRL.sample_collection.replay_buffer import ReplayBuffer
 
 class DQN:
     def __init__(
-            self,
-            gamma: float,
-            tau: float,
-            target_network: nn.Module,
-            q_network: nn.Module,
-            optimizer: optim.Optimizer,
-            loss_type: str,
-            train_frequency: int,
-            target_update_frequency: int
+        self,
+        gamma: float,
+        tau: float,
+        target_network: nn.Module,
+        q_network: nn.Module,
+        optimizer: optim.Optimizer,
+        loss_type: str,
+        train_frequency: int,
+        target_update_frequency: int,
     ):
-
         self.gamma = gamma
         self.tau = tau
         self.target_network = target_network
@@ -38,10 +37,7 @@ class DQN:
         elif order == "2":
             return nn.MSELoss()
 
-    def learn_on_batch(
-            self,
-            batch_samples
-    ):
+    def learn_on_batch(self, batch_samples):
         target = self.compute_target(batch_samples)
         curr_estimate = self.compute_curr_estimate(batch_samples)
         loss = self.loss_on_batch(target, curr_estimate)
@@ -55,12 +51,20 @@ class DQN:
 
     def compute_target(self, data):
         with torch.no_grad():
-            target_max, _ = self.compute_qval(self.target_network, data['next_observations']).max(dim=1)
-            td_target = data['rewards'].flatten() + self.gamma * target_max * (1 - data['dones'].flatten())
+            target_max, _ = self.compute_qval(
+                self.target_network, data["next_observations"]
+            ).max(dim=1)
+            td_target = data["rewards"].flatten() + self.gamma * target_max * (
+                1 - data["dones"].flatten()
+            )
         return td_target
 
     def compute_curr_estimate(self, data):
-        q_val = self.compute_qval(self.q_network, data['observations']).gather(1, data['actions'][:, None]).squeeze()
+        q_val = (
+            self.compute_qval(self.q_network, data["observations"])
+            .gather(1, data["actions"][:, None])
+            .squeeze()
+        )
         # print(q_val)
         return q_val
 
@@ -73,23 +77,26 @@ class DQN:
         if step % self.train_frequency == 0:
             batch_samples = replay_buffer.sample_transition_batch()
 
-            loss = self.learn_on_batch(
-                batch_samples
-            )
+            loss = self.learn_on_batch(batch_samples)
             return loss
         return None
 
     def update_target_params(self, step: int):
         if step % self.target_update_frequency == 0:
-            for target_network_param, q_network_param in zip(self.target_network.parameters(),
-                                                             self.q_network.parameters()):
+            for target_network_param, q_network_param in zip(
+                self.target_network.parameters(), self.q_network.parameters()
+            ):
                 target_network_param.data.copy_(
-                    self.tau * q_network_param.data + (1.0 - self.tau) * target_network_param.data
+                    self.tau * q_network_param.data
+                    + (1.0 - self.tau) * target_network_param.data
                 )
 
-    def best_action(self,
-                    state: torch.tensor):
+    def best_action(self, state: torch.tensor):
         with torch.no_grad():
             # print(torch.argmax(self.compute_qval(self.q_network, torch.Tensor(state))))
-            action = torch.argmax(self.compute_qval(self.q_network, torch.Tensor(state))).cpu().numpy()
+            action = (
+                torch.argmax(self.compute_qval(self.q_network, torch.Tensor(state)))
+                .cpu()
+                .numpy()
+            )
         return action

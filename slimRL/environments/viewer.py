@@ -1,6 +1,7 @@
 import os
-if 'PYGAME_HIDE_SUPPORT_PROMPT' not in os.environ:
-    os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
+if "PYGAME_HIDE_SUPPORT_PROMPT" not in os.environ:
+    os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 import pygame
 import time
@@ -12,8 +13,10 @@ class Viewer:
     Interface to pygame for visualizing mushroom native environments.
 
     """
-    def __init__(self, env_width, env_height, width=500, height=500,
-                 background=(0, 0, 0)):
+
+    def __init__(
+        self, env_width, env_height, width=500, height=500, background=(0, 0, 0)
+    ):
         """
         Constructor.
 
@@ -93,10 +96,12 @@ class Viewer:
 
         """
         edge_2 = edge / 2
-        points = [[edge_2, edge_2],
-                  [edge_2, -edge_2],
-                  [-edge_2, -edge_2],
-                  [-edge_2, edge_2]]
+        points = [
+            [edge_2, edge_2],
+            [edge_2, -edge_2],
+            [-edge_2, -edge_2],
+            [-edge_2, edge_2],
+        ]
 
         self.polygon(center, angle, points, color, width)
 
@@ -149,14 +154,24 @@ class Viewer:
             color (tuple, (255, 255, 255)): the color of the arrow.
 
         """
-        points = [[-0.5 * scale, -0.5 * scale],
-                  [-0.5 * scale, 0.5 * scale],
-                  [0.5 * scale, 0]]
+        points = [
+            [-0.5 * scale, -0.5 * scale],
+            [-0.5 * scale, 0.5 * scale],
+            [0.5 * scale, 0],
+        ]
 
         self.polygon(center, angle, points, color)
 
-    def force_arrow(self, center, direction, force, max_force,
-                    max_length, color=(255, 255, 255), width=1):
+    def force_arrow(
+        self,
+        center,
+        direction,
+        force,
+        max_force,
+        max_length,
+        color=(255, 255, 255),
+        width=1,
+    ):
         """
         Draw a force arrow, i.e. an arrow representing a force. The
         length of the arrow is directly proportional to the force value.
@@ -174,7 +189,6 @@ class Viewer:
         length = force / max_force * max_length
 
         if length != 0:
-
             c = self._transform(center)
             direction = direction / np.linalg.norm(direction)
             end = center + length * direction
@@ -182,13 +196,13 @@ class Viewer:
             delta = e - c
 
             pygame.draw.line(self.screen, color, c, e, width)
-            self.arrow_head(end, length / 4, -np.arctan2(delta[1], delta[0]),
-                            color)
+            self.arrow_head(end, length / 4, -np.arctan2(delta[1], delta[0]), color)
         else:
             self.screen
 
-    def torque_arrow(self, center, torque, max_torque,
-                     max_radius, color=(255, 255, 255), width=1):
+    def torque_arrow(
+        self, center, torque, max_torque, max_radius, color=(255, 255, 255), width=1
+    ):
         """
         Draw a torque arrow, i.e. a circular arrow representing a torque. The
         radius of the arrow is directly proportional to the torque value.
@@ -210,8 +224,7 @@ class Viewer:
         if r != 0:
             c = self._transform(center)
             rect = pygame.Rect(c[0] - r, c[1] - r, 2 * r, 2 * r)
-            pygame.draw.arc(self.screen, color, rect,
-                            angle_start, angle_end, width)
+            pygame.draw.arc(self.screen, color, rect, angle_start, angle_end, width)
 
             arrow_center = center
             arrow_center[1] -= radius * np.sign(torque)
@@ -233,7 +246,7 @@ class Viewer:
         surf = pygame.transform.smoothscale(surf, self.size)
         self.screen.blit(surf, (0, 0))
 
-    def function(self, x_s, x_e, f, n_points=100,  width=1, color=(255, 255, 255)):
+    def function(self, x_s, x_e, f, n_points=100, width=1, color=(255, 255, 255)):
         """
         Draw the graph of a function in the image.
 
@@ -251,7 +264,7 @@ class Viewer:
         x = np.linspace(x_s, x_e, n_points)
         y = f(x)
 
-        points = [self._transform([a, b]) for a, b in zip(x,y)]
+        points = [self._transform([a, b]) for a, b in zip(x, y)]
         pygame.draw.lines(self.screen, color, False, points, width)
 
     @staticmethod
@@ -292,10 +305,15 @@ class Viewer:
         pygame.display.quit()
 
     def _transform(self, p):
-        return np.array([p[0] * self._ratio[0],
-                         self._height - p[1] * self._ratio[1]]).astype(int)
+        return np.array(
+            [p[0] * self._ratio[0], self._height - p[1] * self._ratio[1]]
+        ).astype(int)
 
     @staticmethod
     def _rotate(p, theta):
-        return np.array([np.cos(theta) * p[0] - np.sin(theta) * p[1],
-                         np.sin(theta) * p[0] + np.cos(theta) * p[1]])
+        return np.array(
+            [
+                np.cos(theta) * p[0] - np.sin(theta) * p[1],
+                np.sin(theta) * p[0] + np.cos(theta) * p[1],
+            ]
+        )

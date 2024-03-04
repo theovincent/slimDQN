@@ -4,11 +4,11 @@ import math
 import numpy as np
 import torch
 
-ReplayElement = (
-    collections.namedtuple('shape_type', ['name', 'shape', 'type']))
+ReplayElement = collections.namedtuple("shape_type", ["name", "shape", "type"])
 
-SampleBatch = (collections.namedtuple('sample_batch', ['observations', 'actions', 'rewards',
-                                                       'next_observations', 'dones']))
+SampleBatch = collections.namedtuple(
+    "sample_batch", ["observations", "actions", "rewards", "next_observations", "dones"]
+)
 
 
 def modulo_range(start, length, modulo):
@@ -24,21 +24,21 @@ class ReplayBuffer(object):
     transition sampling function.
     """
 
-    def __init__(self,
-                 observation_shape,
-                 replay_capacity,
-                 batch_size,
-                 update_horizon=1,
-                 gamma=0.99,
-                 max_sample_attempts=1000,
-                 observation_dtype=np.uint8,
-                 terminal_dtype=np.uint8,
-                 action_shape=(),
-                 action_dtype=np.int32,
-                 reward_shape=(),
-                 reward_dtype=np.float32,
-                 ):
-
+    def __init__(
+        self,
+        observation_shape,
+        replay_capacity,
+        batch_size,
+        update_horizon=1,
+        gamma=0.99,
+        max_sample_attempts=1000,
+        observation_dtype=np.uint8,
+        terminal_dtype=np.uint8,
+        action_shape=(),
+        action_dtype=np.int32,
+        reward_shape=(),
+        reward_dtype=np.float32,
+    ):
         self._action_shape = action_shape
         self._action_dtype = action_dtype
         self._reward_shape = reward_shape
@@ -54,8 +54,8 @@ class ReplayBuffer(object):
         self._create_storage()
         self.add_count = np.array(0)
         self._cumulative_discount_vector = np.array(
-            [math.pow(self._gamma, n) for n in range(update_horizon)],
-            dtype=np.float32)
+            [math.pow(self._gamma, n) for n in range(update_horizon)], dtype=np.float32
+        )
         self._next_experience_is_episode_start = True
         self.episode_end_indices = set()
         self.valid_transition_indices = set()
@@ -65,25 +65,22 @@ class ReplayBuffer(object):
         for storage_element in self.get_storage_signature():
             array_shape = [self._replay_capacity] + list(storage_element.shape)
             self._store[storage_element.name] = np.empty(
-                array_shape, dtype=storage_element.type)
+                array_shape, dtype=storage_element.type
+            )
 
     def get_storage_signature(self):
         storage_elements = [
-            ReplayElement('observation', self._observation_shape,
-                          self._observation_dtype),
-            ReplayElement('action', self._action_shape, self._action_dtype),
-            ReplayElement('reward', self._reward_shape, self._reward_dtype),
-            ReplayElement('done', (), self._terminal_dtype)
+            ReplayElement(
+                "observation", self._observation_shape, self._observation_dtype
+            ),
+            ReplayElement("action", self._action_shape, self._action_dtype),
+            ReplayElement("reward", self._reward_shape, self._reward_dtype),
+            ReplayElement("done", (), self._terminal_dtype),
         ]
 
         return storage_elements
 
-    def add(self,
-            observation,
-            action,
-            reward,
-            terminal,
-            episode_end=False):
+    def add(self, observation, action, reward, terminal, episode_end=False):
         """
         If the replay memory is at capacity the oldest transition will be discarded.
 
@@ -109,8 +106,9 @@ class ReplayBuffer(object):
         self._add(observation, action, reward, terminal)
 
     def _add(self, *args):
-        transition = {e.name: args[idx]
-                      for idx, e in enumerate(self.get_storage_signature())}
+        transition = {
+            e.name: args[idx] for idx, e in enumerate(self.get_storage_signature())
+        }
         cursor = self.cursor()
         for arg_name in transition:
             self._store[arg_name][cursor] = transition[arg_name]
@@ -140,8 +138,10 @@ class ReplayBuffer(object):
         if start_index % self._replay_capacity < end_index % self._replay_capacity:
             return_array = array[start_index:end_index, ...]
         else:
-            indices = [(start_index + i) % self._replay_capacity
-                       for i in range(end_index - start_index)]
+            indices = [
+                (start_index + i) % self._replay_capacity
+                for i in range(end_index - start_index)
+            ]
             return_array = array[indices, ...]
         return return_array
 
@@ -153,14 +153,14 @@ class ReplayBuffer(object):
             # The indices and next_indices must be smaller than the cursor.
             if index >= self.cursor() - self._update_horizon:
                 for i in range(index, self.cursor()):
-                    if self._store['done'][i]:
+                    if self._store["done"][i]:
                         return True
                 return False
 
         # If the episode ends before the update horizon, without a terminal signal,
         # it is invalid.
         for i in modulo_range(index, self._update_horizon, self._replay_capacity):
-            if i in self.episode_end_indices and not self._store['done'][i]:
+            if i in self.episode_end_indices and not self._store["done"][i]:
                 return False
 
         return True
@@ -177,8 +177,7 @@ class ReplayBuffer(object):
 
         indices = []
         attempt_count = 0
-        while (len(indices) < batch_size and
-               attempt_count < self._max_sample_attempts):
+        while len(indices) < batch_size and attempt_count < self._max_sample_attempts:
             index = np.random.randint(min_id, max_id) % self._replay_capacity
             if self.is_valid_transition(index):
                 indices.append(index)
@@ -186,9 +185,11 @@ class ReplayBuffer(object):
                 attempt_count += 1
         if len(indices) != batch_size:
             raise RuntimeError(
-                'Max sample attempts: Tried {} times but only sampled {}'
-                ' valid indices. Batch size is {}'.
-                format(self._max_sample_attempts, len(indices), batch_size))
+                "Max sample attempts: Tried {} times but only sampled {}"
+                " valid indices. Batch size is {}".format(
+                    self._max_sample_attempts, len(indices), batch_size
+                )
+            )
 
         return indices
 
@@ -200,44 +201,68 @@ class ReplayBuffer(object):
         assert len(indices) == batch_size
 
         sampled_batch = {
-            'observations': np.empty((batch_size,) + self._observation_shape, dtype=self._observation_dtype),
-            'actions': np.empty((batch_size,) + self._action_shape, dtype=self._action_dtype),
-            'rewards': np.empty((batch_size,) + self._reward_shape, dtype=self._reward_dtype),
-            'next_observations': np.empty((batch_size,) + self._observation_shape,
-                                          dtype=self._observation_dtype),
-            'dones': np.empty((batch_size,), dtype=self._terminal_dtype)
+            "observations": np.empty(
+                (batch_size,) + self._observation_shape, dtype=self._observation_dtype
+            ),
+            "actions": np.empty(
+                (batch_size,) + self._action_shape, dtype=self._action_dtype
+            ),
+            "rewards": np.empty(
+                (batch_size,) + self._reward_shape, dtype=self._reward_dtype
+            ),
+            "next_observations": np.empty(
+                (batch_size,) + self._observation_shape, dtype=self._observation_dtype
+            ),
+            "dones": np.empty((batch_size,), dtype=self._terminal_dtype),
         }
 
         for batch_element, state_index in enumerate(indices):
-            trajectory_indices = [(state_index + j) % self._replay_capacity
-                                  for j in range(self._update_horizon)]
-            trajectory_terminals = self._store['done'][trajectory_indices]
+            trajectory_indices = [
+                (state_index + j) % self._replay_capacity
+                for j in range(self._update_horizon)
+            ]
+            trajectory_terminals = self._store["done"][trajectory_indices]
             is_terminal_transition = trajectory_terminals.any()
             if not is_terminal_transition:
                 trajectory_length = self._update_horizon
             else:
                 trajectory_length = np.argmax(trajectory_terminals.astype(bool), 0) + 1
             next_state_index = state_index + trajectory_length
-            trajectory_discount_vector = (self._cumulative_discount_vector[:trajectory_length])
-            trajectory_rewards = self.get_range(self._store['reward'], state_index, next_state_index)
+            trajectory_discount_vector = self._cumulative_discount_vector[
+                :trajectory_length
+            ]
+            trajectory_rewards = self.get_range(
+                self._store["reward"], state_index, next_state_index
+            )
 
             for element_type, element in sampled_batch.items():
-                if element_type == 'observations':
-                    element[batch_element] = self._store['observation'][state_index]
-                elif element_type == 'actions':
-                    element[batch_element] = self._store['action'][state_index]
-                elif element_type == 'rewards':
+                if element_type == "observations":
+                    element[batch_element] = self._store["observation"][state_index]
+                elif element_type == "actions":
+                    element[batch_element] = self._store["action"][state_index]
+                elif element_type == "rewards":
                     # compute the discounted sum of rewards in the trajectory.
                     element[batch_element] = np.sum(
-                        trajectory_discount_vector * trajectory_rewards, axis=0)
-                elif element_type == 'next_observations':
-                    element[batch_element] = self._store['observation'][next_state_index % self._replay_capacity]
-                elif element_type == 'dones':
+                        trajectory_discount_vector * trajectory_rewards, axis=0
+                    )
+                elif element_type == "next_observations":
+                    element[batch_element] = self._store["observation"][
+                        next_state_index % self._replay_capacity
+                    ]
+                elif element_type == "dones":
                     element[batch_element] = is_terminal_transition
 
-        sampled_batch['observations'] = torch.tensor(sampled_batch['observations'], dtype=torch.float32)
-        sampled_batch['next_observations'] = torch.tensor(sampled_batch['next_observations'], dtype=torch.float32)
-        sampled_batch['rewards'] = torch.tensor(sampled_batch['rewards'], dtype=torch.float32)
-        sampled_batch['actions'] = torch.tensor(sampled_batch['actions'], dtype=torch.int64)
+        sampled_batch["observations"] = torch.tensor(
+            sampled_batch["observations"], dtype=torch.float32
+        )
+        sampled_batch["next_observations"] = torch.tensor(
+            sampled_batch["next_observations"], dtype=torch.float32
+        )
+        sampled_batch["rewards"] = torch.tensor(
+            sampled_batch["rewards"], dtype=torch.float32
+        )
+        sampled_batch["actions"] = torch.tensor(
+            sampled_batch["actions"], dtype=torch.int64
+        )
 
         return sampled_batch
