@@ -1,7 +1,7 @@
 import sys
 import argparse
 import torch
-from experiments.base.parser import addparse
+from experiments.base.parser import dqn_parse
 from experiments.base.utils import load_parameters
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
@@ -15,7 +15,7 @@ def run(argvs=sys.argv[1:]):
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
     parser = argparse.ArgumentParser("Train DQN on CarOnHill.")
-    addparse(parser)
+    dqn_parse(parser)
     args = parser.parse_args(argvs)
 
     p = load_parameters(args)

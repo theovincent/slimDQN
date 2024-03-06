@@ -2,7 +2,7 @@ import sys
 import argparse
 import torch
 import numpy as np
-from experiments.base.parser import addparse
+from experiments.base.parser import dqn_parse
 from experiments.base.utils import load_parameters
 from slimRL.environments.chain import ChainDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
@@ -16,7 +16,7 @@ def run(argvs=sys.argv[1:]):
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
     parser = argparse.ArgumentParser("Train DQN on CarOnHill.")
-    addparse(parser)
+    dqn_parse(parser)
     parser.add_argument(
         "-size",
         "--chain_size",
