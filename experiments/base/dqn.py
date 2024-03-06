@@ -6,7 +6,7 @@ from tqdm import tqdm
 from slimRL.networks.architectures.dqn import BasicDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.utils.misc import linear_schedule
-from slimRL.utils.logger import save_logs, save_model
+from slimRL.utils.logger import save_logs
 import matplotlib.pyplot as plt
 
 

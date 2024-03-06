@@ -3,7 +3,7 @@ import argparse
 import torch
 import numpy as np
 from experiments.base.parser import addparse
-from experiments.base.load_parameters import load_parameters
+from experiments.base.utils import load_parameters
 from slimRL.environments.chain import ChainDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.networks.architectures.dqn import BasicDQN

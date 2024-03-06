@@ -2,7 +2,7 @@ import sys
 import argparse
 import torch
 from experiments.base.parser import addparse
-from experiments.base.load_parameters import load_parameters
+from experiments.base.utils import load_parameters
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.networks.architectures.dqn import BasicDQN
