@@ -77,4 +77,3 @@ def train(
 
     if p["log"]:
         save_logs(p, js, losses)
-        save_model(agent)
