@@ -74,5 +74,4 @@ def train(
         js[idx_epoch] = sum_reward / n_episodes
         print(f"Epoch: {idx_epoch}, Avg. return = {js[idx_epoch]}")
 
-    if p["log"]:
-        save_logs(p, js, losses)
+    save_logs(p, js, losses, agent)

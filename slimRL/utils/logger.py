@@ -2,9 +2,31 @@ import os
 import json
 import torch
 import numpy as np
+from slimRL.networks.architectures.dqn import BasicDQN
+
+SHARED_PARAMS = [
+    "experiment_name",
+    "env_id",
+    "agent",
+    "seed",
+    "replay_capacity",
+    "batch_size",
+    "update_horizon",
+    "gamma",
+    "tau",
+    "lr",
+    "update_to_data",
+    "target_update_period",
+    "n_initial_samples",
+    "end_epsilon",
+    "duration_epsilon",
+    "horizon",
+]
+
+AGENT_PARAMS = {"dqn": ["n_epochs", "n_training_steps_per_epoch"]}
 
 
-def save_logs(p, returns, losses, agent):
+def save_logs(p: dict, returns: np.array, losses: np.array, agent: BasicDQN):
     save_path = os.path.join(
         os.path.abspath(__file__),
         "../experiments/",
@@ -12,13 +34,36 @@ def save_logs(p, returns, losses, agent):
         p["experiment_name"],
         p["agent"],
     )
-    np.save(os.path.join(save_path, "returns_seed=" + str(p["seed"]) + ".npz"), returns)
-    np.save(os.path.join(save_path, "losses_seed=" + str(p["seed"]) + ".npz"), returns)
-    torch.save(agent, "model_seed=" + str(p["seed"]))
+    os.makedirs(save_path, exist_ok=True)
 
-    # param_file_loc = os.path.join(os.path.abspath(__file__), "../experiments/", p["env"], p["experiment_name"], "parameters.json")
-    # try:
-    #     old_params = json.loads(open(param_file_loc), "r")
-    #     old_params[f"---- {p["agent"]} ---"] = "-----------------------------"
-    #     for p in :
-    # except FileNotFoundError:
+    returns_path = os.path.join(save_path, "returns_seed=" + str(p["seed"]) + ".npz")
+    losses_path = os.path.join(save_path, "losses_seed=" + str(p["seed"]) + ".npz")
+    model_path = os.path.join(save_path, "model_seed=" + str(p["seed"]))
+    np.save(returns_path, returns)
+    np.save(losses_path, returns)
+    torch.save(agent.q_network.state_dict(), model_path)
+
+    param_path = os.path.join(
+        os.path.abspath(__file__),
+        "../experiments/",
+        p["env"],
+        p["experiment_name"],
+        "parameters.json",
+    )
+
+    params = {}
+
+    try:
+        with open(param_path, "r") as f:
+            params = json.loads(f)
+    except FileNotFoundError:
+        params["---- Shared parameters ---"] = "----------------"
+        for shared_param in SHARED_PARAMS:
+            params[shared_param] = p[shared_param]
+
+    params["---- " + p["agent"] + " ---"] = "-----------------------------"
+    for agent_param in AGENT_PARAMS[p["agent"]]:
+        params[agent_param] = p[agent_param]
+
+    with open(param_path, "w") as f:
+        json.dumps(params)
