@@ -41,7 +41,6 @@ def train(
 
         while idx_training_step < p["n_training_steps_per_epoch"] or not has_reset:
             epsilon = linear_schedule(
-                p["start_epsilon"],
                 p["end_epsilon"],
                 p["duration_epsilon"],
                 n_training_steps,

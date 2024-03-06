@@ -40,8 +40,7 @@ def run(argvs=sys.argv[1:]):
         gamma=p["gamma"],
         tau=p["tau"],
         lr=p["lr"],
-        loss_type=p["loss_type"],
-        train_frequency=p["n_training_steps_per_online_update"],
-        target_update_frequency=p["n_training_steps_per_target_update"],
+        train_frequency=p["update_to_data"],
+        target_update_frequency=p["target_update_period"],
     )
     train(p, agent, env, rb)

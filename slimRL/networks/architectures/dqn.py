@@ -28,9 +28,9 @@ class BasicDQN(DQN):
         gamma: float,
         tau: float,
         lr: float,
-        loss_type: str,
         train_frequency: int,
         target_update_frequency: int,
+        loss_type: str = "huber",
     ):
         self.env = env
         self.device = device

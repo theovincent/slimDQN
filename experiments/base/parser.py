@@ -51,6 +51,15 @@ def addparse(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
+        "-tau",
+        "--tau",
+        help="Weight for target network update.",
+        type=float,
+        required=False,
+        default=1.0,
+    )
+
+    parser.add_argument(
         "-lr",
         "--lr",
         help="Learning rate for optimizer.",
