@@ -1,7 +1,8 @@
 import sys
 import argparse
 import torch
-from experiments.base.parser import dqn_parse
+import os
+from experiments.base.parser import dqn_parser
 from experiments.base.utils import load_parameters
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
@@ -15,16 +16,14 @@ def run(argvs=sys.argv[1:]):
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
     parser = argparse.ArgumentParser("Train DQN on CarOnHill.")
-    dqn_parse(parser)
+    dqn_parser(parser)
     args = parser.parse_args(argvs)
 
     p = load_parameters(args)
-    p["env_id"] = "car_on_hill"
-    p["agent"] = "dqn"
+    p["env"] = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
+    p["agent"] = os.path.basename(os.path.abspath(__file__)).split(".")[0]
 
-    device = torch.device(
-        "cuda" if torch.cuda.is_available() and p["use_gpu"] else "cpu"
-    )
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     env = CarOnHill(horizon=p["horizon"])
     rb = ReplayBuffer(

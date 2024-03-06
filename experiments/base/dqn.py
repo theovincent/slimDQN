@@ -16,7 +16,7 @@ def train(
     env,
     rb: ReplayBuffer,
 ):
-    env_id = p["env_id"]
+    env_id = p["env"]
     agent_type = p["agent"]
     seed = p["seed"]
     learning_starts = p["n_initial_samples"]

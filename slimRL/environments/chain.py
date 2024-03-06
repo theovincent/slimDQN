@@ -5,8 +5,10 @@ import numpy as np
 
 class Chain:
     def __init__(self, state_n, prob, mu=None, horizon=np.inf) -> None:
-        self.p = self._compute_probabilities(state_n, prob, goal_states=[0, -1])
-        self.r = self._compute_reward(state_n, goal_states=[0, -1], rew=1.0)
+        self.p = self._compute_probabilities(
+            state_n, prob, goal_states=[0, state_n - 1]
+        )
+        self.r = self._compute_reward(state_n, goal_states=[0, state_n - 1], rew=1.0)
         self.mu = mu
 
         # MDP properties
@@ -23,7 +25,13 @@ class Chain:
             if self.mu is not None:
                 self._state = np.array([np.random.choice(self.mu.size, p=self.mu)])
             else:
-                self._state = np.array([np.random.choice(self.p.shape[0])])
+                self._state = np.array(
+                    [
+                        np.random.choice(
+                            [(self.p.shape[0] - 1) // 2, self.p.shape[0] // 2]
+                        )
+                    ]
+                )
         else:
             self._state = state
         self.timer = 0
@@ -31,6 +39,7 @@ class Chain:
         return self._state, {}
 
     def step(self, action):
+        print("Runiing step = Timer = ", self.timer)
         action = action[0]
         self.timer += 1
         p = self.p[self._state[0], action, :]

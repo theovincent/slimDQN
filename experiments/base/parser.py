@@ -1,7 +1,7 @@
 import argparse
 
 
-def addparse(parser: argparse.ArgumentParser) -> None:
+def base_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-e",
         "--experiment_name",
@@ -116,8 +116,8 @@ def addparse(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def dqn_parse(parser: argparse.ArgumentParser) -> None:
-    addparse(parser=parser)
+def dqn_parser(parser: argparse.ArgumentParser) -> None:
+    base_parser(parser=parser)
     parser.add_argument(
         "-E",
         "--n_epochs",
