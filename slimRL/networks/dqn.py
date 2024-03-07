@@ -8,7 +8,6 @@ class DQN:
     def __init__(
         self,
         gamma: float,
-        tau: float,
         target_network: nn.Module,
         q_network: nn.Module,
         optimizer: optim.Optimizer,
@@ -17,7 +16,6 @@ class DQN:
         target_update_frequency: int,
     ):
         self.gamma = gamma
-        self.tau = tau
         self.target_network = target_network
         self.q_network = q_network
         self.optimizer = optimizer
@@ -86,10 +84,7 @@ class DQN:
             for target_network_param, q_network_param in zip(
                 self.target_network.parameters(), self.q_network.parameters()
             ):
-                target_network_param.data.copy_(
-                    self.tau * q_network_param.data
-                    + (1.0 - self.tau) * target_network_param.data
-                )
+                target_network_param.data.copy_(q_network_param.data)
 
     def best_action(self, state: torch.tensor):
         with torch.no_grad():

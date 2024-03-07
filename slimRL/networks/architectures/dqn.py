@@ -26,7 +26,6 @@ class BasicDQN(DQN):
         env,
         device,
         gamma: float,
-        tau: float,
         lr: float,
         train_frequency: int,
         target_update_frequency: int,
@@ -42,7 +41,6 @@ class BasicDQN(DQN):
 
         super().__init__(
             gamma,
-            tau,
             target_network,
             q_network,
             optimizer,

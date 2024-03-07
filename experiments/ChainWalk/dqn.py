@@ -42,7 +42,6 @@ def run(argvs=sys.argv[1:]):
         env,
         device=device,
         gamma=p["gamma"],
-        tau=p["tau"],
         lr=p["lr"],
         train_frequency=p["update_to_data"],
         target_update_frequency=p["target_update_period"],
