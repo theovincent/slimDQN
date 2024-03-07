@@ -12,9 +12,6 @@ from experiments.base.dqn import train
 
 
 def run(argvs=sys.argv[1:]):
-    import warnings
-
-    warnings.simplefilter(action="ignore", category=FutureWarning)
 
     parser = argparse.ArgumentParser("Train DQN on ChainWalk.")
     dqn_parser(parser)
