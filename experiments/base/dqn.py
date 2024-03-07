@@ -5,8 +5,8 @@ import numpy as np
 import torch
 from slimRL.networks.architectures.DQN import BasicDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
-from slimRL.utils.misc import linear_schedule
-from slimRL.utils.logger import save_logs
+from slimRL.sample_collection.schedules import linear_schedule
+from experiments.base.logger import save_logs
 
 
 def train(

@@ -12,15 +12,20 @@ SHARED_PARAMS = [
     "update_horizon",
     "gamma",
     "lr",
-    "update_to_data",
     "target_update_period",
     "n_initial_samples",
-    "end_epsilon",
-    "duration_epsilon",
     "horizon",
 ]
 
-AGENT_PARAMS = {"DQN": ["n_epochs", "n_training_steps_per_epoch"]}
+AGENT_PARAMS = {
+    "DQN": [
+        "n_epochs",
+        "n_training_steps_per_epoch",
+        "update_to_data",
+        "end_epsilon",
+        "duration_epsilon",
+    ]
+}
 
 
 def save_logs(p: dict, returns: np.array, losses: np.array, agent: BasicDQN):
