@@ -59,14 +59,6 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
-        "-utd",
-        "--update_to_data",
-        help="No. of data points to collect per online Q-network update.",
-        type=int,
-        default=4,
-    )
-
-    parser.add_argument(
         "-T",
         "--target_update_period",
         help="Update period for target Q-network.",
@@ -80,6 +72,24 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
         help="No. of initial samples before training begins.",
         type=int,
         default=2000,
+    )
+
+    parser.add_argument(
+        "-H",
+        "--horizon",
+        help="Horizon for truncation.",
+        type=int,
+        default=200,
+    )
+
+
+def online_parser(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "-utd",
+        "--update_to_data",
+        help="No. of data points to collect per online Q-network update.",
+        type=int,
+        default=4,
     )
 
     parser.add_argument(
@@ -98,17 +108,10 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
         default=25000,
     )
 
-    parser.add_argument(
-        "-H",
-        "--horizon",
-        help="Horizon for truncation.",
-        type=int,
-        default=200,
-    )
-
 
 def dqn_parser(parser: argparse.ArgumentParser) -> None:
     base_parser(parser=parser)
+    online_parser(parser=parser)
     parser.add_argument(
         "-E",
         "--n_epochs",
