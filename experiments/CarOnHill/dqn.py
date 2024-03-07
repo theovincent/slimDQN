@@ -10,14 +10,14 @@ from experiments.base.dqn import train
 
 
 def run(argvs=sys.argv[1:]):
-
     parser = argparse.ArgumentParser("Train DQN on CarOnHill.")
     dqn_parser(parser)
     args = parser.parse_args(argvs)
 
     p = vars(args)
-    p["env"] = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
-    p["agent"] = os.path.basename(os.path.abspath(__file__)).split(".")[0]
+    p["env"] = "CarOnHill"
+    p["agent"] = "DQN"
+    p["save_path"] = f"experiments/{p['env']}/logs/{p['experiment_name']}/{p['agent']}"
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
