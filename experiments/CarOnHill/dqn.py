@@ -7,6 +7,7 @@ from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.networks.architectures.DQN import BasicDQN
 from experiments.base.DQN import train
+from experiments.base.utils import check_experiment
 
 
 def run(argvs=sys.argv[1:]):
@@ -18,6 +19,8 @@ def run(argvs=sys.argv[1:]):
     p["env"] = "CarOnHill"
     p["agent"] = "DQN"
     p["save_path"] = f"experiments/{p['env']}/logs/{p['experiment_name']}/{p['agent']}"
+
+    check_experiment(p)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

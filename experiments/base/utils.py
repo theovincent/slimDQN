@@ -28,11 +28,10 @@ AGENT_PARAMS = {
 }
 
 
-def save_logs(p: dict, returns: np.array, losses: np.array, agent: BasicDQN):
+def check_experiment(p: dict):
     save_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "../../", p["save_path"]
     )
-    os.makedirs(save_path, exist_ok=True)
 
     returns_path = os.path.join(save_path, "returns_seed=" + str(p["seed"]) + ".npz")
     losses_path = os.path.join(save_path, "losses_seed=" + str(p["seed"]) + ".npz")
@@ -46,6 +45,45 @@ def save_logs(p: dict, returns: np.array, losses: np.array, agent: BasicDQN):
         raise AssertionError(
             "Experiment results already exists. Delete them and restart, or change the experiment name."
         )
+
+    param_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../../",
+        p["save_path"],
+        "..",
+        "parameters.json",
+    )
+
+    try:
+        with open(param_path, "r") as f:
+            params = json.load(f)
+        for param in SHARED_PARAMS:
+            if params[param] != p[param]:
+                raise AssertionError(
+                    "Same experiment has been run with different shared parameters. Change the experiment name."
+                )
+        if f"---- {p['agent']} ---" in params.keys():
+            for param in AGENT_PARAMS[p["agent"]]:
+                if params[param] != p[param]:
+                    raise AssertionError(
+                        f"Same experiment has been run with different {p['agent']} parameters. Change the experiment name."
+                    )
+    except FileNotFoundError:
+        if os.path.exists(os.path.join(param_path, "..")):
+            AssertionError(
+                "There is a folder with this experiment name and no parameters.json. Delete the folder and restart, or change the experiment name."
+            )
+
+
+def save_logs(p: dict, returns: np.array, losses: np.array, agent: BasicDQN):
+    save_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "../../", p["save_path"]
+    )
+    os.makedirs(save_path, exist_ok=True)
+
+    returns_path = os.path.join(save_path, "returns_seed=" + str(p["seed"]) + ".npz")
+    losses_path = os.path.join(save_path, "losses_seed=" + str(p["seed"]) + ".npz")
+    model_path = os.path.join(save_path, "model_seed=" + str(p["seed"]))
 
     np.save(returns_path, returns)
     np.save(losses_path, returns)
@@ -64,15 +102,6 @@ def save_logs(p: dict, returns: np.array, losses: np.array, agent: BasicDQN):
     try:
         with open(param_path, "r") as f:
             params = json.load(f)
-        for param in SHARED_PARAMS:
-            if params[param] != p[param]:
-                raise AssertionError(
-                    "Same experiment has been run with different shared parameters. Change the experiment name."
-                )
-        if f"---- {p['agent']} ---" in params.keys():
-            raise AssertionError(
-                f"Same experiment with {p['agent']} has been run already. Change the experiment name."
-            )
     except FileNotFoundError:
         params["---- Shared parameters ---"] = "----------------"
         for shared_param in SHARED_PARAMS:
@@ -81,6 +110,13 @@ def save_logs(p: dict, returns: np.array, losses: np.array, agent: BasicDQN):
     params[f"---- {p['agent']} ---"] = "-----------------------------"
     for agent_param in AGENT_PARAMS[p["agent"]]:
         params[agent_param] = p[agent_param]
+
+    params_order = SHARED_PARAMS.concatenate(
+        [f"---- {p['agent']} ---"] + AGENT_PARAMS[agent]
+        for agent in sorted(AGENT_PARAMS)
+        if f"---- {p['agent']} ---" in params.keys()
+    )
+    params = {key: params[key] for key in params_order}
 
     with open(param_path, "w") as f:
         json.dump(params, f, indent=4)
