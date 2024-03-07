@@ -7,8 +7,8 @@ from experiments.base.parser import dqn_parser
 from experiments.ChainWalk.parser import chain_parser
 from slimRL.environments.chain import Chain
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
-from slimRL.networks.architectures.dqn import BasicDQN
-from experiments.base.dqn import train
+from slimRL.networks.architectures.DQN import BasicDQN
+from experiments.base.DQN import train
 
 
 def run(argvs=sys.argv[1:]):

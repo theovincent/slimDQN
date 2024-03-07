@@ -2,7 +2,7 @@ import os
 import json
 import numpy as np
 import torch
-from slimRL.networks.architectures.dqn import BasicDQN
+from slimRL.networks.architectures.DQN import BasicDQN
 
 SHARED_PARAMS = [
     "experiment_name",
@@ -20,7 +20,7 @@ SHARED_PARAMS = [
     "horizon",
 ]
 
-AGENT_PARAMS = {"dqn": ["n_epochs", "n_training_steps_per_epoch"]}
+AGENT_PARAMS = {"DQN": ["n_epochs", "n_training_steps_per_epoch"]}
 
 
 def save_logs(p: dict, returns: np.array, losses: np.array, agent: BasicDQN):
