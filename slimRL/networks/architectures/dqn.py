@@ -1,7 +1,7 @@
 import numpy as np
 import torch.nn as nn
 import torch.optim as optim
-from ..DQN import DQN
+from slimRL.networks.DQN import DQN
 
 
 class DQNNet(nn.Module):
