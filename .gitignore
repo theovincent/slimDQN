@@ -160,3 +160,6 @@ cython_debug/
 .idea/
 .venv/
 env/
+
+slimRL/experiments/CarOnHill/logs/
+slimRL/experiments/ChainWalk/logs/
