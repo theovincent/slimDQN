@@ -161,5 +161,6 @@ cython_debug/
 .venv/
 env/
 
-slimRL/experiments/CarOnHill/logs/
-slimRL/experiments/ChainWalk/logs/
+**.json
+**.npy
+experiments/*/logs/*
