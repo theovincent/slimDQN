@@ -1,13 +1,12 @@
 import time
 import random
+from tqdm import tqdm
 import numpy as np
 import torch
-from tqdm import tqdm
 from slimRL.networks.architectures.dqn import BasicDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.utils.misc import linear_schedule
 from slimRL.utils.logger import save_logs
-import matplotlib.pyplot as plt
 
 
 def train(

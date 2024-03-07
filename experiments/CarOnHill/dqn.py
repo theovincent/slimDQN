@@ -1,9 +1,8 @@
+import os
 import sys
 import argparse
 import torch
-import os
 from experiments.base.parser import dqn_parser
-from experiments.base.utils import load_parameters
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.networks.architectures.dqn import BasicDQN
@@ -19,7 +18,7 @@ def run(argvs=sys.argv[1:]):
     dqn_parser(parser)
     args = parser.parse_args(argvs)
 
-    p = load_parameters(args)
+    p = vars(args)
     p["env"] = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
     p["agent"] = os.path.basename(os.path.abspath(__file__)).split(".")[0]
 

@@ -1,11 +1,10 @@
+import os
 import sys
 import argparse
-import torch
-import os
 import numpy as np
+import torch
 from experiments.base.parser import dqn_parser
 from experiments.ChainWalk.parser import chain_parser
-from experiments.base.utils import load_parameters
 from slimRL.environments.chain import Chain
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.networks.architectures.dqn import BasicDQN
@@ -23,7 +22,7 @@ def run(argvs=sys.argv[1:]):
 
     args = parser.parse_args(argvs)
 
-    p = load_parameters(args)
+    p = vars(args)
     p["env"] = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
     p["agent"] = os.path.basename(os.path.abspath(__file__)).split(".")[0]
 

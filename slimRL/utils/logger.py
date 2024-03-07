@@ -1,7 +1,7 @@
 import os
 import json
-import torch
 import numpy as np
+import torch
 from slimRL.networks.architectures.dqn import BasicDQN
 
 SHARED_PARAMS = [
