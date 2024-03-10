@@ -163,4 +163,4 @@ env/
 
 **.json
 **.npy
-experiments/*/logs/*
+experiments/**/logs/*
