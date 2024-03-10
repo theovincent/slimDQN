@@ -9,7 +9,7 @@ from slimRL.environments.chain import Chain
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.networks.architectures.DQN import BasicDQN
 from experiments.base.DQN import train
-from experiments.base.utils import check_experiment
+from experiments.base.utils import prepare_logs
 
 
 def run(argvs=sys.argv[1:]):
@@ -22,11 +22,12 @@ def run(argvs=sys.argv[1:]):
     p = vars(args)
     p["env"] = "ChainWalk-" + str(p["chain_size"])
     p["agent"] = "DQN"
-    p["save_path"] = (
-        f"experiments/ChainWalk/logs/{p['experiment_name']}/{p['env']}/{p['agent']}"
+    p["save_path"] = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        f"logs/{p['experiment_name']}/{p['agent']}",
     )
 
-    check_experiment(p)
+    prepare_logs(p)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
