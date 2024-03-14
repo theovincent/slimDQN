@@ -7,7 +7,7 @@ from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.networks.architectures.DQN import BasicDQN
 from experiments.base.DQN import train
-from experiments.base.utils import prepare_logs
+from experiments.base.logger import prepare_logs
 
 
 def run(argvs=sys.argv[1:]):
