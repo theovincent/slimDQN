@@ -96,15 +96,13 @@ def store_params(p: dict):
         for agent_param in AGENT_PARAMS[p["algo"]]:
             params[agent_param] = p[agent_param]
     # set parameter order for sorting all keys in a pre-defined order
-    params_order = SHARED_PARAMS + [
-        i
-        for subl in [
-            [f"---- {agent} ---"] + AGENT_PARAMS[agent]
-            for agent in sorted(AGENT_PARAMS)
-            if f"---- {agent} ---" in params
-        ]
-        for i in subl
-    ]
+
+    algo_params = []
+    for agent in sorted(AGENT_PARAMS):
+        if f"---- {agent} ---" in params:
+            algo_params = algo_params + [f"---- {agent} ---"] + AGENT_PARAMS[agent]
+
+    params_order = SHARED_PARAMS + algo_params
 
     # sort keys in uniform order and store
     params = {key: params[key] for key in params_order}
