@@ -46,7 +46,7 @@ def check_experiment(p: dict):
 
     param_path = os.path.join(
         p["save_path"],
-        "..",
+        "..",  # parameters.json is outside the algorithm folder (in the experiment folder)
         "parameters.json",
     )
 
