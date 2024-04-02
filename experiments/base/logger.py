@@ -42,65 +42,60 @@ def check_experiment(p: dict):
         or os.path.isfile(model_path)
     ):
         # check if same algorithm as been run on current env with same seed
-        return "Same algorithm with same seed results already exists. Delete them and restart, or change the experiment name."
+        raise AssertionError(
+            "Same algorithm with same seed results already exists. Delete them and restart, or change the experiment name."
+        )
 
-    param_path = os.path.join(
+    params_path = os.path.join(
         p["save_path"],
         "..",  # parameters.json is outside the algorithm folder (in the experiment folder)
         "parameters.json",
     )
 
     try:
-        with open(param_path, "r") as f:
-            params = json.load(f)
+        params = json.load(open(params_path, "r"))
         for param in SHARED_PARAMS:
             if params[param] != p[param]:
-                return "Same experiment has been run with different shared parameters. Change the experiment name."
+                raise AssertionError(
+                    "Same experiment has been run with different shared parameters. Change the experiment name."
+                )
         if f"---- {p['algo']} ---" in params.keys():
             for param in AGENT_PARAMS[p["algo"]]:
                 if params[param] != p[param]:
-                    return f"Same experiment has been run with different {p['algo']} parameters. Change the experiment name."
-            return "PASS_2"
-        return "PASS_1"
+                    raise AssertionError(
+                        f"Same experiment has been run with different {p['algo']} parameters. Change the experiment name."
+                    )
     except FileNotFoundError:
         if os.path.exists(os.path.join(p["save_path"], "..")):
-            return "There is a folder with this experiment name and no parameters.json. Delete the folder and restart, or change the experiment name."
-    return "PASS_0"
+            raise AssertionError(
+                "There is a folder with this experiment name and no parameters.json. Delete the folder and restart, or change the experiment name."
+            )
 
 
-def prepare_logs(p: dict):
-    result = check_experiment(p)
-    if "PASS" not in result:
-        raise AssertionError(result)
-
-    if result == "PASS_2":
-        # same experiment with different seed, so no need to create/update anything
-        return
-    params = {}
+def store_params(p: dict):
     params_path = os.path.join(
         p["save_path"],
         "..",
         "parameters.json",
     )
 
-    os.makedirs(p["save_path"])
-    # need to create a directory for this experiment, algorithm combination
+    try:
+        params = json.load(open(params_path, "r"))
 
-    if result == "PASS_0":
-        # if this is totally new experiment, store shared parameters afresh
+    except FileNotFoundError:
+        params = {}
+
+        # store shared params
         params["---- Shared parameters ---"] = "----------------"
         for shared_param in SHARED_PARAMS:
             params[shared_param] = p[shared_param]
-    elif result == "PASS_1":
-        # if this experiment was run previously but not with current algorithm, load the previous parameters
-        with open(params_path, "r") as f:
-            params = json.load(f)
 
-    # update params with algorithm parameters for this experiment
-    params[f"---- {p['algo']} ---"] = "-----------------------------"
-    for agent_param in AGENT_PARAMS[p["algo"]]:
-        params[agent_param] = p[agent_param]
-
+    if f"---- {p['algo']} ---" not in params.keys():
+        # store algo params
+        params[f"---- {p['algo']} ---"] = "-----------------------------"
+        for agent_param in AGENT_PARAMS[p["algo"]]:
+            params[agent_param] = p[agent_param]
+    # set parameter order for sorting all keys in a pre-defined order
     params_order = SHARED_PARAMS + [
         i
         for subl in [
@@ -110,11 +105,20 @@ def prepare_logs(p: dict):
         ]
         for i in subl
     ]
-    params = {key: params[key] for key in params_order}
+
     # sort keys in uniform order and store
+    params = {key: params[key] for key in params_order}
 
     with open(params_path, "w") as f:
         json.dump(params, f, indent=4)
+
+
+def prepare_logs(p: dict):
+    check_experiment(p)
+    os.makedirs(
+        p["save_path"], exist_ok=True
+    )  # need to create a directory for this experiment, algorithm combination
+    store_params(p)
 
 
 def save_logs(p: dict, returns: np.array, losses: np.array, agent: BasicDQN):
