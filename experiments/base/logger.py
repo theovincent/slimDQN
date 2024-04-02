@@ -110,7 +110,6 @@ def prepare_logs(p: dict):
         ]
         for i in subl
     ]
-    print(params_order)
     params = {key: params[key] for key in params_order}
     # sort keys in uniform order and store
 

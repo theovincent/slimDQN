@@ -56,7 +56,7 @@ def train(
                 next_obs, _ = env.reset()
 
             sum_reward += reward
-            n_episodes += int(has_reset)
+            n_episodes += int(termination or has_reset)
 
             if n_training_steps > learning_starts:
                 losses[
@@ -69,6 +69,8 @@ def train(
             n_training_steps += 1
 
         js[idx_epoch] = sum_reward / n_episodes
-        print(f"Epoch: {idx_epoch}, Avg. return = {js[idx_epoch]}")
+        print(
+            f"Epoch: {idx_epoch}, Avg. return = {js[idx_epoch]}, Num episodes = {n_episodes}"
+        )
 
     save_logs(p, js, losses, agent)
