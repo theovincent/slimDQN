@@ -47,8 +47,8 @@ def run(argvs=sys.argv[1:]):
     num_seeds = returns.items()[0].shape[0]
 
     for algo in p["agents"]:
-        return_mean = returns["algo"].mean(axis=0)
-        return_std = returns["algo"].std(axis=0)
+        return_mean = returns[algo].mean(axis=0)
+        return_std = returns[algo].std(axis=0)
         return_cnf = confidence_interval(return_mean, return_std, num_seeds)
         ax.plot(
             epochs,

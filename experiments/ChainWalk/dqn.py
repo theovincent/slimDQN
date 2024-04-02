@@ -21,10 +21,10 @@ def run(argvs=sys.argv[1:]):
 
     p = vars(args)
     p["env"] = "ChainWalk-" + str(p["chain_size"])
-    p["agent"] = "DQN"
+    p["algo"] = "DQN"
     p["save_path"] = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        f"logs/{p['experiment_name']}/{p['agent']}",
+        f"logs/{p['experiment_name']}/{p['algo']}",
     )
 
     prepare_logs(p)

@@ -17,7 +17,7 @@ def train(
 ):
     seed = p["seed"]
     learning_starts = p["n_initial_samples"]
-    run_name = f"{p['env']}__{p['agent']}__{seed}__{int(time.time())}"
+    run_name = f"{p['env']}__{p['algo']}__{seed}__{int(time.time())}"
 
     print(run_name)
 

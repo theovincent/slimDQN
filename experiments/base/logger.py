@@ -56,10 +56,10 @@ def check_experiment(p: dict):
         for param in SHARED_PARAMS:
             if params[param] != p[param]:
                 return "Same experiment has been run with different shared parameters. Change the experiment name."
-        if f"---- {p['agent']} ---" in params.keys():
-            for param in AGENT_PARAMS[p["agent"]]:
+        if f"---- {p['algo']} ---" in params.keys():
+            for param in AGENT_PARAMS[p["algo"]]:
                 if params[param] != p[param]:
-                    return f"Same experiment has been run with different {p['agent']} parameters. Change the experiment name."
+                    return f"Same experiment has been run with different {p['algo']} parameters. Change the experiment name."
             return "PASS_2"
         return "PASS_1"
     except FileNotFoundError:
@@ -97,8 +97,8 @@ def prepare_logs(p: dict):
             params = json.load(f)
 
     # update params with algorithm parameters for this experiment
-    params[f"---- {p['agent']} ---"] = "-----------------------------"
-    for agent_param in AGENT_PARAMS[p["agent"]]:
+    params[f"---- {p['algo']} ---"] = "-----------------------------"
+    for agent_param in AGENT_PARAMS[p["algo"]]:
         params[agent_param] = p[agent_param]
 
     params_order = SHARED_PARAMS + [
