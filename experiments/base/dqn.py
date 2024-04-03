@@ -48,15 +48,18 @@ def train(
                 action = [agent.best_action(obs)]
 
             next_obs, reward, termination, infos = env.step(action)
-            has_reset = "episode_end" in infos.keys() and infos["episode_end"]
-            rb.add(obs, action, reward, termination, has_reset)
+            truncation = ("episode_end" in infos.keys()) and infos["episode_end"]
+            has_reset = termination or truncation
+            rb.add(obs, action, reward, termination, truncation)
             obs = next_obs
 
-            if termination or has_reset:
+            if has_reset:
                 next_obs, _ = env.reset()
 
+            if reward < -100:
+                print(reward)
             sum_reward += reward
-            n_episodes += int(termination or has_reset)
+            n_episodes += int(has_reset)
 
             if n_training_steps > learning_starts:
                 losses[

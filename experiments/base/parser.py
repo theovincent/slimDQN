@@ -53,9 +53,17 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-lr",
         "--lr",
-        help="Learning rate for optimizer.",
+        help="Learning rate for Adam optimizer.",
         type=float,
         default=2e-4,
+    )
+
+    parser.add_argument(
+        "-lr_eps",
+        "--lr_epsilon",
+        help="Epsilon for Adam optimizer.",
+        type=float,
+        default=1.5e-4,
     )
 
     parser.add_argument(

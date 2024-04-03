@@ -27,6 +27,7 @@ class BasicDQN(DQN):
         device,
         gamma: float,
         lr: float,
+        adam_eps: float,
         train_frequency: int,
         target_update_frequency: int,
         loss_type: str = "huber",
@@ -34,8 +35,9 @@ class BasicDQN(DQN):
         self.env = env
         self.device = device
         self.lr = lr
+        self.adam_eps = adam_eps
         q_network = DQNNet(env).to(self.device)
-        optimizer = optim.Adam(q_network.parameters(), lr=self.lr)
+        optimizer = optim.Adam(q_network.parameters(), lr=self.lr, eps=self.adam_eps)
         target_network = DQNNet(env).to(self.device)
         target_network.load_state_dict(q_network.state_dict())
 
