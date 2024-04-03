@@ -1,25 +1,38 @@
-from typing import Tuple
-from functools import partial
-from gymnasium.wrappers.monitoring import video_recorder
 import gymnasium as gym
 import numpy as np
 
 
-class LunarLanderEnv:
-    def __init__(self, gamma: float):
-        self.n_actions = 4
-        self.gamma = gamma
-
+class LunarLander:
+    def __init__(self, horizon=1000):
+        self.horizon = horizon
         self.env = gym.make("LunarLander-v2", render_mode="rgb_array")
 
-    def reset(self, action):
-        self.state, _ = self.env.reset(seed=int(action[0]))
-        self.n_steps = 0
+        self._state = None
+        self.observation_shape = (8,)
+        self.action_shape = ()
+        self.action_dim = self.env.action_space.n
+        self.single_action_space = list(range(self.action_dim))
 
-        return np.array(self.state)
+        self.timer = 0
+
+    def reset(self, state=None):
+        if state is None:
+            self._state, _ = self.env.reset()
+        else:
+            self._state = state
+        self._state = np.array(self._state)
+
+        self.timer = 0
+
+        return self._state, {}
 
     def step(self, action):
-        self.state, reward, absorbing, _, info = self.env.step(int(action[0]))
-        self.n_steps += 1
+        action = action[0]
+        self.timer += 1
+        self._state, reward, absorbing, _, _ = self.env.step(action)
 
-        return
+        infos = {}
+        if self.timer == self.horizon:
+            infos["episode_end"] = True
+
+        return self._state, reward, absorbing, infos
