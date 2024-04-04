@@ -34,6 +34,8 @@ def train(
         sum_reward = 0
         n_episodes = 0
         idx_training_step = 0
+        avg_episode_len = 0
+        exploration_frac = 0
         has_reset = False
 
         while idx_training_step < p["n_training_steps_per_epoch"] or not has_reset:
@@ -44,6 +46,7 @@ def train(
             )
             if random.random() < epsilon:
                 action = random.sample(env.single_action_space, 1)
+                exploration_frac += 1
             else:
                 action = [agent.best_action(obs)]
 
@@ -54,10 +57,9 @@ def train(
             obs = next_obs
 
             if has_reset:
-                next_obs, _ = env.reset()
+                avg_episode_len += env.timer
+                obs, _ = env.reset()
 
-            if reward < -100:
-                print(reward)
             sum_reward += reward
             n_episodes += int(has_reset)
 
@@ -72,8 +74,10 @@ def train(
             n_training_steps += 1
 
         js[idx_epoch] = sum_reward / n_episodes
+        avg_episode_len /= n_episodes
+        exploration_frac /= idx_training_step
         print(
-            f"Epoch: {idx_epoch}, Avg. return = {js[idx_epoch]}, Num episodes = {n_episodes}"
+            f"Epoch: {idx_epoch}, Avg. return = {js[idx_epoch]}, Num episodes = {n_episodes}, Avg episode len = {avg_episode_len}, Exploration fraction = {exploration_frac}"
         )
 
     save_logs(p, js, losses, agent)
