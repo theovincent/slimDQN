@@ -32,7 +32,7 @@ class ReplayBuffer(object):
         update_horizon=1,
         gamma=0.99,
         max_sample_attempts=1000,
-        observation_dtype=np.uint8,
+        observation_dtype=np.float32,
         terminal_dtype=np.uint8,
         action_shape=(),
         action_dtype=np.int32,
@@ -52,7 +52,7 @@ class ReplayBuffer(object):
         self._terminal_dtype = terminal_dtype
         self._max_sample_attempts = max_sample_attempts
         self._create_storage()
-        self.add_count = np.array(0)
+        self.add_count = 0
         self._cumulative_discount_vector = np.array(
             [math.pow(self._gamma, n) for n in range(update_horizon)], dtype=np.float32
         )
