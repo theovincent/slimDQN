@@ -24,7 +24,7 @@ class DQN:
         self.target_update_frequency = target_update_frequency
 
     def loss_on_batch(self, td_target, estimate):
-        return self.loss(self.loss_type)(td_target, estimate)
+        return self.loss(self.loss_type)(estimate, td_target)
 
     @staticmethod
     def loss(order) -> nn.modules.loss:
@@ -63,7 +63,6 @@ class DQN:
             .gather(1, data["actions"][:, None])
             .squeeze()
         )
-        # print(q_val)
         return q_val
 
     @staticmethod
@@ -88,7 +87,6 @@ class DQN:
 
     def best_action(self, state: torch.tensor):
         with torch.no_grad():
-            # print(torch.argmax(self.compute_qval(self.q_network, torch.Tensor(state))))
             action = (
                 torch.argmax(self.compute_qval(self.q_network, torch.Tensor(state)))
                 .cpu()
