@@ -1,9 +1,8 @@
 import sys
 import argparse
 import torch
-from slimRL.environments.car_on_hill import CarOnHill
+from slimRL.environments.lunar_lander import LunarLander
 from slimRL.networks.architectures.DQN import DQNNet
-from slimRL.environments.visualization.car_on_hill import render
 
 
 def run(argvs=sys.argv[1:]):
@@ -11,7 +10,7 @@ def run(argvs=sys.argv[1:]):
 
     warnings.simplefilter(action="ignore", category=FutureWarning)
 
-    parser = argparse.ArgumentParser("Visualize DQN performance on CarOnHill.")
+    parser = argparse.ArgumentParser("Visualize DQN performance on LunarLander.")
     parser.add_argument(
         "-m",
         "--model",
@@ -29,14 +28,14 @@ def run(argvs=sys.argv[1:]):
     )
     args = parser.parse_args(argvs)
 
-    env = CarOnHill()
+    env = LunarLander(render_mode="human")
     agent = DQNNet(env)
     agent.load_state_dict(torch.load(args.model))
     agent.eval()
 
     obs, _ = env.reset()
     for _ in range(args.steps):
-        render(env)
+        env.env.render()
         action = [torch.argmax(agent(torch.Tensor(obs))).numpy()]
         next_obs, reward, termination, infos = env.step(action)
         episode_end = "episode_end" in infos.keys() and infos["episode_end"]
