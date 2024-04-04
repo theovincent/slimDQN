@@ -3,9 +3,9 @@ import numpy as np
 
 
 class LunarLander:
-    def __init__(self, horizon=1000):
+    def __init__(self, horizon=1000, render_mode=None):
         self.horizon = horizon
-        self.env = gym.make("LunarLander-v2", render_mode="rgb_array")
+        self.env = gym.make("LunarLander-v2", render_mode=render_mode)
 
         self._state = None
         self.observation_shape = (8,)
