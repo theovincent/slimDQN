@@ -39,7 +39,6 @@ class Chain:
         return self._state, {}
 
     def step(self, action):
-        print("Runiing step = Timer = ", self.timer)
         action = action[0]
         self.timer += 1
         p = self.p[self._state[0], action, :]

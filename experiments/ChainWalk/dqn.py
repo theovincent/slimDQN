@@ -46,6 +46,7 @@ def run(argvs=sys.argv[1:]):
         device=device,
         gamma=p["gamma"],
         lr=p["lr"],
+        adam_eps=p["lr_epsilon"],
         train_frequency=p["update_to_data"],
         target_update_frequency=p["target_update_period"],
     )
