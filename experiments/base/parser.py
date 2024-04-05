@@ -140,24 +140,16 @@ def dqn_parser(parser: argparse.ArgumentParser) -> None:
 def plot_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "-e",
-        "--experiment_name",
-        help="Experiment name.",
-        type=str,
+        "--experiment_folders",
+        nargs="+",
+        help="Give the path to all experiment folders to plot from logs/",
         required=True,
     )
+
     parser.add_argument(
         "-env",
         "--env",
         help="Environment folder name.",
         type=str,
         required=True,
-    )
-
-    parser.add_argument(
-        "-ag",
-        "--agents",
-        help="Give the list of agents to plot without spaces. Eg: -ag DQN,FQI (By default plots all agents).",
-        type=lambda x: x.split(","),
-        required=False,
-        default=None,
     )

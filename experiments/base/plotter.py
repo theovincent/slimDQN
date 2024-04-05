@@ -8,57 +8,64 @@ from experiments.base.utils import confidence_interval
 
 
 def run(argvs=sys.argv[1:]):
-    parser = argparse.ArgumentParser("Train DQN on CarOnHill.")
+    parser = argparse.ArgumentParser("Plot returns against epochs.")
     plot_parser(parser)
     args = parser.parse_args(argvs)
 
     p = vars(args)
 
-    p["file_path"] = os.path.join(
+    base_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "..",
         p["env"],
-        f"logs/{p['experiment_name']}",
+        "logs",
     )
 
-    assert os.path.exists(p["file_path"]), f"Required path {p['file_path']} not found"
+    assert os.path.exists(base_path), f"Required path {p['file_path']} not found"
 
-    for algo in p["agents"]:
-        results_folder = os.path.join(p["file_path"], algo)
-        assert os.path.exists(
-            results_folder
-        ), f"{algo} algorithm results folder - {results_folder} not found"
+    results_folder = []
 
-    plt.rc("font", size=28, family="serif", serif="Times New Roman")
-    plt.rc("lines", linewidth=3)
+    for exp in p["experiment_folders"]:
+        exp_folder = os.path.join(base_path, exp)
+        assert os.path.exists(exp_folder), f"{exp_folder} not found"
+        results_folder.append(exp_folder)
+
+    plt.rc("font", size=15, family="serif", serif="Times New Roman")
+    plt.rc("lines", linewidth=1)
     fig = plt.figure(f"Returns for {p['env']}")
     ax = fig.add_subplot(111)
-    fig_legend = plt.figure("Legend figure")
+    plt.xlabel("Epochs")
+    plt.ylabel("Average reward")
+    plt.title(f"{p['env']}")
 
     returns = {}
-    for algo in p["agents"]:
-        results_folder = os.path.join(p["file_path"], algo)
-        returns[algo] = np.array(
-            [np.load(f) for f in os.listdir(results_folder) if "returns" in f]
+    for result in results_folder:
+        experiment = result.split("logs")[-1][1:]
+        returns[experiment] = np.array(
+            [
+                np.load(os.path.join(result, f))
+                for f in os.listdir(result)
+                if "returns" in f
+            ]
         )
-        print(f"{algo} --> {returns['algo'].shape}")
-    num_epochs = max([ret.shape[1] for ret in returns.items()])
-    epochs = range(1, num_epochs + 1)
-    num_seeds = returns.items()[0].shape[0]
+    num_epochs = [ret.shape[1] for ret in returns.values()]
+    num_seeds = [ret.shape[0] for ret in returns.values()]
 
-    for algo in p["agents"]:
-        return_mean = returns[algo].mean(axis=0)
-        return_std = returns[algo].std(axis=0)
-        return_cnf = confidence_interval(return_mean, return_std, num_seeds)
+    for i, exp in enumerate(returns):
+        return_mean = returns[exp].mean(axis=0)
+        return_std = returns[exp].std(axis=0)
+        return_cnf = confidence_interval(return_mean, return_std, num_seeds[i])
         ax.plot(
-            epochs,
+            range(1, num_epochs[i] + 1, 1),
             return_mean,
-            label=algo,
+            label=exp,
         )
         ax.fill_between(
-            epochs,
+            range(1, num_epochs[i] + 1, 1),
             return_cnf[0],
             return_cnf[1],
             alpha=0.3,
         )
+    plt.legend()
+    plt.tight_layout()
     plt.show()
