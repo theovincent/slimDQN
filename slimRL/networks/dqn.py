@@ -8,6 +8,7 @@ class DQN:
     def __init__(
         self,
         gamma: float,
+        update_horizon: int,
         target_network: nn.Module,
         q_network: nn.Module,
         optimizer: optim.Optimizer,
@@ -16,6 +17,7 @@ class DQN:
         target_update_frequency: int,
     ):
         self.gamma = gamma
+        self.update_horizon = update_horizon
         self.target_network = target_network
         self.q_network = q_network
         self.optimizer = optimizer
@@ -40,7 +42,6 @@ class DQN:
         curr_estimate = self.compute_curr_estimate(batch_samples)
         loss = self.loss_on_batch(target, curr_estimate)
 
-        # print(self.optimizer)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -52,9 +53,9 @@ class DQN:
             target_max, _ = self.compute_qval(
                 self.target_network, data["next_observations"]
             ).max(dim=1)
-            td_target = data["rewards"].flatten() + self.gamma * target_max * (
-                1 - data["dones"].flatten()
-            )
+            td_target = data["rewards"].flatten() + (
+                self.gamma**self.update_horizon
+            ) * target_max * (1 - data["dones"].flatten())
         return td_target
 
     def compute_curr_estimate(self, data):

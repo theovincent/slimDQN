@@ -26,6 +26,7 @@ class BasicDQN(DQN):
         env,
         device,
         gamma: float,
+        update_horizon: int,
         lr: float,
         adam_eps: float,
         train_frequency: int,
@@ -43,6 +44,7 @@ class BasicDQN(DQN):
 
         super().__init__(
             gamma,
+            update_horizon,
             target_network,
             q_network,
             optimizer,
