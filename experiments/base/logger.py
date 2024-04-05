@@ -31,9 +31,9 @@ AGENT_PARAMS = {
 def check_experiment(p: dict):
 
     returns_path = os.path.join(
-        p["save_path"], "returns_seed=" + str(p["seed"]) + ".npz"
+        p["save_path"], "returns_seed=" + str(p["seed"]) + ".npy"
     )
-    losses_path = os.path.join(p["save_path"], "losses_seed=" + str(p["seed"]) + ".npz")
+    losses_path = os.path.join(p["save_path"], "losses_seed=" + str(p["seed"]) + ".npy")
     model_path = os.path.join(p["save_path"], "model_seed=" + str(p["seed"]))
 
     if (
@@ -121,10 +121,8 @@ def prepare_logs(p: dict):
 
 def save_logs(p: dict, returns: np.array, losses: np.array, agent: BasicDQN):
 
-    returns_path = os.path.join(
-        p["save_path"], "returns_seed=" + str(p["seed"]) + ".npz"
-    )
-    losses_path = os.path.join(p["save_path"], "losses_seed=" + str(p["seed"]) + ".npz")
+    returns_path = os.path.join(p["save_path"], "returns_seed=" + str(p["seed"]))
+    losses_path = os.path.join(p["save_path"], "losses_seed=" + str(p["seed"]))
     model_path = os.path.join(p["save_path"], "model_seed=" + str(p["seed"]))
 
     np.save(returns_path, returns)
