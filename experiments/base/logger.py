@@ -29,7 +29,7 @@ AGENT_PARAMS = {
 
 
 def check_experiment(p: dict):
-
+    # check if the experiment is valid
     returns_path = os.path.join(
         p["save_path"], "returns_seed=" + str(p["seed"]) + ".npy"
     )
@@ -41,7 +41,7 @@ def check_experiment(p: dict):
         or os.path.isfile(losses_path)
         or os.path.isfile(model_path)
     ):
-        # check if same algorithm as been run on current env with same seed
+
         raise AssertionError(
             "Same algorithm with same seed results already exists. Delete them and restart, or change the experiment name."
         )
@@ -95,8 +95,8 @@ def store_params(p: dict):
         params[f"---- {p['algo']} ---"] = "-----------------------------"
         for agent_param in AGENT_PARAMS[p["algo"]]:
             params[agent_param] = p[agent_param]
-    # set parameter order for sorting all keys in a pre-defined order
 
+    # set parameter order for sorting all keys in a pre-defined order
     algo_params = []
     for agent in sorted(AGENT_PARAMS):
         if f"---- {agent} ---" in params:
