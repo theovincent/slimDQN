@@ -52,7 +52,7 @@ def check_experiment(p: dict):
         "parameters.json",
     )
 
-    try:
+    if os.path.exists(params_path):
         params = json.load(open(params_path, "r"))
         for param in SHARED_PARAMS:
             if params[param] != p[param]:
@@ -65,7 +65,7 @@ def check_experiment(p: dict):
                     raise AssertionError(
                         f"Same experiment has been run with different {p['algo']} parameters. Change the experiment name."
                     )
-    except FileNotFoundError:
+    else:
         if os.path.exists(os.path.join(p["save_path"], "..")):
             raise AssertionError(
                 "There is a folder with this experiment name and no parameters.json. Delete the folder and restart, or change the experiment name."
@@ -79,10 +79,10 @@ def store_params(p: dict):
         "parameters.json",
     )
 
-    try:
+    if os.path.exists(params_path):
         params = json.load(open(params_path, "r"))
 
-    except FileNotFoundError:
+    else:
         params = {}
 
         # store shared params
