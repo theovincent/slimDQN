@@ -48,20 +48,18 @@ def run(argvs=sys.argv[1:]):
                 if "returns" in f
             ]
         )
-    num_epochs = [ret.shape[1] for ret in returns.values()]
-    num_seeds = [ret.shape[0] for ret in returns.values()]
 
     for i, exp in enumerate(returns):
         return_mean = returns[exp].mean(axis=0)
         return_std = returns[exp].std(axis=0)
-        return_cnf = confidence_interval(return_mean, return_std, num_seeds[i])
+        return_cnf = confidence_interval(return_mean, return_std, returns[exp].shape[0])
         ax.plot(
-            range(1, num_epochs[i] + 1, 1),
+            range(1, returns[exp].shape[1] + 1, 1),
             return_mean,
             label=exp,
         )
         ax.fill_between(
-            range(1, num_epochs[i] + 1, 1),
+            range(1, returns[exp].shape[1] + 1, 1),
             return_cnf[0],
             return_cnf[1],
             alpha=0.3,
