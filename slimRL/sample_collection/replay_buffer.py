@@ -34,14 +34,10 @@ class ReplayBuffer(object):
         max_sample_attempts=1000,
         observation_dtype=np.float32,
         terminal_dtype=np.uint8,
-        action_shape=(),
         action_dtype=np.int32,
-        reward_shape=(),
         reward_dtype=np.float32,
     ):
-        self._action_shape = action_shape
         self._action_dtype = action_dtype
-        self._reward_shape = reward_shape
         self._reward_dtype = reward_dtype
         self._observation_shape = observation_shape
         self._replay_capacity = replay_capacity
@@ -73,8 +69,8 @@ class ReplayBuffer(object):
             ReplayElement(
                 "observation", self._observation_shape, self._observation_dtype
             ),
-            ReplayElement("action", self._action_shape, self._action_dtype),
-            ReplayElement("reward", self._reward_shape, self._reward_dtype),
+            ReplayElement("action", (), self._action_dtype),
+            ReplayElement("reward", (), self._reward_dtype),
             ReplayElement("done", (), self._terminal_dtype),
         ]
 
@@ -102,7 +98,6 @@ class ReplayBuffer(object):
         else:
             self.episode_end_indices.discard(self.cursor())  # If present
 
-        action = action[0]
         self._add(observation, action, reward, terminal)
 
     def _add(self, *args):
@@ -204,12 +199,8 @@ class ReplayBuffer(object):
             "observations": np.empty(
                 (batch_size,) + self._observation_shape, dtype=self._observation_dtype
             ),
-            "actions": np.empty(
-                (batch_size,) + self._action_shape, dtype=self._action_dtype
-            ),
-            "rewards": np.empty(
-                (batch_size,) + self._reward_shape, dtype=self._reward_dtype
-            ),
+            "actions": np.empty((batch_size,), dtype=self._action_dtype),
+            "rewards": np.empty((batch_size,), dtype=self._reward_dtype),
             "next_observations": np.empty(
                 (batch_size,) + self._observation_shape, dtype=self._observation_dtype
             ),
