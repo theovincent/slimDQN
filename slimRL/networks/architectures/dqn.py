@@ -13,7 +13,7 @@ class DQNNet(nn.Module):
             nn.ReLU(),
             nn.Linear(120, 84),
             nn.ReLU(),
-            nn.Linear(84, env.action_dim),
+            nn.Linear(84, env.n_actions),
         )
 
     def forward(self, x):
