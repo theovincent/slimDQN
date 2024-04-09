@@ -36,10 +36,10 @@ def check_experiment(p: dict):
     losses_path = os.path.join(p["save_path"], "losses_seed=" + str(p["seed"]) + ".npy")
     model_path = os.path.join(p["save_path"], "model_seed=" + str(p["seed"]))
 
-    assert (
-        os.path.isfile(returns_path)
-        or os.path.isfile(losses_path)
-        or os.path.isfile(model_path)
+    assert not (
+        os.path.exists(returns_path)
+        or os.path.exists(losses_path)
+        or os.path.exists(model_path)
     ), AssertionError(
         "Same algorithm with same seed results already exists. Delete them and restart, or change the experiment name."
     )
@@ -53,16 +53,16 @@ def check_experiment(p: dict):
     if os.path.exists(params_path):
         params = json.load(open(params_path, "r"))
         for param in SHARED_PARAMS:
-            assert params[param] != p[param], AssertionError(
+            assert params[param] == p[param], AssertionError(
                 "Same experiment has been run with different shared parameters. Change the experiment name."
             )
         if f"---- {p['algo']} ---" in params.keys():
             for param in AGENT_PARAMS[p["algo"]]:
-                assert params[param] != p[param], AssertionError(
+                assert params[param] == p[param], AssertionError(
                     f"Same experiment has been run with different {p['algo']} parameters. Change the experiment name."
                 )
     else:
-        assert os.path.exists(os.path.join(p["save_path"], "..")), AssertionError(
+        assert not os.path.exists(os.path.join(p["save_path"], "..")), AssertionError(
             "There is a folder with this experiment name and no parameters.json. Delete the folder and restart, or change the experiment name."
         )
 
