@@ -4,7 +4,7 @@ import numpy as np
 
 
 class Chain:
-    def __init__(self, state_n, prob, mu=None, horizon=np.inf) -> None:
+    def __init__(self, state_n, prob, mu=None) -> None:
         self.p = self._compute_probabilities(
             state_n, prob, goal_states=[0, state_n - 1]
         )
@@ -12,20 +12,17 @@ class Chain:
         self.mu = mu
 
         # MDP properties
-        self.horizon = horizon
         self.observation_shape = (1,)
-        self.action_shape = ()
-        self.action_dim = 2
-        self.single_action_space = list(range(self.action_dim))
+        self.n_actions = 2
 
-        self.timer = 0
+        self.n_steps = 0
 
     def reset(self, state=None):
         if state is None:
             if self.mu is not None:
-                self._state = np.array([np.random.choice(self.mu.size, p=self.mu)])
+                self.state = np.array([np.random.choice(self.mu.size, p=self.mu)])
             else:
-                self._state = np.array(
+                self.state = np.array(
                     [
                         np.random.choice(
                             [(self.p.shape[0] - 1) // 2, self.p.shape[0] // 2]
@@ -33,31 +30,26 @@ class Chain:
                     ]
                 )
         else:
-            self._state = state
-        self.timer = 0
+            self.state = state
+        self.n_steps = 0
 
-        return self._state, {}
+        return self.state
 
     def step(self, action):
-        action = action[0]
-        self.timer += 1
-        p = self.p[self._state[0], action, :]
+        self.n_steps += 1
+        p = self.p[self.state[0], action, :]
         if np.sum(p) == 0:  # handle the case when agent starts in the goal state
-            next_state = self._state
+            next_state = self.state
             absorbing = True
-            reward = self.r[self._state[0], action, self._state[0]]
+            reward = self.r[self.state[0], action, self.state[0]]
         else:
             next_state = np.array([np.random.choice(p.size, p=p)])
             absorbing = not np.any(self.p[next_state[0]])
-            reward = self.r[self._state[0], action, next_state[0]]
+            reward = self.r[self.state[0], action, next_state[0]]
 
-        infos = {}
-        if self.timer == self.horizon:
-            infos["episode_end"] = True
+        self.state = next_state
 
-        self._state = next_state
-
-        return self._state, reward, absorbing, infos
+        return self.state, reward, absorbing
 
     def _compute_probabilities(self, state_n, prob, goal_states):
         """

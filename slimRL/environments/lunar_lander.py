@@ -3,36 +3,26 @@ import numpy as np
 
 
 class LunarLander:
-    def __init__(self, horizon=1000, render_mode=None):
-        self.horizon = horizon
+    def __init__(self, render_mode=None):
         self.env = gym.make("LunarLander-v2", render_mode=render_mode)
-
-        self._state = None
         self.observation_shape = (8,)
-        self.action_shape = ()
-        self.action_dim = self.env.action_space.n
-        self.single_action_space = list(range(self.action_dim))
+        self.n_actions = self.env.action_space.n
 
-        self.timer = 0
+        self.n_steps = 0
 
     def reset(self, state=None):
         if state is None:
-            self._state, _ = self.env.reset()
+            self.state, _ = self.env.reset()
         else:
-            self._state = state
-        self._state = np.array(self._state)
+            self.state = state
+        self.state = np.array(self.state)
 
-        self.timer = 0
+        self.n_steps = 0
 
-        return self._state, {}
+        return self.state
 
     def step(self, action):
-        action = action[0]
-        self.timer += 1
-        self._state, reward, absorbing, _, _ = self.env.step(action)
+        self.n_steps += 1
+        self.state, reward, absorbing, _, _ = self.env.step(action)
 
-        infos = {}
-        if self.timer == self.horizon:
-            infos["episode_end"] = True
-
-        return self._state, reward, absorbing, infos
+        return self.state, reward, absorbing

@@ -13,14 +13,8 @@ class CarOnHill:
 
     """
 
-    def __init__(self, horizon=200):
-        """
-        Constructor.
+    def __init__(self):
 
-        Args:
-            horizon (int, 100): horizon of the problem;
-
-        """
         # MDP parameters
         self.max_pos = 1.0
         self.max_velocity = 3.0
@@ -30,43 +24,37 @@ class CarOnHill:
 
         # MDP properties
         self._dt = 0.1
-        self.horizon = horizon
 
         # Visualization
         self._viewer = Viewer(1, 1)
-        self._state = None
         self.observation_shape = (2,)
-        self.action_shape = ()
-        self.action_dim = 2
-        self.single_action_space = list(range(self.action_dim))
+        self.n_actions = 2
 
-        self.timer = 0
+        self.n_steps = 0
 
     def reset(self, state=None):
         if state is None:
-            self._state = np.array([-0.5, 0])
+            self.state = np.array([-0.5, 0])
         else:
-            self._state = state
+            self.state = state
 
-        self.timer = 0
+        self.n_steps = 0
 
-        return self._state, {}
+        return self.state
 
     def step(self, action):
-        action = action[0]
-        self.timer += 1
+        self.n_steps += 1
         action = self._discrete_actions[action]
-        sa = np.append(self._state, action)
+        sa = np.append(self.state, action)
         new_state = odeint(self._dpds, sa, [0, self._dt])
 
-        self._state = new_state[-1, :-1]
+        self.state = new_state[-1, :-1]
 
-        if self._state[0] < -self.max_pos or np.abs(self._state[1]) > self.max_velocity:
+        if self.state[0] < -self.max_pos or np.abs(self.state[1]) > self.max_velocity:
             reward = -1.0
             absorbing = True
         elif (
-            self._state[0] > self.max_pos
-            and np.abs(self._state[1]) <= self.max_velocity
+            self.state[0] > self.max_pos and np.abs(self.state[1]) <= self.max_velocity
         ):
             reward = 1.0
             absorbing = True
@@ -74,11 +62,7 @@ class CarOnHill:
             reward = 0.0
             absorbing = False
 
-        infos = {}
-        if self.timer == self.horizon:
-            infos["episode_end"] = True
-
-        return self._state, reward, absorbing, infos
+        return self.state, reward, absorbing
 
     @staticmethod
     def _angle(x):
