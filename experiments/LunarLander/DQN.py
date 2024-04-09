@@ -27,7 +27,7 @@ def run(argvs=sys.argv[1:]):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    env = LunarLander(horizon=p["horizon"])
+    env = LunarLander()
     rb = ReplayBuffer(
         observation_shape=env.observation_shape,
         replay_capacity=p["replay_capacity"],

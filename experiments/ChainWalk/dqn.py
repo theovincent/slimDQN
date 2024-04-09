@@ -31,9 +31,7 @@ def run(argvs=sys.argv[1:]):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    env = Chain(
-        state_n=p["chain_size"], prob=p["transition_prob"], horizon=p["horizon"]
-    )
+    env = Chain(state_n=p["chain_size"], prob=p["transition_prob"])
     rb = ReplayBuffer(
         observation_shape=env.observation_shape,
         replay_capacity=p["replay_capacity"],
@@ -45,6 +43,7 @@ def run(argvs=sys.argv[1:]):
         env,
         device=device,
         gamma=p["gamma"],
+        update_horizon=p["update_horizon"],
         lr=p["lr"],
         adam_eps=p["lr_epsilon"],
         train_frequency=p["update_to_data"],
