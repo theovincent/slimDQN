@@ -10,7 +10,7 @@ def collect_single_sample(env, agent, rb: ReplayBuffer, p, n_training_steps: int
         n_training_steps,
     )
     if random.random() < epsilon:
-        action = random.sample(range(env.n_actions), 1)[0]
+        action = random.randint(0, env.n_actions - 1)
     else:
         action = agent.best_action(env.state)
 
