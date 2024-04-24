@@ -117,6 +117,33 @@ def online_parser(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def fqi_parser(parser: argparse.ArgumentParser) -> None:
+    base_parser(parser=parser)
+    parser.add_argument(
+        "-bi",
+        "--n_bellman_iterations",
+        help="No. of Bellman iterations to perform.",
+        type=int,
+        default=100,
+    )
+
+    parser.add_argument(
+        "-fs",
+        "--n_fitting_steps",
+        help="No. of gradient update steps to perform per Bellman iteration.",
+        type=int,
+        default=200,
+    )
+
+    parser.add_argument(
+        "-pat",
+        "--patience",
+        help="No. of fitting steps for which increase in TD loss is allowed.",
+        type=int,
+        default=5,
+    )
+
+
 def dqn_parser(parser: argparse.ArgumentParser) -> None:
     base_parser(parser=parser)
     online_parser(parser=parser)

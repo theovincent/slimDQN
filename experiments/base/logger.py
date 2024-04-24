@@ -24,7 +24,8 @@ AGENT_PARAMS = {
         "update_to_data",
         "end_epsilon",
         "duration_epsilon",
-    ]
+    ],
+    "FQI": ["n_bellman_iterations", "n_fitting_steps", "patience"],
 }
 
 
@@ -43,12 +44,14 @@ def check_experiment(p: dict):
     ), "Same algorithm with same seed results already exists. Delete them and restart, or change the experiment name."
 
     params_path = os.path.join(
-        p["save_path"],
-        "..",  # parameters.json is outside the algorithm folder (in the experiment folder)
+        os.path.split(p["save_path"])[
+            0
+        ],  # parameters.json is outside the algorithm folder (in the experiment folder)
         "parameters.json",
     )
 
     if os.path.exists(params_path):
+        print("YO")
         params = json.load(open(params_path, "r"))
         for param in SHARED_PARAMS:
             assert (
