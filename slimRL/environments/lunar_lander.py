@@ -8,8 +8,6 @@ class LunarLander:
         self.observation_shape = (8,)
         self.n_actions = self.env.action_space.n
 
-        self.n_steps = 0
-
     def reset(self, state=None):
         if state is None:
             self.state, _ = self.env.reset()

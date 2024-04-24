@@ -15,8 +15,6 @@ class Chain:
         self.observation_shape = (1,)
         self.n_actions = 2
 
-        self.n_steps = 0
-
     def reset(self, state=None):
         if state is None:
             if self.mu is not None:
