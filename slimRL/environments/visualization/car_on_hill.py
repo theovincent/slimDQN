@@ -14,7 +14,7 @@ def render(env, record=False):
         [3e-2, 0],
     ]
 
-    x_car = (env._state[0] + 1) / 2
+    x_car = (env.state[0] + 1) / 2
     y_car = env._height(x_car)
     c_car = [x_car, y_car]
     angle = env._angle(x_car)
