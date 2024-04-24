@@ -24,12 +24,14 @@ def train(
 
     n_training_steps = 0
     env.reset()
-    losses = np.zeros((p["n_epochs"], p["n_training_steps_per_epoch"])) * np.nan
-    js = np.zeros(p["n_epochs"]) * np.nan
+    log_rewards = []
+    log_lengths = []
 
     for idx_epoch in tqdm(range(p["n_epochs"])):
-        sum_reward = 0
-        n_episodes = 0
+        epoch_rewards = []
+        epoch_episode_lengths = []
+        episode_reward = 0
+        episode_length = 0
         idx_training_step = 0
         has_reset = False
 
@@ -39,22 +41,26 @@ def train(
                 env, agent, rb, p, n_training_steps
             )
 
-            sum_reward += reward
-            n_episodes += int(has_reset)
+            episode_reward += reward
+            episode_length += 1
+            if has_reset:
+                epoch_rewards.append(episode_reward)
+                epoch_episode_lengths.append(episode_length)
+                episode_reward = 0
+                episode_length = 0
 
             if n_training_steps > p["n_initial_samples"]:
-                losses[
-                    idx_epoch,
-                    np.minimum(idx_training_step, p["n_training_steps_per_epoch"] - 1),
-                ] = agent.update_online_params(n_training_steps, rb)
+                agent.update_online_params(n_training_steps, rb)
                 agent.update_target_params(n_training_steps)
 
             idx_training_step += 1
             n_training_steps += 1
 
-        js[idx_epoch] = sum_reward / n_episodes
+        log_rewards.append(epoch_rewards)
+        log_lengths.append(epoch_episode_lengths)
+
         print(
-            f"Epoch: {idx_epoch}, Avg. return = {js[idx_epoch]}, Num episodes = {n_episodes}"
+            f"Epoch: {idx_epoch}, Avg. return = {sum(epoch_rewards)/len(epoch_rewards)}, Num episodes = {len(epoch_rewards)}"
         )
 
-    save_logs(p, js, losses, agent)
+    save_logs(p, log_rewards, log_lengths, agent)

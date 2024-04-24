@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -43,9 +44,9 @@ def run(argvs=sys.argv[1:]):
         experiment = result.split("logs")[-1][1:]
         returns[experiment] = np.array(
             [
-                np.load(os.path.join(result, f))
+                [np.mean(i) for i in json.load(open(os.path.join(result, f), "r"))]
                 for f in os.listdir(result)
-                if "returns" in f
+                if "rewards" in f
             ]
         )
 

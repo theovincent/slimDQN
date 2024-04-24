@@ -112,12 +112,12 @@ def prepare_logs(p: dict):
     store_params(p)
 
 
-def save_logs(p: dict, returns: np.array, losses: np.array, agent: BasicDQN):
+def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: BasicDQN):
 
-    returns_path = os.path.join(p["save_path"], "returns_seed=" + str(p["seed"]))
-    losses_path = os.path.join(p["save_path"], "losses_seed=" + str(p["seed"]))
+    rewards_path = os.path.join(p["save_path"], "rewards_seed=" + str(p["seed"]))
+    lengths_path = os.path.join(p["save_path"], "lengths_seed=" + str(p["seed"]))
     model_path = os.path.join(p["save_path"], "model_seed=" + str(p["seed"]))
 
-    np.save(returns_path, returns)
-    np.save(losses_path, returns)
+    json.dump(log_rewards, open(rewards_path, "w"))
+    json.dump(log_lengths, open(lengths_path, "w"))
     torch.save(agent.q_network.state_dict(), model_path)
