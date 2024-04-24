@@ -40,9 +40,7 @@ def check_experiment(p: dict):
         os.path.exists(returns_path)
         or os.path.exists(losses_path)
         or os.path.exists(model_path)
-    ), AssertionError(
-        "Same algorithm with same seed results already exists. Delete them and restart, or change the experiment name."
-    )
+    ), "Same algorithm with same seed results already exists. Delete them and restart, or change the experiment name."
 
     params_path = os.path.join(
         p["save_path"],
@@ -53,18 +51,18 @@ def check_experiment(p: dict):
     if os.path.exists(params_path):
         params = json.load(open(params_path, "r"))
         for param in SHARED_PARAMS:
-            assert params[param] == p[param], AssertionError(
-                "Same experiment has been run with different shared parameters. Change the experiment name."
-            )
+            assert (
+                params[param] == p[param]
+            ), "Same experiment has been run with different shared parameters. Change the experiment name."
         if f"---- {p['algo']} ---" in params.keys():
             for param in AGENT_PARAMS[p["algo"]]:
-                assert params[param] == p[param], AssertionError(
-                    f"Same experiment has been run with different {p['algo']} parameters. Change the experiment name."
-                )
+                assert (
+                    params[param] == p[param]
+                ), f"Same experiment has been run with different {p['algo']} parameters. Change the experiment name."
     else:
-        assert not os.path.exists(os.path.join(p["save_path"], "..")), AssertionError(
-            "There is a folder with this experiment name and no parameters.json. Delete the folder and restart, or change the experiment name."
-        )
+        assert not os.path.exists(
+            os.path.join(p["save_path"], "..")
+        ), "There is a folder with this experiment name and no parameters.json. Delete the folder and restart, or change the experiment name."
 
 
 def store_params(p: dict):
