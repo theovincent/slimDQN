@@ -16,12 +16,10 @@ def collect_single_sample(env, agent, rb: ReplayBuffer, p, n_training_steps: int
 
     obs = env.state.copy()
     _, reward, termination = env.step(action)
-    truncation = False
-    if env.n_steps == p["horizon"]:
-        truncation = True
-    has_reset = termination or truncation
+    truncation = env.n_steps == p["horizon"]
     rb.add(obs, action, reward, termination, truncation)
 
+    has_reset = termination or truncation
     if has_reset:
         env.reset()
 
