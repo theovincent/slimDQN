@@ -5,8 +5,8 @@ from slimRL.sample_collection.replay_buffer import ReplayBuffer
 
 def collect_single_sample(env, agent, rb: ReplayBuffer, p, n_training_steps: int):
     epsilon = linear_schedule(
-        p["end_epsilon"],
-        p["duration_epsilon"],
+        p.get("end_epsilon", 1),  # default values are to handle FQI and keep epsilon=1
+        p.get("duration_epsilon", -1),
         n_training_steps,
     )
     if random.random() < epsilon:

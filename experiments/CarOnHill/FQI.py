@@ -9,6 +9,7 @@ from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.networks.architectures.DQN import BasicDQN
 from experiments.base.FQI import train
 from experiments.base.logger import prepare_logs
+from slimRL.sample_collection.utils import collect_single_sample
 
 
 def run(argvs=sys.argv[1:]):
@@ -37,20 +38,6 @@ def run(argvs=sys.argv[1:]):
         gamma=p["gamma"],
     )
 
-    env.reset()
-    for steps in range(p["replay_capacity"]):
-        obs = env.state.copy()
-        action = random.randint(0, env.n_actions - 1)
-        _, reward, termination = env.step(action)
-        truncation = env.n_steps == p["horizon"]
-        rb.add(obs, action, reward, termination, truncation)
-
-        has_reset = termination or truncation
-        if has_reset:
-            env.reset()
-
-    print("Replay buffer filled.")
-
     agent = BasicDQN(
         env,
         device=device,
@@ -61,5 +48,11 @@ def run(argvs=sys.argv[1:]):
         train_frequency=-1,
         target_update_frequency=-1,
     )
+
+    env.reset()
+    for steps in range(p["replay_capacity"]):
+        collect_single_sample(env, agent, rb, p, 0)
+
+    print("Replay buffer filled.")
 
     train(p, agent, rb)
