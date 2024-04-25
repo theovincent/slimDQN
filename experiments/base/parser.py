@@ -124,7 +124,7 @@ def fqi_parser(parser: argparse.ArgumentParser) -> None:
         "--n_bellman_iterations",
         help="No. of Bellman iterations to perform.",
         type=int,
-        default=100,
+        default=20,
     )
 
     parser.add_argument(
@@ -132,7 +132,7 @@ def fqi_parser(parser: argparse.ArgumentParser) -> None:
         "--n_fitting_steps",
         help="No. of gradient update steps to perform per Bellman iteration.",
         type=int,
-        default=200,
+        default=15,
     )
 
     parser.add_argument(
