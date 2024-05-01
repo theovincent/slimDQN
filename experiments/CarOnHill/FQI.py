@@ -22,7 +22,7 @@ def run(argvs=sys.argv[1:]):
     p["algo"] = "FQI"
     p["save_path"] = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        f"logs/{p['experiment_name']}/{p['algo']}",
+        f"logs/{p['experiment_name']}/{p['algo']}/seed={p['seed']}",
     )
 
     prepare_logs(p)
