@@ -54,6 +54,7 @@ class ReplayBuffer(object):
         )
         self._next_experience_is_episode_start = True
         self.episode_end_indices = set()
+        self.episode_end_next_states = dict()
         self.valid_transition_indices = set()
 
     def _create_storage(self):
@@ -63,6 +64,7 @@ class ReplayBuffer(object):
             self._store[storage_element.name] = np.empty(
                 array_shape, dtype=storage_element.type
             )
+        self._store["next_observations_trunc"] = {}
 
     def get_storage_signature(self):
         storage_elements = [
@@ -76,7 +78,9 @@ class ReplayBuffer(object):
 
         return storage_elements
 
-    def add(self, observation, action, reward, terminal, episode_end=False):
+    def add(
+        self, observation, action, reward, terminal, episode_end=False, next_obs=None
+    ):
         """
         If the replay memory is at capacity the oldest transition will be discarded.
 
@@ -95,10 +99,14 @@ class ReplayBuffer(object):
         if episode_end or terminal:
             self.episode_end_indices.add(self.cursor())
             self._next_experience_is_episode_start = True
+            if episode_end and not terminal:
+                self.episode_end_next_states[self.cursor()] = next_obs
         else:
             self.episode_end_indices.discard(self.cursor())  # If present
+            self.episode_end_next_states.pop(self.cursor(), None)
 
         self._add(observation, action, reward, terminal)
+        self._store["next_observations_trunc"] = self.episode_end_next_states
 
     def _add(self, *args):
         transition = {

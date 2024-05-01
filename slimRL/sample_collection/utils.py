@@ -15,9 +15,9 @@ def collect_single_sample(env, agent, rb: ReplayBuffer, p, n_training_steps: int
         action = agent.best_action(env.state)
 
     obs = env.state.copy()
-    _, reward, termination = env.step(action)
+    next_obs, reward, termination = env.step(action)
     truncation = env.n_steps == p["horizon"]
-    rb.add(obs, action, reward, termination, truncation)
+    rb.add(obs, action, reward, termination, truncation, next_obs)
 
     has_reset = termination or truncation
     if has_reset:
