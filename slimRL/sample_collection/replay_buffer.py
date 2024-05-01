@@ -101,12 +101,13 @@ class ReplayBuffer(object):
             self._next_experience_is_episode_start = True
             if episode_end and not terminal:
                 self.episode_end_next_states[self.cursor()] = next_obs
+                self._store["next_observations_trunc"] = self.episode_end_next_states
         else:
             self.episode_end_indices.discard(self.cursor())  # If present
             self.episode_end_next_states.pop(self.cursor(), None)
+            self._store["next_observations_trunc"] = self.episode_end_next_states
 
         self._add(observation, action, reward, terminal)
-        self._store["next_observations_trunc"] = self.episode_end_next_states
 
     def _add(self, *args):
         transition = {
