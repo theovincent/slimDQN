@@ -25,7 +25,7 @@ AGENT_PARAMS = {
         "end_epsilon",
         "duration_epsilon",
     ],
-    "FQI": ["n_bellman_iterations", "n_fitting_steps", "patience"],
+    "FQI": ["n_bellman_iterations", "n_fitting_steps"],
 }
 
 

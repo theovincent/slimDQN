@@ -135,14 +135,6 @@ def fqi_parser(parser: argparse.ArgumentParser) -> None:
         default=15,
     )
 
-    parser.add_argument(
-        "-pat",
-        "--patience",
-        help="No. of fitting steps for which increase in TD loss is allowed.",
-        type=int,
-        default=5,
-    )
-
 
 def dqn_parser(parser: argparse.ArgumentParser) -> None:
     base_parser(parser=parser)
