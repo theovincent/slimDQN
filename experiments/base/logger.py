@@ -51,7 +51,6 @@ def check_experiment(p: dict):
     )
 
     if os.path.exists(params_path):
-        print("YO")
         params = json.load(open(params_path, "r"))
         for param in SHARED_PARAMS:
             assert (
