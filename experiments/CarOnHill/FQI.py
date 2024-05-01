@@ -53,6 +53,8 @@ def run(argvs=sys.argv[1:]):
     for steps in range(p["replay_capacity"]):
         collect_single_sample(env, agent, rb, p, 0)
 
+    assert sum(rb._store["reward"] == 1) > 0, "No positive reward sampled. Rerun!"
+
     print("Replay buffer filled.")
 
     train(p, agent, rb)

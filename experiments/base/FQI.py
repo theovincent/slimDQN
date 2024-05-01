@@ -23,6 +23,8 @@ def train(
     np.random.seed(p["seed"])
     torch.manual_seed(p["seed"])
 
+    json.dump(rb._store, open(os.path.join(p["save_path"], "replay_buffer.json"), "w"))
+
     for idx_bellman_iteration in tqdm(range(p["n_bellman_iterations"])):
         for grad_step in tqdm(range(p["n_fitting_steps"])):
             for _ in range(int(np.ceil(p["replay_capacity"] / p["batch_size"]))):
