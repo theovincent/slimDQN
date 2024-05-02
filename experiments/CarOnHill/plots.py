@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.architectures.DQN import DQNNet
 from slimRL.sample_collection.count_samples import count_samples
-from experiments.CarOnHill.plot_utils import plot_on_grid, compute_q_on_data
+from experiments.CarOnHill.plot_utils import plot_on_grid
 from experiments.base.parser import plot_parser
 
 
@@ -50,7 +50,13 @@ def samples_plot(argvs=sys.argv[1:]):
 
     assert os.path.exists(rb_path), f"Required replay buffer {rb_path} not found"
 
-    rb = {k: np.array(v) for k, v in json.load(open(rb_path, "r")).items()}
+    rb = json.load(
+        open(rb_path, "r"),
+        object_hook=lambda d: {
+            int(k) if k.isdigit() else k: np.array(v) if isinstance(v, list) else v
+            for k, v in d.items()
+        },
+    )
 
     max_pos = 1.0
     max_velocity = 3.0

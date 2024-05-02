@@ -24,8 +24,9 @@ def train(
     torch.manual_seed(p["seed"])
 
     json.dump(
-        {k: v.tolist() for k, v in rb._store.items()},
+        rb._store,
         open(os.path.join(p["save_path"], f"replay_buffer_seed={p['seed']}.json"), "w"),
+        default=lambda x: x.tolist() if isinstance(x, np.ndarray) else x,
     )
 
     for idx_bellman_iteration in tqdm(range(p["n_bellman_iterations"])):
