@@ -55,6 +55,6 @@ def run(argvs=sys.argv[1:]):
 
     assert sum(rb._store["reward"] == 1) > 0, "No positive reward sampled. Rerun!"
 
-    print("Replay buffer filled.")
+    print(f"Replay buffer filled with {sum(rb._store['reward'] == 1)} success samples.")
 
     train(p, agent, rb)

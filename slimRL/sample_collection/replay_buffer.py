@@ -54,7 +54,7 @@ class ReplayBuffer(object):
         )
         self._next_experience_is_episode_start = True
         self.episode_end_indices = set()
-        self.episode_end_next_states = dict()
+        self.episode_trunc_next_states = dict()
         self.valid_transition_indices = set()
 
     def _create_storage(self):
@@ -96,16 +96,18 @@ class ReplayBuffer(object):
         if self._next_experience_is_episode_start:
             self._next_experience_is_episode_start = False
 
+        self._store["last_transition_next_obs"] = (self.cursor(), next_obs)
+        self.episode_trunc_next_states[self.cursor()] = next_obs
         if episode_end or terminal:
             self.episode_end_indices.add(self.cursor())
             self._next_experience_is_episode_start = True
             if episode_end and not terminal:
-                self.episode_end_next_states[self.cursor()] = next_obs
-                self._store["next_observations_trunc"] = self.episode_end_next_states
+                self.episode_trunc_next_states[self.cursor()] = next_obs
+                self._store["next_observations_trunc"] = self.episode_trunc_next_states
         else:
             self.episode_end_indices.discard(self.cursor())  # If present
-            self.episode_end_next_states.pop(self.cursor(), None)
-            self._store["next_observations_trunc"] = self.episode_end_next_states
+            self.episode_trunc_next_states.pop(self.cursor(), None)
+            self._store["next_observations_trunc"] = self.episode_trunc_next_states
 
         self._add(observation, action, reward, terminal)
 
