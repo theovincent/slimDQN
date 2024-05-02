@@ -193,7 +193,6 @@ def td_error_plot(argvs=sys.argv[1:]):
                     ),
                 )
             )
-        for model_key, model_wts in models.items():
             evaluate(
                 model_key + "_trunc_states",
                 model_wts,
