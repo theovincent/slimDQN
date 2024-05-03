@@ -1,10 +1,8 @@
 import os
 import sys
-import json
 import argparse
 import numpy as np
 import torch
-import multiprocessing
 import matplotlib.pyplot as plt
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.architectures.DQN import DQNNet
@@ -84,10 +82,10 @@ def evaluate(
     model_key: str,
     model_wts: torch.Tensor,
     q_estimate: dict,
-    env,
+    agent,
     observations: torch.Tensor,
 ):
-    agent = DQNNet(env)
+
     agent.load_state_dict(model_wts)
     agent.eval()
     q_estimate[model_key] = agent(observations).detach().numpy()
@@ -174,30 +172,23 @@ def td_error_plot(argvs=sys.argv[1:]):
         )
 
         env = CarOnHill()
+        agent = DQNNet(env)
 
-        manager = multiprocessing.Manager()
+        q_estimate = dict()
 
-        q_estimate = manager.dict()
-
-        processes = []
         for model_key, model_wts in models.items():
-            processes.append(
-                multiprocessing.Process(
-                    target=evaluate,
-                    args=(
-                        model_key,
-                        model_wts,
-                        q_estimate,
-                        env,
-                        torch.Tensor(rb["observation"]),
-                    ),
-                )
+            evaluate(
+                model_key,
+                model_wts,
+                q_estimate,
+                agent,
+                torch.Tensor(rb["observation"]),
             )
             evaluate(
                 model_key + "_trunc_states",
                 model_wts,
                 q_estimate,
-                env,
+                agent,
                 torch.Tensor(
                     np.array(
                         [v for k, v in sorted(rb["next_observations_trunc"].items())]
@@ -208,15 +199,9 @@ def td_error_plot(argvs=sys.argv[1:]):
                 model_key + "_last_transition",
                 model_wts,
                 q_estimate,
-                env,
+                agent,
                 torch.Tensor(rb["last_transition_next_obs"][1]),
             )
-
-        for process in processes:
-            process.start()
-
-        for process in processes:
-            process.join()
 
         td_error = {}
         for exp, result_path in results_folder.items():
@@ -246,8 +231,21 @@ def td_error_plot(argvs=sys.argv[1:]):
                                 T_q
                                 - q_estimate[
                                     f"{exp}/{seed_run}/model_iteration={idx_iteration}"
-                                ][np.arange(rb_size), rb["action"]]
+                                ][np.arange(rb_size), rb["action"]],
+                                ord=2,
                             )
+                            # print(
+                            #     f"{idx_iteration} ---> {td_error[exp][idx_seed, idx_iteration - 1]}"
+                            # )
+                            # if idx_iteration == 49:
+                            #     print(
+                            #         q_estimate[
+                            #             f"{exp}/{seed_run}/model_iteration={idx_iteration}"
+                            #         ][:6]
+                            #     )
+                            #     print(T_q[:6])
+                            #     print(rb["reward"][:6])
+                            #     print(rb["action"][:6])
             print(td_error[exp])
 
         plt.rc("font", size=15, family="serif", serif="Times New Roman")
