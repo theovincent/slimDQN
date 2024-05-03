@@ -1,8 +1,8 @@
 # Credits: https://github.com/theovincent/PBO
 
 
-from tqdm import tqdm
 import numpy as np
+import multiprocessing
 from slimRL.environments.car_on_hill import CarOnHill
 
 
@@ -28,42 +28,78 @@ def optimal_steps_to_absorbing(env: CarOnHill, state: np.ndarray, max_steps: int
     return False, step
 
 
-def compute_optimal_values(n_states_x, n_states_v, horizon, gamma):
+def compute_optimal_q_value(
+    eval_state, idx_state_x, idx_state_v, action, horizon, gamma, optimal_q, optimal_v
+):
+    env = CarOnHill()
+    env.reset(eval_state)
+    next_state, reward, absorbing = env.step(action)
+
+    if absorbing:
+        optimal_q[idx_state_x][idx_state_v][action] = reward
+    else:
+        success, step_to_absorbing = optimal_steps_to_absorbing(
+            env, next_state, horizon
+        )
+        if step_to_absorbing == 0:
+            optimal_v_next_state = 0
+        else:
+            optimal_v_next_state = (
+                gamma ** (step_to_absorbing - 1)
+                if success
+                else -(gamma ** (step_to_absorbing - 1))
+            )
+
+        optimal_q[idx_state_x][idx_state_v][action] = (
+            reward + gamma * optimal_v_next_state
+        )
+    print(f"Done with {eval_state}, {action}")
+    optimal_v[idx_state_x][idx_state_v] = max(optimal_q[idx_state_x][idx_state_v])
+
+
+def compute_optimal_values(
+    n_states_x, n_states_v, horizon, gamma, num_parallel_processes
+):
 
     env = CarOnHill()
     states_x = np.linspace(-env.max_pos, env.max_pos, n_states_x)
     states_v = np.linspace(-env.max_velocity, env.max_velocity, n_states_v)
 
-    optimal_v = np.zeros((n_states_x, n_states_v))
-    optimal_q = np.zeros((n_states_x, n_states_v, 2))
+    manager = multiprocessing.Manager()
+    optimal_q = manager.list(np.zeros((n_states_x, n_states_v, 2)).tolist())
+    optimal_v = manager.list(np.zeros((n_states_x, n_states_v)).tolist())
 
-    for idx_state_x, state_x in tqdm(enumerate(states_x)):
-        for idx_state_v, state_v in tqdm(enumerate(states_v), leave=False):
+    processes = []
+    for idx_state_x, state_x in enumerate(states_x):
+        for idx_state_v, state_v in enumerate(states_v):
             for action in range(2):
                 eval_state = np.array([state_x, state_v])
-                env.reset(eval_state)
-                next_state, reward, absorbing = env.step(action)
-
-                if absorbing:
-                    optimal_q[idx_state_x, idx_state_v, action] = reward
-                else:
-                    success, step_to_absorbing = optimal_steps_to_absorbing(
-                        env, next_state, horizon
+                processes.append(
+                    multiprocessing.Process(
+                        target=compute_optimal_q_value,
+                        args=(
+                            eval_state,
+                            idx_state_x,
+                            idx_state_v,
+                            action,
+                            horizon,
+                            gamma,
+                            optimal_q,
+                            optimal_v,
+                        ),
                     )
-                    if step_to_absorbing == 0:
-                        optimal_v_next_state = 0
-                    else:
-                        optimal_v_next_state = (
-                            gamma ** (step_to_absorbing - 1)
-                            if success
-                            else -(gamma ** (step_to_absorbing - 1))
-                        )
+                )
 
-                    optimal_q[idx_state_x, idx_state_v, action] = (
-                        reward + gamma * optimal_v_next_state
-                    )
-                print(f"Done with {state_x}, {state_v}, {action}")
-            optimal_v[idx_state_x, idx_state_v] = np.max(
-                optimal_q[idx_state_x, idx_state_v]
+    for i in range(int(np.ceil(len(processes) / num_parallel_processes))):
+        proc_list = processes[
+            i
+            * num_parallel_processes : min(
+                (i + 1) * num_parallel_processes, len(processes) - 1
             )
-    return optimal_v, optimal_q
+        ]
+        for process in proc_list:
+            process.start()
+
+        for process in proc_list:
+            process.join()
+    return np.array(optimal_v), np.array(optimal_q)

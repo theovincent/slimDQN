@@ -37,11 +37,22 @@ def run(argvs=sys.argv[1:]):
         type=float,
         default=0.99,
     )
+    parser.add_argument(
+        "-par",
+        "--num_parallel_processes",
+        help="No. of parallel processes to run at a time.",
+        type=int,
+        default=4,
+    )
     args = parser.parse_args(argvs)
     p = vars(args)
 
     optimal_v, optimal_q = compute_optimal_values(
-        p["n_states_x"], p["n_states_v"], p["horizon"], p["gamma"]
+        p["n_states_x"],
+        p["n_states_v"],
+        p["horizon"],
+        p["gamma"],
+        p["num_parallel_processes"],
     )
 
     np.save(f"logs/V_nx={p['n_states_x']}_nv={p['n_states_v']}.npy", optimal_v)
