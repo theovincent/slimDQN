@@ -24,37 +24,35 @@ def optimal_steps_to_absorbing(env: CarOnHill, state: np.ndarray, max_steps: int
 
         step += 1
         current_states = next_states
+        current_states = sorted(current_states, key=lambda x: x[0], reverse=True)
 
     return False, step
 
 
 def compute_optimal_q_value(
-    eval_state, idx_state_x, idx_state_v, action, horizon, gamma, optimal_q, optimal_v
+    eval_state, idx_state_x, idx_state_v, action, horizon, gamma, optimal_q
 ):
     env = CarOnHill()
     env.reset(eval_state)
     next_state, reward, absorbing = env.step(action)
 
     if absorbing:
-        optimal_q[idx_state_x][idx_state_v][action] = reward
+        optimal_q[(idx_state_x, idx_state_v, action)] = reward
     else:
-        success, step_to_absorbing = optimal_steps_to_absorbing(
-            env, next_state, horizon
+        success, steps_to_absorbing = optimal_steps_to_absorbing(
+            env, next_state, horizon - 1
         )
-        if step_to_absorbing == 0:
-            optimal_v_next_state = 0
-        else:
-            optimal_v_next_state = (
-                gamma ** (step_to_absorbing - 1)
-                if success
-                else -(gamma ** (step_to_absorbing - 1))
-            )
 
-        optimal_q[idx_state_x][idx_state_v][action] = (
+        optimal_v_next_state = (
+            gamma ** (steps_to_absorbing) if success else -(gamma**steps_to_absorbing)
+        )
+
+        optimal_q[(idx_state_x, idx_state_v, action)] = (
             reward + gamma * optimal_v_next_state
         )
-    print(f"Done with {eval_state}, {action}")
-    optimal_v[idx_state_x][idx_state_v] = max(optimal_q[idx_state_x][idx_state_v])
+    print(
+        f"Q( {eval_state}, {action} ) = {optimal_q[(idx_state_x, idx_state_v, action)] }"
+    )
 
 
 def compute_optimal_values(
@@ -66,8 +64,10 @@ def compute_optimal_values(
     states_v = np.linspace(-env.max_velocity, env.max_velocity, n_states_v)
 
     manager = multiprocessing.Manager()
-    optimal_q = manager.list(np.zeros((n_states_x, n_states_v, 2)).tolist())
-    optimal_v = manager.list(np.zeros((n_states_x, n_states_v)).tolist())
+    optimal_q = np.zeros((n_states_x, n_states_v, 2))
+    optimal_v = np.zeros((n_states_x, n_states_v))
+
+    optimal_q_shared = manager.dict()
 
     processes = []
     for idx_state_x, state_x in enumerate(states_x):
@@ -84,8 +84,7 @@ def compute_optimal_values(
                             action,
                             horizon,
                             gamma,
-                            optimal_q,
-                            optimal_v,
+                            optimal_q_shared,
                         ),
                     )
                 )
@@ -94,7 +93,7 @@ def compute_optimal_values(
         proc_list = processes[
             i
             * num_parallel_processes : min(
-                (i + 1) * num_parallel_processes, len(processes) - 1
+                (i + 1) * num_parallel_processes, len(processes)
             )
         ]
         for process in proc_list:
@@ -102,4 +101,11 @@ def compute_optimal_values(
 
         for process in proc_list:
             process.join()
-    return np.array(optimal_v), np.array(optimal_q)
+    for idx_state_x, state_x in enumerate(states_x):
+        for idx_state_v, state_v in enumerate(states_v):
+            for action in range(2):
+                optimal_q[idx_state_x, idx_state_v, action] = optimal_q_shared[
+                    (idx_state_x, idx_state_v, action)
+                ]
+    optimal_v = np.max(optimal_q, axis=2)
+    return optimal_v, optimal_q

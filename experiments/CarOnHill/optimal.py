@@ -1,6 +1,8 @@
 # Credits: https://github.com/theovincent/PBO.git
 
+import os
 import sys
+import time
 import argparse
 import numpy as np
 from slimRL.environments.solvers.car_on_hill import compute_optimal_values
@@ -47,6 +49,7 @@ def run(argvs=sys.argv[1:]):
     args = parser.parse_args(argvs)
     p = vars(args)
 
+    t1 = time.time()
     optimal_v, optimal_q = compute_optimal_values(
         p["n_states_x"],
         p["n_states_v"],
@@ -54,12 +57,61 @@ def run(argvs=sys.argv[1:]):
         p["gamma"],
         p["num_parallel_processes"],
     )
+    t2 = time.time()
+    print("Time taken (mins) = ", (t2 - t1) / 60)
 
-    np.save(f"logs/V_nx={p['n_states_x']}_nv={p['n_states_v']}.npy", optimal_v)
-    np.save(f"logs/Q_nx={p['n_states_x']}_nv={p['n_states_v']}.npy", optimal_q)
+    save_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../CarOnHill/logs",
+    )
+    np.save(f"{save_path}/V_nx={p['n_states_x']}_nv={p['n_states_v']}.npy", optimal_v)
+    np.save(f"{save_path}/Q_nx={p['n_states_x']}_nv={p['n_states_v']}.npy", optimal_q)
 
     plot_on_grid(
         optimal_v,
         p["n_states_x"],
         p["n_states_v"],
+    )
+
+
+def plot_optimal_q(argvs=sys.argv[1:]):
+    parser = argparse.ArgumentParser("Plot optimal values for CarOnHill.")
+    parser.add_argument(
+        "-nx",
+        "--n_states_x",
+        help="Discretization for position (x).",
+        type=int,
+        default=17,
+    )
+    parser.add_argument(
+        "-nv",
+        "--n_states_v",
+        help="Discretization for velocity (v).",
+        type=int,
+        default=17,
+    )
+    args = parser.parse_args(argvs)
+    p = vars(args)
+
+    save_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../CarOnHill/logs",
+    )
+    optimal_v = np.load(f"{save_path}/V_nx={p['n_states_x']}_nv={p['n_states_v']}.npy")
+    optimal_q = np.load(f"{save_path}/Q_nx={p['n_states_x']}_nv={p['n_states_v']}.npy")
+
+    plot_on_grid(
+        optimal_v,
+        optimal_v.shape[0],
+        optimal_v.shape[1],
+    )
+    plot_on_grid(
+        optimal_q[:, :, 0],
+        optimal_v.shape[0],
+        optimal_v.shape[1],
+    )
+    plot_on_grid(
+        optimal_q[:, :, 1],
+        optimal_v.shape[0],
+        optimal_v.shape[1],
     )

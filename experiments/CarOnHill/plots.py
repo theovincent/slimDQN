@@ -8,9 +8,7 @@ from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.architectures.DQN import DQNNet
 from slimRL.sample_collection.count_samples import count_samples
 from slimRL.sample_collection.utils import load_replay_buffer_store
-from experiments.CarOnHill.plot_utils import plot_on_grid
-from experiments.base.parser import plot_parser
-from experiments.base.utils import confidence_interval
+from experiments.CarOnHill.plot_utils import plot_on_grid, plot_value
 
 
 def samples_plot(argvs=sys.argv[1:]):
@@ -234,46 +232,12 @@ def td_error_plot(argvs=sys.argv[1:]):
                                 ][np.arange(rb_size), rb["action"]],
                                 ord=2,
                             )
-                            # print(
-                            #     f"{idx_iteration} ---> {td_error[exp][idx_seed, idx_iteration - 1]}"
-                            # )
-                            # if idx_iteration == 49:
-                            #     print(
-                            #         q_estimate[
-                            #             f"{exp}/{seed_run}/model_iteration={idx_iteration}"
-                            #         ][:6]
-                            #     )
-                            #     print(T_q[:6])
-                            #     print(rb["reward"][:6])
-                            #     print(rb["action"][:6])
+
             print(td_error[exp])
-
-        plt.rc("font", size=15, family="serif", serif="Times New Roman")
-        plt.rc("lines", linewidth=1)
-        fig = plt.figure(f"TD error")
-        ax = fig.add_subplot(111)
-        plt.xlabel("Bellman iteration")
-        plt.ylabel("$||\Gamma Q_{i-1} - Q_{i}||_2$")
-        ax.set_xticks(range(1, td_error[exp].shape[1] + 1, 1)[::2])
-
-        for i, exp in enumerate(td_error):
-            td_error_mean = td_error[exp].mean(axis=0)
-            td_error_std = td_error[exp].std(axis=0)
-            td_error_cnf = confidence_interval(
-                td_error_mean, td_error_std, td_error[exp].shape[0]
-            )
-            ax.plot(
-                range(1, td_error[exp].shape[1] + 1, 1),
-                td_error_mean,
-                label=exp,
-            )
-            ax.fill_between(
-                range(1, td_error[exp].shape[1] + 1, 1),
-                td_error_cnf[0],
-                td_error_cnf[1],
-                alpha=0.3,
-            )
-
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        plot_value(
+            xlabel="Bellman iteration",
+            ylabel="$||\Gamma Q_{i-1} - Q_{i}||_2$",
+            x_val=range(1, td_error[exp].shape[1] + 1, 1),
+            y_val=td_error,
+            title="TD error on data",
+        )

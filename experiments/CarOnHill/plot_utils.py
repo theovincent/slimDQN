@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from experiments.base.utils import confidence_interval
 
 
 def plot_on_grid(values, n_states_x, n_states_v, zeros_to_nan=False, tick_size=2):
@@ -34,4 +35,34 @@ def plot_on_grid(values, n_states_x, n_states_v, zeros_to_nan=False, tick_size=2
     fig.tight_layout()
     fig.canvas.draw()
 
+    plt.show()
+
+
+def plot_value(xlabel, ylabel, x_val, y_val, **kwargs):
+    plt.rc("font", size=15, family="serif", serif="Times New Roman")
+    plt.rc("lines", linewidth=1)
+    fig = plt.figure(kwargs.get("title", ""))
+    ax = fig.add_subplot(111)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    ax.set_xticks(x_val[:: kwargs.get("ticksize", 2)])
+
+    for i, exp in enumerate(y_val):
+        y_mean = y_val[exp].mean(axis=0)
+        y_std = y_val[exp].std(axis=0)
+        y_cnf = confidence_interval(y_mean, y_std, y_val[exp].shape[0])
+        ax.plot(
+            range(1, y_val[exp].shape[1] + 1, 1),
+            y_mean,
+            label=exp,
+        )
+        ax.fill_between(
+            range(1, y_val[exp].shape[1] + 1, 1),
+            y_cnf[0],
+            y_cnf[1],
+            alpha=0.3,
+        )
+
+    plt.legend()
+    plt.tight_layout()
     plt.show()
