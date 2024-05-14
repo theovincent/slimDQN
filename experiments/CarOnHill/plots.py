@@ -337,9 +337,10 @@ def td_error_plot(argvs=sys.argv[1:]):
                                 f"{exp}/{seed_run}/model_iteration={idx_iteration}"
                             ][:, action]
 
-                        td_error[exp][idx_seed, idx_iteration - 1] = np.linalg.norm(
-                            np.multiply(T_q - q, scaling[:, np.newaxis]),
-                            ord=2,
+                        td_error[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                            np.sum(
+                                np.multiply(np.square(T_q - q), scaling[:, np.newaxis])
+                            )
                         )
 
         print(td_error[exp])
@@ -349,5 +350,159 @@ def td_error_plot(argvs=sys.argv[1:]):
         x_val=range(1, td_error[exp].shape[1] + 1, 1),
         y_val=td_error,
         title="TD error on grid",
+        ticksize=10,
+    )
+
+
+def diff_from_opt_plot(argvs=sys.argv[1:]):
+    parser = argparse.ArgumentParser(
+        "Plot difference from optimal value against Bellman iterations."
+    )
+    parser.add_argument(
+        "-e",
+        "--experiment_folders",
+        nargs="+",
+        help="Give the path to all experiment folders to plot from logs/",
+        required=True,
+    )
+    parser.add_argument(
+        "-rb",
+        "--replay_buffer_path",
+        type=str,
+        help="Path to replay buffer from logs/ (if plot on data)",
+        required=True,
+    )
+    parser.add_argument(
+        "-nx",
+        "--n_states_x",
+        help="Discretization for position (x).",
+        type=int,
+        default=17,
+    )
+    parser.add_argument(
+        "-nv",
+        "--n_states_v",
+        help="Discretization for velocity (v).",
+        type=int,
+        default=17,
+    )
+    args = parser.parse_args(argvs)
+
+    p = vars(args)
+
+    base_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../CarOnHill/logs",
+    )
+
+    assert os.path.exists(base_path), f"Required path {p['file_path']} not found"
+
+    results_folder = {}
+
+    for exp in p["experiment_folders"]:
+        exp_folder = os.path.join(base_path, exp)
+        assert os.path.exists(exp_folder), f"{exp_folder} not found"
+        results_folder[exp] = exp_folder
+
+    rb_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../CarOnHill/logs",
+        p["replay_buffer_path"],
+    )
+
+    assert os.path.exists(rb_path), f"Required replay buffer {rb_path} not found"
+
+    rb = load_replay_buffer_store(rb_path)
+    rb_size = rb["observation"].shape[0]
+
+    models = {}
+    for exp, result_path in results_folder.items():
+        for seed_run in os.listdir(result_path):
+            if not os.path.isfile(os.path.join(result_path, seed_run)):
+                for iteration in os.listdir(os.path.join(result_path, seed_run)):
+                    if "model" in iteration:
+                        models[f"{exp}/{seed_run}/{iteration}"] = torch.load(
+                            os.path.join(result_path, seed_run, iteration)
+                        )
+
+    num_bellman_iterations = len(set(i.split("/")[-1] for i in models.keys()))
+    num_seeds = len(set(i.split("/")[-2] for i in models.keys()))
+    print(
+        f"Bellman iterations = {num_bellman_iterations}, Num seeds = {num_seeds}, RB size = {rb_size}"
+    )
+
+    env = CarOnHill()
+    boxes_x_size = (2 * env.max_pos) / (p["n_states_x"] - 1)
+    states_x_boxes = (
+        np.linspace(-env.max_pos, env.max_pos + boxes_x_size, p["n_states_x"] + 1)
+        - boxes_x_size / 2
+    )
+    boxes_v_size = (2 * env.max_velocity) / (p["n_states_v"] - 1)
+    states_v_boxes = (
+        np.linspace(
+            -env.max_velocity, env.max_velocity + boxes_v_size, p["n_states_v"] + 1
+        )
+        - boxes_v_size / 2
+    )
+
+    samples_stats, _, _ = count_samples(
+        rb["observation"][:, 0],
+        rb["observation"][:, 1],
+        states_x_boxes,
+        states_v_boxes,
+        rb["reward"],
+    )
+    print(samples_stats.shape)
+    states_x = np.linspace(-env.max_pos, env.max_pos, p["n_states_x"])
+    states_v = np.linspace(-env.max_velocity, env.max_velocity, p["n_states_v"])
+
+    samples_stats = samples_stats / samples_stats.sum()
+    scaling = samples_stats.reshape(-1)
+    states_grid = np.array([[i, j] for i in states_x for j in states_v])
+
+    agent = DQNNet(env)
+
+    q_estimate = dict()
+
+    for model_key, model_wts in models.items():
+        evaluate(
+            model_key,
+            model_wts,
+            q_estimate,
+            agent,
+            torch.Tensor(states_grid),
+        )
+
+    opt_q = np.load(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "../CarOnHill/logs/Q_nx=17_nv=17.npy",
+        )
+    )
+
+    opt_gap = {}
+    for exp, result_path in results_folder.items():
+        opt_gap[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
+        for idx_seed, seed_run in enumerate(os.listdir(result_path)):
+            if not os.path.isfile(os.path.join(result_path, seed_run)):
+                for idx_iteration in range(num_bellman_iterations):
+                    q = q_estimate[f"{exp}/{seed_run}/model_iteration={idx_iteration}"]
+
+                    opt_gap[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                        np.sum(
+                            np.multiply(
+                                np.square(opt_q.reshape((-1, 2)) - q),
+                                scaling[:, np.newaxis],
+                            )
+                        )
+                    )
+
+        print(opt_gap[exp])
+    plot_value(
+        xlabel="Bellman iteration",
+        ylabel="$|| Q^{*} - Q_{i}||_2$",
+        x_val=range(1, opt_gap[exp].shape[1] + 1, 1),
+        y_val=opt_gap,
+        title="Difference from optimal Q values on grid",
         ticksize=10,
     )
