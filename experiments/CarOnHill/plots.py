@@ -3,7 +3,7 @@ import sys
 import argparse
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
+import multiprocessing
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.architectures.DQN import DQNNet
 from slimRL.sample_collection.count_samples import count_samples
@@ -531,5 +531,339 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
         x_val=range(1, opt_gap_q[exp].shape[1] + 1, 1),
         y_val=opt_gap_v,
         title="Difference from optimal V on grid",
+        ticksize=10,
+    )
+
+
+def run_traj(agent, state, action, env, horizon, gamma):
+    env.reset(state)
+    _, reward, absorbing = env.step(action)
+    step = 1
+    performance = reward
+    discount = gamma
+
+    while not absorbing and step < horizon:
+        action = np.argmax(agent(torch.Tensor(state)).detach().numpy())
+        _, reward, absorbing = env.step(action)
+        performance += discount * reward
+        discount *= gamma
+        step += 1
+
+    return performance
+
+
+def compute_iterated_value(
+    model_key, model_wts, states_x, states_v, iterated_q_shared, horizon, gamma
+):
+    env = CarOnHill()
+    agent = DQNNet(env)
+    agent.load_state_dict(model_wts)
+    agent.eval()
+    for idx_state_x, state_x in enumerate(states_x):
+        for idx_state_v, state_v in enumerate(states_v):
+            for action in range(env.n_actions):
+                iterated_q_shared[(model_key, idx_state_x, idx_state_v, action)] = (
+                    run_traj(
+                        agent, np.array([state_x, state_v]), action, env, horizon, gamma
+                    )
+                )
+    print(f"Parallel Done with {model_key}")
+
+
+def plot_iterated_values(argvs=sys.argv[1:]):
+    parser = argparse.ArgumentParser(
+        "Plot difference of q_pi from optimal value against Bellman iterations."
+    )
+    parser.add_argument(
+        "-e",
+        "--experiment_folders",
+        nargs="+",
+        help="Give the path to all experiment folders to plot from logs/",
+        required=True,
+    )
+    parser.add_argument(
+        "-rb",
+        "--replay_buffer_path",
+        type=str,
+        help="Path to replay buffer from logs/ (if plot on data)",
+        required=True,
+    )
+    parser.add_argument(
+        "-nx",
+        "--n_states_x",
+        help="Discretization for position (x).",
+        type=int,
+        default=17,
+    )
+    parser.add_argument(
+        "-nv",
+        "--n_states_v",
+        help="Discretization for velocity (v).",
+        type=int,
+        default=17,
+    )
+    parser.add_argument(
+        "-par",
+        "--num_parallel_processes",
+        help="No. of parallel processes to run at a time.",
+        type=int,
+        default=4,
+    )
+    parser.add_argument(
+        "-H",
+        "--horizon",
+        help="Horizon.",
+        type=int,
+        default=100,
+    )
+    parser.add_argument(
+        "-gamma",
+        "--gamma",
+        help="Gamma.",
+        type=float,
+        default=0.99,
+    )
+    args = parser.parse_args(argvs)
+
+    p = vars(args)
+
+    base_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../CarOnHill/logs",
+    )
+
+    assert os.path.exists(base_path), f"Required path {p['file_path']} not found"
+
+    results_folder = {}
+
+    for exp in p["experiment_folders"]:
+        exp_folder = os.path.join(base_path, exp)
+        assert os.path.exists(exp_folder), f"{exp_folder} not found"
+        results_folder[exp] = exp_folder
+
+    rb_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../CarOnHill/logs",
+        p["replay_buffer_path"],
+    )
+
+    assert os.path.exists(rb_path), f"Required replay buffer {rb_path} not found"
+
+    rb = load_replay_buffer_store(rb_path)
+    rb_size = rb["observation"].shape[0]
+
+    models = {}
+    for exp, result_path in results_folder.items():
+        for seed_run in os.listdir(result_path):
+            if not os.path.isfile(os.path.join(result_path, seed_run)):
+                for iteration in os.listdir(os.path.join(result_path, seed_run)):
+                    if "model" in iteration:
+                        models[f"{exp}/{seed_run}/{iteration}"] = torch.load(
+                            os.path.join(result_path, seed_run, iteration)
+                        )
+
+    num_bellman_iterations = len(set(i.split("/")[-1] for i in models.keys()))
+    num_seeds = len(set(i.split("/")[-2] for i in models.keys()))
+    print(
+        f"Bellman iterations = {num_bellman_iterations}, Num seeds = {num_seeds}, RB size = {rb_size}"
+    )
+
+    env = CarOnHill()
+    agent = DQNNet(env)
+    boxes_x_size = (2 * env.max_pos) / (p["n_states_x"] - 1)
+    states_x_boxes = (
+        np.linspace(-env.max_pos, env.max_pos + boxes_x_size, p["n_states_x"] + 1)
+        - boxes_x_size / 2
+    )
+    boxes_v_size = (2 * env.max_velocity) / (p["n_states_v"] - 1)
+    states_v_boxes = (
+        np.linspace(
+            -env.max_velocity, env.max_velocity + boxes_v_size, p["n_states_v"] + 1
+        )
+        - boxes_v_size / 2
+    )
+
+    samples_stats, _, _ = count_samples(
+        rb["observation"][:, 0],
+        rb["observation"][:, 1],
+        states_x_boxes,
+        states_v_boxes,
+        rb["reward"],
+    )
+    print(samples_stats.shape)
+    states_x = np.linspace(-env.max_pos, env.max_pos, p["n_states_x"])
+    states_v = np.linspace(-env.max_velocity, env.max_velocity, p["n_states_v"])
+
+    samples_stats = samples_stats / samples_stats.sum()
+    scaling = samples_stats.reshape(-1)
+    states_grid = np.array([[i, j] for i in states_x for j in states_v])
+
+    q_estimate = dict()
+
+    for model_key, model_wts in models.items():
+        evaluate(
+            model_key,
+            model_wts,
+            q_estimate,
+            agent,
+            torch.Tensor(states_grid),
+        )
+
+    manager = multiprocessing.Manager()
+
+    iterated_q_shared = manager.dict()
+
+    processes = []
+    for model_key, model_wts in models.items():
+        processes.append(
+            multiprocessing.Process(
+                target=compute_iterated_value,
+                args=(
+                    model_key,
+                    model_wts,
+                    states_x,
+                    states_v,
+                    iterated_q_shared,
+                    p["horizon"],
+                    p["gamma"],
+                ),
+            )
+        )
+
+    for i in range(int(np.ceil(len(processes) / p["num_parallel_processes"]))):
+        proc_list = processes[
+            i
+            * p["num_parallel_processes"] : min(
+                (i + 1) * p["num_parallel_processes"], len(processes)
+            )
+        ]
+        for process in proc_list:
+            process.start()
+
+        for process in proc_list:
+            process.join()
+
+    iterated_q = {}
+    for model_key in models.keys():
+        iterated_q[model_key] = np.zeros((len(states_x), len(states_v), env.n_actions))
+        for idx_state_x, state_x in enumerate(states_x):
+            for idx_state_v, state_v in enumerate(states_v):
+                for action in range(env.n_actions):
+                    iterated_q[model_key][idx_state_x, idx_state_v, action] = (
+                        iterated_q_shared[(model_key, idx_state_x, idx_state_v, action)]
+                    )
+
+    q_estimate = dict()
+
+    for model_key, model_wts in models.items():
+        evaluate(
+            model_key,
+            model_wts,
+            q_estimate,
+            agent,
+            torch.Tensor(states_grid),
+        )
+
+    opt_q = np.load(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "../CarOnHill/logs/Q_nx=17_nv=17.npy",
+        )
+    )
+
+    opt_v = np.load(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "../CarOnHill/logs/V_nx=17_nv=17.npy",
+        )
+    )
+
+    opt_gap_q = {}
+    opt_gap_v = {}
+    iter_gap_q = {}
+    iter_gap_v = {}
+    for exp, result_path in results_folder.items():
+        opt_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
+        opt_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
+        iter_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
+        iter_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
+        for idx_seed, seed_run in enumerate(os.listdir(result_path)):
+            if not os.path.isfile(os.path.join(result_path, seed_run)):
+                for idx_iteration in range(num_bellman_iterations):
+                    q_i = q_estimate[
+                        f"{exp}/{seed_run}/model_iteration={idx_iteration}"
+                    ]
+                    v_i = np.max(q_i, axis=-1)
+                    q_pi_i = iterated_q[
+                        f"{exp}/{seed_run}/model_iteration={idx_iteration}"
+                    ]
+                    v_pi_i = q_pi_i[:, np.argmax(q_i, axis=-1)]
+                    opt_gap_q[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                        np.sum(
+                            np.multiply(
+                                np.square(opt_q.reshape((-1, env.n_actions)) - q_pi_i),
+                                scaling[:, np.newaxis],
+                            )
+                        )
+                    )
+
+                    opt_gap_v[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                        np.sum(
+                            np.multiply(
+                                np.square(opt_v.reshape(-1) - v_pi_i),
+                                scaling,
+                            )
+                        )
+                    )
+                    iter_gap_q[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                        np.sum(
+                            np.multiply(
+                                np.square(q_i - q_pi_i),
+                                scaling[:, np.newaxis],
+                            )
+                        )
+                    )
+
+                    iter_gap_v[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                        np.sum(
+                            np.multiply(
+                                np.square(v_i - v_pi_i),
+                                scaling,
+                            )
+                        )
+                    )
+
+        print(opt_gap_q[exp], opt_gap_v[exp], iter_gap_q[exp], iter_gap_v[exp])
+
+    plot_value(
+        xlabel="Bellman iteration",
+        ylabel="$|| Q^{*} - Q^{\pi_i}||_2$",
+        x_val=range(1, opt_gap_q[exp].shape[1] + 1, 1),
+        y_val=opt_gap_q,
+        title="Difference from optimal Q on grid",
+        ticksize=10,
+    )
+    plot_value(
+        xlabel="Bellman iteration",
+        ylabel="$|| V^{*} - V^{\pi_i}||_2$",
+        x_val=range(1, opt_gap_q[exp].shape[1] + 1, 1),
+        y_val=opt_gap_v,
+        title="Difference from optimal V on grid",
+        ticksize=10,
+    )
+    plot_value(
+        xlabel="Bellman iteration",
+        ylabel="$|| Q^{i} - Q^{\pi_i}||_2$",
+        x_val=range(1, iter_gap_q[exp].shape[1] + 1, 1),
+        y_val=opt_gap_q,
+        title="Difference of estimated Q from iterated Q on grid",
+        ticksize=10,
+    )
+    plot_value(
+        xlabel="Bellman iteration",
+        ylabel="$|| V^{i} - V^{\pi_i}||_2$",
+        x_val=range(1, iter_gap_q[exp].shape[1] + 1, 1),
+        y_val=opt_gap_v,
+        title="Difference of estimated V from optimal V on grid",
         ticksize=10,
     )
