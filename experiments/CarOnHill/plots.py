@@ -480,29 +480,56 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
         )
     )
 
-    opt_gap = {}
+    opt_v = np.load(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "../CarOnHill/logs/V_nx=17_nv=17.npy",
+        )
+    )
+
+    opt_gap_q = {}
+    opt_gap_v = {}
     for exp, result_path in results_folder.items():
-        opt_gap[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
+        opt_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
+        opt_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
         for idx_seed, seed_run in enumerate(os.listdir(result_path)):
             if not os.path.isfile(os.path.join(result_path, seed_run)):
                 for idx_iteration in range(num_bellman_iterations):
                     q = q_estimate[f"{exp}/{seed_run}/model_iteration={idx_iteration}"]
-
-                    opt_gap[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                    v = np.max(q, axis=-1)
+                    opt_gap_q[exp][idx_seed, idx_iteration - 1] = np.sqrt(
                         np.sum(
                             np.multiply(
-                                np.square(opt_q.reshape((-1, 2)) - q),
+                                np.square(opt_q.reshape((-1, env.n_actions)) - q),
                                 scaling[:, np.newaxis],
                             )
                         )
                     )
 
-        print(opt_gap[exp])
+                    opt_gap_v[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                        np.sum(
+                            np.multiply(
+                                np.square(opt_v.reshape(-1) - v),
+                                scaling,
+                            )
+                        )
+                    )
+
+        print(opt_gap_q[exp], opt_gap_v[exp])
+
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$|| Q^{*} - Q_{i}||_2$",
-        x_val=range(1, opt_gap[exp].shape[1] + 1, 1),
-        y_val=opt_gap,
-        title="Difference from optimal Q values on grid",
+        x_val=range(1, opt_gap_q[exp].shape[1] + 1, 1),
+        y_val=opt_gap_q,
+        title="Difference from optimal Q on grid",
+        ticksize=10,
+    )
+    plot_value(
+        xlabel="Bellman iteration",
+        ylabel="$|| V^{*} - V_{i}||_2$",
+        x_val=range(1, opt_gap_q[exp].shape[1] + 1, 1),
+        y_val=opt_gap_v,
+        title="Difference from optimal V on grid",
         ticksize=10,
     )
