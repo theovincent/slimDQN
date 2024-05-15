@@ -797,7 +797,8 @@ def plot_iterated_values(argvs=sys.argv[1:]):
                     q_pi_i = iterated_q[
                         f"{exp}/{seed_run}/model_iteration={idx_iteration}"
                     ]
-                    v_pi_i = q_pi_i[:, np.argmax(q_i, axis=-1)]
+                    q_pi_i = q_pi_i.reshape((-1, env.n_actions))
+                    v_pi_i = q_pi_i[np.arange(len(q_pi_i)), np.argmax(q_i, axis=-1)]
                     opt_gap_q[exp][idx_seed, idx_iteration - 1] = np.sqrt(
                         np.sum(
                             np.multiply(
