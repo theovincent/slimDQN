@@ -97,7 +97,6 @@ class ReplayBuffer(object):
             self._next_experience_is_episode_start = False
 
         self._store["last_transition_next_obs"] = (self.cursor(), next_obs)
-        self.episode_trunc_next_states[self.cursor()] = next_obs
         if episode_end or terminal:
             self.episode_end_indices.add(self.cursor())
             self._next_experience_is_episode_start = True
