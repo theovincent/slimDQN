@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from slimRL.environments.car_on_hill import CarOnHill
 from experiments.base.utils import confidence_interval
 
 
@@ -9,12 +10,11 @@ def plot_on_grid(values, n_states_x, n_states_v, zeros_to_nan=False, tick_size=2
     plt.rc("lines", linewidth=1)
     fig, ax = plt.subplots(figsize=(5.7, 5))
 
-    max_pos = 1.0
-    max_velocity = 3.0
+    env = CarOnHill()
 
-    states_x = np.linspace(-max_pos, max_pos, n_states_x)
-    states_v = np.linspace(-max_velocity, max_velocity, n_states_v)
-    x, v = np.meshgrid(states_x, states_v)
+    states_x = np.linspace(-env.max_pos, env.max_pos, n_states_x)
+    states_v = np.linspace(-env.max_velocity, env.max_velocity, n_states_v)
+    x, v = np.meshgrid(states_x, states_v, indexing="ij")
 
     if zeros_to_nan:
         values = np.where(values == 0, np.nan, values)

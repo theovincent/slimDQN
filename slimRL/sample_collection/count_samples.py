@@ -19,12 +19,12 @@ def count_samples(
 
     # only count the element pairs that are in the boxes
     dim_one_inside_boxes = np.logical_and(
-        dimension_one >= discrete_dim_one_boxes[0],
-        dimension_one <= discrete_dim_one_boxes[-1],
+        dimension_one > discrete_dim_one_boxes[0],
+        dimension_one < discrete_dim_one_boxes[-1],
     )
     dim_two_inside_boxes = np.logical_and(
-        dimension_two >= discrete_dim_two_boxes[0],
-        dimension_two <= discrete_dim_two_boxes[-1],
+        dimension_two > discrete_dim_two_boxes[0],
+        dimension_two < discrete_dim_two_boxes[-1],
     )
     dimensions_inside_boxes = np.logical_and(dim_one_inside_boxes, dim_two_inside_boxes)
 
