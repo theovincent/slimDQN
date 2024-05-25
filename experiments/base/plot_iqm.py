@@ -4,9 +4,7 @@ import json
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
-from rliable import library as rly
-from rliable import metrics
-from rliable import plot_utils
+from experiments.base.iqm import get_iqm_and_conf_parallel
 from experiments.base.parser import plot_parser
 
 
@@ -35,42 +33,36 @@ def run(argvs=sys.argv[1:]):
 
     plt.rc("font", size=10, family="serif", serif="Times New Roman")
     plt.rc("lines", linewidth=1)
+    fig = plt.figure(f"Returns for {p['env']}")
+    ax = fig.add_subplot(111)
+    plt.xlabel("Epochs")
+    plt.ylabel("IQM total reward")
+    plt.title(f"{p['env']}")
 
     returns = {}
     for result in results_folder:
         experiment = result.split("logs")[-1][1:]
-        returns[experiment] = np.expand_dims(
-            np.array(
-                [
-                    [np.mean(i) for i in json.load(open(os.path.join(result, f), "r"))]
-                    for f in os.listdir(result)
-                    if "rewards" in f
-                ]
-            ),
-            axis=1,
+        returns[experiment] = np.array(
+            [
+                [np.mean(i) for i in json.load(open(os.path.join(result, f), "r"))]
+                for f in os.listdir(result)
+                if "rewards" in f
+            ]
         )
 
-    aggregate_scores, aggregate_score_cis = rly.get_interval_estimates(
-        returns,
-        lambda scores: np.array(
-            [
-                metrics.aggregate_iqm(scores[..., epoch])
-                for epoch in range(scores.shape[-1])
-            ]
-        ),
-        reps=500,
-    )
-    fig, ax = plt.subplots(figsize=(9, 5))
-    n_epochs = max([i.size for i in aggregate_scores.values()])
-
-    plot_utils.plot_sample_efficiency_curve(
-        np.arange(1, n_epochs + 1),
-        aggregate_scores,
-        aggregate_score_cis,
-        algorithms=list(returns.keys()),
-        xlabel="Epoch",
-        ylabel="IQM Average total reward",
-        ax=ax,
-    )
+    for exp in returns:
+        iqm, iqm_ci = get_iqm_and_conf_parallel(returns[exp])
+        ax.plot(
+            range(1, returns[exp].shape[1] + 1, 1),
+            iqm,
+            label=exp,
+        )
+        ax.fill_between(
+            range(1, returns[exp].shape[1] + 1, 1),
+            iqm_ci[0],
+            iqm_ci[1],
+            alpha=0.3,
+        )
     plt.legend()
+    plt.tight_layout()
     plt.show()
