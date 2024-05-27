@@ -23,7 +23,8 @@ def get_iqm_and_conf_parallel(array, bootstraps=2000, percentile=0.95):
     cut_off = (1.0 - percentile) / 2
     num_seeds, epochs = array.shape
     args = [
-        (array[:, epoch], num_seeds, bootstraps, cut_off) for epoch in range(epochs)
+        (array[:, epoch], num_seeds, bootstraps, cut_off * 100)
+        for epoch in range(epochs)
     ]
 
     with Pool() as pool:
