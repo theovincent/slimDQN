@@ -40,11 +40,15 @@ def save_replay_buffer_store(rb: ReplayBuffer, save_path):
     for key in rb._store["next_observations_trunc"]:
         rb_store["next_observations_trunc"][key] = rb._store["next_observations_trunc"][
             key
-        ].tolist()
+        ].tolist()  # store the next observations for last state of truncated trajectories at rb_store["next_observations_trunc"][index of last state]
 
     rb_store["last_transition_next_obs"] = (
-        rb._store["last_transition_next_obs"][0],
-        rb._store["last_transition_next_obs"][1].tolist(),
+        rb._store["last_transition_next_obs"][
+            0
+        ],  # index of last recorded observation in replay buffer
+        rb._store["last_transition_next_obs"][
+            1
+        ].tolist(),  # next state for last recorded observation in replay buffer
     )
     json.dump(
         rb_store,
@@ -61,7 +65,9 @@ def load_replay_buffer_store(rb_path):
     next_obs_keys = list(rb_store["next_observations_trunc"])
     for key in next_obs_keys:
         rb_store["next_observations_trunc"][int(key)] = np.array(
-            rb_store["next_observations_trunc"].pop(key)
+            rb_store["next_observations_trunc"].pop(
+                key
+            )  # as index is dumped by json in str format, pop removes str key from dict and adds an int key
         )
 
     rb_store["last_transition_next_obs"] = (
