@@ -845,7 +845,7 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         iter_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations))
         iter_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations))
         idx_seed = 0
-        for seed_run in enumerate(os.listdir(result_path)):
+        for seed_run in os.listdir(result_path):
             if not os.path.isfile(os.path.join(result_path, seed_run)):
                 for idx_iteration in range(num_bellman_iterations):
                     q_i = q_estimate[
