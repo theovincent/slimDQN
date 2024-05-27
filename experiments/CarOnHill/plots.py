@@ -577,7 +577,7 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
                         )
                     )
 
-                    opt_gap_v[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                    opt_gap_v[exp][idx_seed, idx_iteration] = np.sqrt(
                         np.sum(
                             np.multiply(
                                 np.square(opt_v - v),
@@ -880,7 +880,7 @@ def plot_iterated_values(argvs=sys.argv[1:]):
                             )
                         )
                     )
-                    iter_gap_q[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                    iter_gap_q[exp][idx_seed, idx_iteration] = np.sqrt(
                         np.sum(
                             np.multiply(
                                 np.square(q_i - q_pi_i),
@@ -889,7 +889,7 @@ def plot_iterated_values(argvs=sys.argv[1:]):
                         )
                     )
 
-                    iter_gap_v[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                    iter_gap_v[exp][idx_seed, idx_iteration] = np.sqrt(
                         np.sum(
                             np.multiply(
                                 np.square(v_i - v_pi_i),
