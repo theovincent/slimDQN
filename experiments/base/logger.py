@@ -11,7 +11,7 @@ SHARED_PARAMS = [
     "batch_size",
     "update_horizon",
     "gamma",
-    "lr",
+    "start_lr",
     "target_update_period",
     "n_initial_samples",
     "horizon",

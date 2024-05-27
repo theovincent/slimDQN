@@ -51,11 +51,19 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
-        "-lr",
-        "--lr",
-        help="Learning rate for Adam optimizer.",
+        "-start_lr",
+        "--start_lr",
+        help="Starting learning rate for Adam optimizer.",
         type=float,
-        default=2e-4,
+        default=1e-3,
+    )
+
+    parser.add_argument(
+        "-end_lr",
+        "--end_lr",
+        help="Ending learning rate for Adam optimizer.",
+        type=float,
+        default=5e-7,
     )
 
     parser.add_argument(
@@ -133,6 +141,14 @@ def fqi_parser(parser: argparse.ArgumentParser) -> None:
         help="No. of gradient update steps to perform per Bellman iteration.",
         type=int,
         default=15,
+    )
+
+    parser.add_argument(
+        "-pat",
+        "--patience",
+        help="No. of fitting steps for which increase in TD loss is allowed.",
+        type=int,
+        default=30,
     )
 
 
