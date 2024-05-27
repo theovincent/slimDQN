@@ -44,12 +44,16 @@ def run(argvs=sys.argv[1:]):
 
     obs = env.reset()
 
+    total_reward = 0
     for _ in range(args.steps):
         render(env)
         action = torch.argmax(agent(torch.Tensor(obs))).numpy()
         next_obs, reward, termination = env.step(action)
+        total_reward += reward
 
         if termination or env.n_steps > args.horizon:
+            print("Total reward = ", total_reward)
+            total_reward = 0
             next_obs = env.reset()
 
         obs = next_obs
