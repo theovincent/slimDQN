@@ -104,7 +104,7 @@ def td_error_plot(argvs=sys.argv[1:]):
         "-rb",
         "--replay_buffer_path",
         type=str,
-        help="Path to replay buffer from logs/ (if plot on data)",
+        help="Path to replay buffer from logs/",
         required=True,
     )
     parser.add_argument(
@@ -168,8 +168,13 @@ def td_error_plot(argvs=sys.argv[1:]):
                             os.path.join(result_path, seed_run, iteration)
                         )
 
-    num_bellman_iterations = len(set(i.split("/")[-1] for i in models.keys()))
-    num_seeds = len(set(i.split("/")[-2] for i in models.keys()))
+    num_bellman_iterations = len(
+        set(i.split("/")[-1] for i in models.keys())
+    )  # because the last part of the key of models has the iteration
+    num_seeds = len(
+        set(i.split("/")[-2] for i in models.keys())
+    )  # because the second last part of the key of models has the iteration
+
     print(
         f"Bellman iterations = {num_bellman_iterations}, Num seeds = {num_seeds}, RB size = {rb_size}"
     )
@@ -187,62 +192,128 @@ def td_error_plot(argvs=sys.argv[1:]):
             agent,
             torch.Tensor(rb["observation"]),
         )
+        if len(rb["next_observations_trunc"]) > 0:
+            evaluate(
+                model_key
+                + "_trunc_next_states",  # evaluate the Q value for next observations for truncated states
+                model_wts,
+                q_estimate,
+                agent,
+                torch.Tensor(
+                    np.array(
+                        [v for _, v in sorted(rb["next_observations_trunc"].items())]
+                    )
+                ),
+            )
         evaluate(
-            model_key + "_trunc_states",
-            model_wts,
-            q_estimate,
-            agent,
-            torch.Tensor(
-                np.array([v for k, v in sorted(rb["next_observations_trunc"].items())])
-            ),
-        )
-        evaluate(
-            model_key + "_last_transition",
+            model_key
+            + "_last_transition",  # evaluate the Q value for next observation for the last recorded transition
             model_wts,
             q_estimate,
             agent,
             torch.Tensor(rb["last_transition_next_obs"][1]),
         )
 
+    print("s = ", rb["observation"][195:205])
+    print("a = ", rb["action"][195:205])
+    print("r = ", rb["reward"][195:205])
+    print("d = ", rb["done"][195:205])
+
+    # test_est = {}
+    # m1 = 1
+    # m2 = 35
+    # m3 = 49
+    # test_model1 = torch.load(
+    #     "/Users/yogeshtripathi/RL/slimRL/experiments/CarOnHill/logs/fqi/FQI/seed=30/model_iteration="
+    #     + str(m1)
+    # )
+    # test_model2 = torch.load(
+    #     "/Users/yogeshtripathi/RL/slimRL/experiments/CarOnHill/logs/fqi/FQI/seed=30/model_iteration="
+    #     + str(m2)
+    # )
+    # test_model3 = torch.load(
+    #     "/Users/yogeshtripathi/RL/slimRL/experiments/CarOnHill/logs/fqi/FQI/seed=30/model_iteration="
+    #     + str(m3)
+    # )
+
+    # evaluate(
+    #     str(m1),
+    #     test_model1,
+    #     test_est,
+    #     agent,
+    #     torch.Tensor([-0.5, 0]),
+    # )
+    # evaluate(
+    #     str(m2),
+    #     test_model2,
+    #     test_est,
+    #     agent,
+    #     torch.Tensor([-0.5, 0]),
+    # )
+    # evaluate(
+    #     str(m3),
+    #     test_model3,
+    #     test_est,
+    #     agent,
+    #     torch.Tensor([-0.5, 0]),
+    # )
+    # print("Test estimates = ", test_est)
+
     td_error = {}
     for exp, result_path in results_folder.items():
         td_error[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
-        for idx_seed, seed_run in enumerate(os.listdir(result_path)):
+        idx_seed = 0
+        for seed_run in os.listdir(
+            result_path
+        ):  # cannot iterate over num_seeds as you need idx_seed and seed_run
             if not os.path.isfile(os.path.join(result_path, seed_run)):
-                for idx_iteration in range(num_bellman_iterations):
-                    if idx_iteration > 0:
-                        T_q = q_estimate[
-                            f"{exp}/{seed_run}/model_iteration={idx_iteration-1}"
-                        ].copy()
-                        T_q = np.roll(T_q, -1, axis=0)
-                        for idx, (pos, _) in enumerate(
-                            sorted(rb["next_observations_trunc"].items())
-                        ):
-                            T_q[pos] = q_estimate[
-                                f"{exp}/{seed_run}/model_iteration={idx_iteration-1}_trunc_states"
-                            ][idx]
-                        T_q[rb["last_transition_next_obs"][0]] = q_estimate[
-                            f"{exp}/{seed_run}/model_iteration={idx_iteration-1}_last_transition"
-                        ]
-                        T_q = rb["reward"] + p["gamma"] * np.max(T_q, axis=1) * (
-                            1 - rb["done"]
-                        )
+                for idx_iteration in range(1, num_bellman_iterations):
+                    T_q = q_estimate[
+                        f"{exp}/{seed_run}/model_iteration={idx_iteration-1}"
+                    ].copy()
+                    print("Just got the T_q = ", T_q[195:205])
+                    T_q = np.roll(T_q, -1, axis=0)
+                    # print("Rolled T_q = ", T_q[195:205])
+                    for idx, (pos, _) in enumerate(
+                        sorted(rb["next_observations_trunc"].items())
+                    ):
+                        T_q[pos] = q_estimate[
+                            f"{exp}/{seed_run}/model_iteration={idx_iteration-1}_trunc_next_states"
+                        ][idx]
+                    # print("Adjusted for trunc T_q = ", T_q[195:205])
+                    T_q[rb["last_transition_next_obs"][0]] = q_estimate[
+                        f"{exp}/{seed_run}/model_iteration={idx_iteration-1}_last_transition"
+                    ]
+                    # print("Adjusted for last obs T_q = ", T_q[195:205])
+                    T_q = rb["reward"] + p["gamma"] * np.max(T_q, axis=1) * (
+                        1 - rb["done"]
+                    )
 
-                        td_error[exp][idx_seed, idx_iteration - 1] = np.linalg.norm(
-                            T_q
-                            - q_estimate[
-                                f"{exp}/{seed_run}/model_iteration={idx_iteration}"
-                            ][np.arange(rb_size), rb["action"]],
-                            ord=2,
-                        )
+                    print("Final T_q = ", T_q[195:205])
+                    print(
+                        "q = ",
+                        q_estimate[f"{exp}/{seed_run}/model_iteration={idx_iteration}"][
+                            np.arange(rb_size), rb["action"]
+                        ][195:205],
+                    )
+
+                    td_error[exp][idx_seed, idx_iteration - 1] = np.linalg.norm(
+                        T_q
+                        - q_estimate[
+                            f"{exp}/{seed_run}/model_iteration={idx_iteration}"
+                        ][np.arange(rb_size), rb["action"]],
+                    )
+                    # exit(1)
+                idx_seed += 1
 
         print(td_error[exp])
+
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$||\Gamma Q_{i-1} - Q_{i}||_2$",
-        x_val=range(1, td_error[exp].shape[1] + 1, 1),
+        x_val=range(1, num_bellman_iterations, 1),
         y_val=td_error,
-        title="TD error on data",
+        title="TD error on replay buffer data",
         ticksize=10,
     )
 
@@ -258,7 +329,6 @@ def td_error_plot(argvs=sys.argv[1:]):
         )
         - boxes_v_size / 2
     )
-    print(states_x_boxes, states_v_boxes)
 
     samples_stats, _, _ = count_samples(
         rb["observation"][:, 0],
@@ -267,20 +337,15 @@ def td_error_plot(argvs=sys.argv[1:]):
         states_v_boxes,
         rb["reward"],
     )
-    print(samples_stats.shape)
-    samples_stats = samples_stats[1:, 1:]
-    states_x_boxes = states_x_boxes[1:-1]
-    states_v_boxes = states_v_boxes[1:-1]
+    scaling = samples_stats / samples_stats.sum()
 
-    samples_stats = samples_stats / samples_stats.sum()
+    states_x = np.linspace(-env.max_pos, env.max_pos, p["n_states_x"])
+    states_v = np.linspace(-env.max_velocity, env.max_velocity, p["n_states_v"])
+    states_grid = np.array([[x, v] for x in states_x for v in states_v])
+
     scaling = np.array(
-        [
-            samples_stats[i, j]
-            for i in range(len(states_x_boxes))
-            for j in range(len(states_v_boxes))
-        ]
+        [scaling[i, j] for i in range(p["n_states_x"]) for j in range(p["n_states_v"])]
     )
-    states_grid = np.array([[i, j] for i in states_x_boxes for j in states_v_boxes])
     next_states_grid = np.zeros(
         (states_grid.shape[0], env.n_actions, states_grid.shape[-1])
     )
@@ -317,31 +382,28 @@ def td_error_plot(argvs=sys.argv[1:]):
     td_error = {}
     for exp, result_path in results_folder.items():
         td_error[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
-        for idx_seed, seed_run in enumerate(os.listdir(result_path)):
+        idx_seed = 0
+        for seed_run in os.listdir(result_path):
             if not os.path.isfile(os.path.join(result_path, seed_run)):
-                for idx_iteration in range(num_bellman_iterations):
-                    if idx_iteration > 0:
-                        T_q = np.zeros((states_grid.shape[0], 2))
-                        q = np.zeros((states_grid.shape[0], 2))
-                        for action in range(env.n_actions):
-                            next_state_q_estimate = q_estimate[
-                                f"{exp}/{seed_run}/model_iteration={idx_iteration-1}_next_states_action={action}"
-                            ].copy()
+                for idx_iteration in range(1, num_bellman_iterations):
+                    T_q = np.zeros((states_grid.shape[0], env.n_actions))
+                    q = np.zeros((states_grid.shape[0], env.n_actions))
+                    for action in range(env.n_actions):
+                        next_state_q_estimate = q_estimate[
+                            f"{exp}/{seed_run}/model_iteration={idx_iteration-1}_next_states_action={action}"
+                        ]
 
-                            T_q[:, action] = rewards_grid[:, action] + p[
-                                "gamma"
-                            ] * np.max(next_state_q_estimate, axis=1) * (
-                                1 - dones_grid[:, action]
-                            )
-                            q[:, action] = q_estimate[
-                                f"{exp}/{seed_run}/model_iteration={idx_iteration}"
-                            ][:, action]
+                        T_q[:, action] = rewards_grid[:, action] + p["gamma"] * np.max(
+                            next_state_q_estimate, axis=1
+                        ) * (1 - dones_grid[:, action])
+                        q[:, action] = q_estimate[
+                            f"{exp}/{seed_run}/model_iteration={idx_iteration}"
+                        ][:, action]
 
-                        td_error[exp][idx_seed, idx_iteration - 1] = np.sqrt(
-                            np.sum(
-                                np.multiply(np.square(T_q - q), scaling[:, np.newaxis])
-                            )
-                        )
+                    td_error[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                        np.sum(np.multiply(np.square(T_q - q), scaling[:, np.newaxis]))
+                    )
+                idx_seed += 1
 
         print(td_error[exp])
     plot_value(
@@ -369,7 +431,7 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
         "-rb",
         "--replay_buffer_path",
         type=str,
-        help="Path to replay buffer from logs/ (if plot on data)",
+        help="Path to replay buffer from logs/",
         required=True,
     )
     parser.add_argument(
@@ -452,13 +514,15 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
         states_v_boxes,
         rb["reward"],
     )
-    print(samples_stats.shape)
+    scaling = samples_stats / samples_stats.sum()
+
     states_x = np.linspace(-env.max_pos, env.max_pos, p["n_states_x"])
     states_v = np.linspace(-env.max_velocity, env.max_velocity, p["n_states_v"])
+    states_grid = np.array([[x, v] for x in states_x for v in states_v])
 
-    samples_stats = samples_stats / samples_stats.sum()
-    scaling = samples_stats.reshape(-1)
-    states_grid = np.array([[i, j] for i in states_x for j in states_v])
+    scaling = np.array(
+        [scaling[i, j] for i in range(p["n_states_x"]) for j in range(p["n_states_v"])]
+    )
 
     agent = DQNNet(env)
 
@@ -476,31 +540,38 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
     opt_q = np.load(
         os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "../CarOnHill/logs/Q_nx=17_nv=17.npy",
+            f"../CarOnHill/logs/Q_nx={p['n_states_x']}_nv={p['n_states_v']}.npy",
         )
+    )
+    opt_q = np.array(
+        [opt_q[i, j] for i in range(p["n_states_x"]) for j in range(p["n_states_v"])]
     )
 
     opt_v = np.load(
         os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "../CarOnHill/logs/V_nx=17_nv=17.npy",
+            f"../CarOnHill/logs/V_nx={p['n_states_x']}_nv={p['n_states_v']}.npy",
         )
+    )
+    opt_v = np.array(
+        [opt_v[i, j] for i in range(p["n_states_x"]) for j in range(p["n_states_v"])]
     )
 
     opt_gap_q = {}
     opt_gap_v = {}
     for exp, result_path in results_folder.items():
-        opt_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
-        opt_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
-        for idx_seed, seed_run in enumerate(os.listdir(result_path)):
+        opt_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations))
+        opt_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations))
+        idx_seed = 0
+        for seed_run in os.listdir(result_path):
             if not os.path.isfile(os.path.join(result_path, seed_run)):
                 for idx_iteration in range(num_bellman_iterations):
                     q = q_estimate[f"{exp}/{seed_run}/model_iteration={idx_iteration}"]
                     v = np.max(q, axis=-1)
-                    opt_gap_q[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                    opt_gap_q[exp][idx_seed, idx_iteration] = np.sqrt(
                         np.sum(
                             np.multiply(
-                                np.square(opt_q.reshape((-1, env.n_actions)) - q),
+                                np.square(opt_q - q),
                                 scaling[:, np.newaxis],
                             )
                         )
@@ -509,18 +580,19 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
                     opt_gap_v[exp][idx_seed, idx_iteration - 1] = np.sqrt(
                         np.sum(
                             np.multiply(
-                                np.square(opt_v.reshape(-1) - v),
+                                np.square(opt_v - v),
                                 scaling,
                             )
                         )
                     )
+                idx_seed += 1
 
         print(opt_gap_q[exp], opt_gap_v[exp])
 
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$|| Q^{*} - Q_{i}||_2$",
-        x_val=range(1, opt_gap_q[exp].shape[1] + 1, 1),
+        x_val=range(1, num_bellman_iterations + 1, 1),
         y_val=opt_gap_q,
         title="Difference from optimal Q on grid",
         ticksize=10,
@@ -528,7 +600,7 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$|| V^{*} - V_{i}||_2$",
-        x_val=range(1, opt_gap_q[exp].shape[1] + 1, 1),
+        x_val=range(1, num_bellman_iterations + 1, 1),
         y_val=opt_gap_v,
         title="Difference from optimal V on grid",
         ticksize=10,
@@ -572,7 +644,7 @@ def compute_iterated_value(
 
 def plot_iterated_values(argvs=sys.argv[1:]):
     parser = argparse.ArgumentParser(
-        "Plot difference of q_pi from optimal value against Bellman iterations."
+        "Plot difference of Q_pi_i from optimal value and Q_i against Bellman iterations."
     )
     parser.add_argument(
         "-e",
@@ -585,7 +657,7 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         "-rb",
         "--replay_buffer_path",
         type=str,
-        help="Path to replay buffer from logs/ (if plot on data)",
+        help="Path to replay buffer from logs/",
         required=True,
     )
     parser.add_argument(
@@ -601,13 +673,6 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         help="Discretization for velocity (v).",
         type=int,
         default=17,
-    )
-    parser.add_argument(
-        "-par",
-        "--num_parallel_processes",
-        help="No. of parallel processes to run at a time.",
-        type=int,
-        default=4,
     )
     parser.add_argument(
         "-H",
@@ -690,13 +755,15 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         states_v_boxes,
         rb["reward"],
     )
-    print(samples_stats.shape)
+    scaling = samples_stats / samples_stats.sum()
+
     states_x = np.linspace(-env.max_pos, env.max_pos, p["n_states_x"])
     states_v = np.linspace(-env.max_velocity, env.max_velocity, p["n_states_v"])
+    states_grid = np.array([[x, v] for x in states_x for v in states_v])
 
-    samples_stats = samples_stats / samples_stats.sum()
-    scaling = samples_stats.reshape(-1)
-    states_grid = np.array([[i, j] for i in states_x for j in states_v])
+    scaling = np.array(
+        [scaling[i, j] for i in range(p["n_states_x"]) for j in range(p["n_states_v"])]
+    )
 
     q_estimate = dict()
 
@@ -730,13 +797,8 @@ def plot_iterated_values(argvs=sys.argv[1:]):
             )
         )
 
-    for i in range(int(np.ceil(len(processes) / p["num_parallel_processes"]))):
-        proc_list = processes[
-            i
-            * p["num_parallel_processes"] : min(
-                (i + 1) * p["num_parallel_processes"], len(processes)
-            )
-        ]
+    for i in range(int(np.ceil(len(processes) / 8.0))):
+        proc_list = processes[i * 8 : min((i + 1) * 8, len(processes))]
         for process in proc_list:
             process.start()
 
@@ -746,29 +808,21 @@ def plot_iterated_values(argvs=sys.argv[1:]):
     iterated_q = {}
     for model_key in models.keys():
         iterated_q[model_key] = np.zeros((len(states_x), len(states_v), env.n_actions))
-        for idx_state_x, state_x in enumerate(states_x):
-            for idx_state_v, state_v in enumerate(states_v):
+        for idx_state_x, _ in enumerate(states_x):
+            for idx_state_v, _ in enumerate(states_v):
                 for action in range(env.n_actions):
                     iterated_q[model_key][idx_state_x, idx_state_v, action] = (
                         iterated_q_shared[(model_key, idx_state_x, idx_state_v, action)]
                     )
-
-    q_estimate = dict()
-
-    for model_key, model_wts in models.items():
-        evaluate(
-            model_key,
-            model_wts,
-            q_estimate,
-            agent,
-            torch.Tensor(states_grid),
-        )
 
     opt_q = np.load(
         os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "../CarOnHill/logs/Q_nx=17_nv=17.npy",
         )
+    )
+    opt_q = np.array(
+        [opt_q[i, j] for i in range(p["n_states_x"]) for j in range(p["n_states_v"])]
     )
 
     opt_v = np.load(
@@ -777,17 +831,21 @@ def plot_iterated_values(argvs=sys.argv[1:]):
             "../CarOnHill/logs/V_nx=17_nv=17.npy",
         )
     )
+    opt_v = np.array(
+        [opt_v[i, j] for i in range(p["n_states_x"]) for j in range(p["n_states_v"])]
+    )
 
     opt_gap_q = {}
     opt_gap_v = {}
     iter_gap_q = {}
     iter_gap_v = {}
     for exp, result_path in results_folder.items():
-        opt_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
-        opt_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
-        iter_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
-        iter_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
-        for idx_seed, seed_run in enumerate(os.listdir(result_path)):
+        opt_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations))
+        opt_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations))
+        iter_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations))
+        iter_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations))
+        idx_seed = 0
+        for seed_run in enumerate(os.listdir(result_path)):
             if not os.path.isfile(os.path.join(result_path, seed_run)):
                 for idx_iteration in range(num_bellman_iterations):
                     q_i = q_estimate[
@@ -797,21 +855,27 @@ def plot_iterated_values(argvs=sys.argv[1:]):
                     q_pi_i = iterated_q[
                         f"{exp}/{seed_run}/model_iteration={idx_iteration}"
                     ]
-                    q_pi_i = q_pi_i.reshape((-1, env.n_actions))
-                    v_pi_i = q_pi_i[np.arange(len(q_pi_i)), np.argmax(q_i, axis=-1)]
-                    opt_gap_q[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                    q_pi_i = np.array(
+                        [
+                            q_pi_i[i, j]
+                            for i in range(p["n_states_x"])
+                            for j in range(p["n_states_v"])
+                        ]
+                    )
+                    v_pi_i = q_pi_i[np.arange(q_pi_i.shape[0]), np.argmax(q_i, axis=-1)]
+                    opt_gap_q[exp][idx_seed, idx_iteration] = np.sqrt(
                         np.sum(
                             np.multiply(
-                                np.square(opt_q.reshape((-1, env.n_actions)) - q_pi_i),
+                                np.square(opt_q - q_pi_i),
                                 scaling[:, np.newaxis],
                             )
                         )
                     )
 
-                    opt_gap_v[exp][idx_seed, idx_iteration - 1] = np.sqrt(
+                    opt_gap_v[exp][idx_seed, idx_iteration] = np.sqrt(
                         np.sum(
                             np.multiply(
-                                np.square(opt_v.reshape(-1) - v_pi_i),
+                                np.square(opt_v - v_pi_i),
                                 scaling,
                             )
                         )
@@ -833,13 +897,14 @@ def plot_iterated_values(argvs=sys.argv[1:]):
                             )
                         )
                     )
+                idx_seed = 0
 
         print(opt_gap_q[exp], opt_gap_v[exp], iter_gap_q[exp], iter_gap_v[exp])
 
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$|| Q^{*} - Q^{\pi_i}||_2$",
-        x_val=range(1, opt_gap_q[exp].shape[1] + 1, 1),
+        x_val=range(1, num_bellman_iterations + 1, 1),
         y_val=opt_gap_q,
         title="Difference from optimal Q on grid",
         ticksize=10,
@@ -847,7 +912,7 @@ def plot_iterated_values(argvs=sys.argv[1:]):
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$|| V^{*} - V^{\pi_i}||_2$",
-        x_val=range(1, opt_gap_q[exp].shape[1] + 1, 1),
+        x_val=range(1, num_bellman_iterations + 1, 1),
         y_val=opt_gap_v,
         title="Difference from optimal V on grid",
         ticksize=10,
@@ -855,16 +920,16 @@ def plot_iterated_values(argvs=sys.argv[1:]):
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$|| Q^{i} - Q^{\pi_i}||_2$",
-        x_val=range(1, iter_gap_q[exp].shape[1] + 1, 1),
-        y_val=opt_gap_q,
+        x_val=range(1, num_bellman_iterations + 1, 1),
+        y_val=iter_gap_q,
         title="Difference of estimated Q from iterated Q on grid",
         ticksize=10,
     )
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$|| V^{i} - V^{\pi_i}||_2$",
-        x_val=range(1, iter_gap_q[exp].shape[1] + 1, 1),
-        y_val=opt_gap_v,
+        x_val=range(1, num_bellman_iterations + 1, 1),
+        y_val=iter_gap_v,
         title="Difference of estimated V from optimal V on grid",
         ticksize=10,
     )
