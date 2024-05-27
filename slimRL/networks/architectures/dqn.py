@@ -5,16 +5,21 @@ from slimRL.networks.DQN import DQN
 
 
 class DQNNet(nn.Module):
-    def __init__(self, env):
+    def __init__(self, env, hidden_layers: list):
         super().__init__()
         self.env = env
-        self.network = nn.Sequential(
-            nn.Linear(np.array(self.env.observation_shape).prod(), 120),
-            nn.ReLU(),
-            nn.Linear(120, 84),
-            nn.ReLU(),
-            nn.Linear(84, env.n_actions),
-        )
+        layers = []
+        input_size = np.array(self.env.observation_shape).prod()
+
+        for hidden_size in hidden_layers:
+            layers.append(nn.Linear(input_size, hidden_size))
+            layers.append(nn.ReLU())
+            input_size = hidden_size
+
+        layers.append(nn.Linear(input_size, env.n_actions))
+
+        self.network = nn.Sequential(*layers)
+        print(self.network)
 
     def forward(self, x):
         return self.network(x)
@@ -25,6 +30,7 @@ class BasicDQN(DQN):
         self,
         env,
         device,
+        hidden_layers: list,
         gamma: float,
         update_horizon: int,
         lr: float,
@@ -37,9 +43,9 @@ class BasicDQN(DQN):
         self.device = device
         self.lr = lr
         self.adam_eps = adam_eps
-        q_network = DQNNet(env).to(self.device)
+        q_network = DQNNet(env, hidden_layers).to(self.device)
         optimizer = optim.Adam(q_network.parameters(), lr=self.lr, eps=self.adam_eps)
-        target_network = DQNNet(env).to(self.device)
+        target_network = DQNNet(env, hidden_layers).to(self.device)
         target_network.load_state_dict(q_network.state_dict())
 
         super().__init__(

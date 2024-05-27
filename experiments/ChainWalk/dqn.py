@@ -26,6 +26,7 @@ def run(argvs=sys.argv[1:]):
         os.path.dirname(os.path.abspath(__file__)),
         f"logs/{p['experiment_name']}/{p['env']}/{p['algo']}",
     )
+    p["hidden_layers"] = [int(h) for h in p["hidden_layers"]]
 
     prepare_logs(p)
 
@@ -41,6 +42,7 @@ def run(argvs=sys.argv[1:]):
     )
     agent = BasicDQN(
         env,
+        hidden_layers=p["hidden_layers"],
         device=device,
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],

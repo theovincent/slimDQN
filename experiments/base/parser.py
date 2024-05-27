@@ -19,6 +19,15 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
+        "-hl",
+        "--hidden_layers",
+        nargs="*",
+        default=[],
+        help="Hidden layer sizes.",
+        required=False,
+    )
+
+    parser.add_argument(
         "-rb",
         "--replay_capacity",
         help="Size of replay buffer to use.",
