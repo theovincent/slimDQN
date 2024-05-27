@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from slimRL.environments.car_on_hill import CarOnHill
-from experiments.base.utils import confidence_interval
+from experiments.base.plot_iqm import get_iqm_and_conf_parallel
 
 
 def plot_on_grid(values, n_states_x, n_states_v, zeros_to_nan=False, tick_size=2):
@@ -47,17 +47,15 @@ def plot_value(xlabel, ylabel, x_val, y_val, **kwargs):
     plt.ylabel(ylabel)
     ax.set_xticks(x_val[:: kwargs.get("ticksize", 2)])
 
-    for i, exp in enumerate(y_val):
-        y_mean = y_val[exp].mean(axis=0)
-        y_std = y_val[exp].std(axis=0)
-        y_cnf = confidence_interval(y_mean, y_std, y_val[exp].shape[0])
+    for exp in y_val:
+        y_iqm, y_cnf = get_iqm_and_conf_parallel(y_val[exp])
         ax.plot(
-            range(1, y_val[exp].shape[1] + 1, 1),
-            y_mean,
+            x_val,
+            y_iqm,
             label=exp,
         )
         ax.fill_between(
-            range(1, y_val[exp].shape[1] + 1, 1),
+            x_val,
             y_cnf[0],
             y_cnf[1],
             alpha=0.3,
