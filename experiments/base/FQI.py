@@ -33,6 +33,7 @@ def train(
         best_loss = float("inf")
         patience = 0
         scheduler = LambdaLR(agent.optimizer, lr_lambda=linear_lr_schedule)
+        grad_step = 0
         for grad_step in range(p["n_fitting_steps"]):
             cumulative_loss = 0
             for _ in range(int(np.ceil(p["replay_capacity"] / p["batch_size"]))):
@@ -47,6 +48,7 @@ def train(
             if patience > p["patience"]:
                 break
             scheduler.step()
+        print(f"Ran Bellman iteration {idx_bellman_iteration} for {grad_step} steps")
         agent.update_target_params(0)
 
         model_path = os.path.join(
