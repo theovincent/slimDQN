@@ -37,8 +37,9 @@ def run(argvs=sys.argv[1:]):
     args = parser.parse_args(argvs)
 
     env = LunarLander(render_mode="human")
-    agent = DQNNet(env)
-    agent.load_state_dict(torch.load(args.model))
+    model = torch.load(args.model)
+    agent = DQNNet(env, model["hidden_layers"])
+    agent.load_state_dict(model["network"])
     agent.eval()
 
     obs = env.reset()

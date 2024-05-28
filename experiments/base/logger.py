@@ -122,4 +122,10 @@ def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: BasicDQN):
 
     json.dump(log_rewards, open(rewards_path, "w"))
     json.dump(log_lengths, open(lengths_path, "w"))
-    torch.save(agent.q_network.state_dict(), model_path)
+    torch.save(
+        {
+            "hidden_layers": agent.q_network.hidden_layers,
+            "network": agent.q_network.state_dict(),
+        },
+        model_path,
+    )

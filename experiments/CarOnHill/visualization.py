@@ -38,8 +38,9 @@ def run(argvs=sys.argv[1:]):
     args = parser.parse_args(argvs)
 
     env = CarOnHill()
-    agent = DQNNet(env)
-    agent.load_state_dict(torch.load(args.model))
+    model_params = torch.load(args.model)
+    agent = DQNNet(env, model_params["hidden_layers"])
+    agent.load_state_dict(model_params["network"])
     agent.eval()
 
     obs = env.reset()
