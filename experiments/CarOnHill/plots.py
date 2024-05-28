@@ -180,25 +180,23 @@ def td_error_plot(argvs=sys.argv[1:]):
     )
 
     env = CarOnHill()
-    agent = DQNNet(env)
-
     q_estimate = dict()
 
-    for model_key, model_wts in models.items():
+    for model_key, model in models.items():
         evaluate(
             model_key,
-            model_wts,
+            model["network"],
             q_estimate,
-            agent,
+            DQNNet(env, model["hidden_layers"]),
             torch.Tensor(rb["observation"]),
         )
         if len(rb["next_observations_trunc"]) > 0:
             evaluate(
                 model_key
                 + "_trunc_next_states",  # evaluate the Q value for next observations for truncated states
-                model_wts,
+                model["network"],
                 q_estimate,
-                agent,
+                DQNNet(env, model["hidden_layers"]),
                 torch.Tensor(
                     np.array(
                         [v for _, v in sorted(rb["next_observations_trunc"].items())]
@@ -208,16 +206,16 @@ def td_error_plot(argvs=sys.argv[1:]):
         evaluate(
             model_key
             + "_last_transition",  # evaluate the Q value for next observation for the last recorded transition
-            model_wts,
+            model["network"],
             q_estimate,
-            agent,
+            DQNNet(env, model["hidden_layers"]),
             torch.Tensor(rb["last_transition_next_obs"][1]),
         )
 
-    print("s = ", rb["observation"][195:205])
-    print("a = ", rb["action"][195:205])
-    print("r = ", rb["reward"][195:205])
-    print("d = ", rb["done"][195:205])
+    print("s = ", rb["observation"][2768:2778])
+    print("a = ", rb["action"][2768:2778])
+    print("r = ", rb["reward"][2768:2778])
+    print("d = ", rb["done"][2768:2778])
 
     # test_est = {}
     # m1 = 1
@@ -271,30 +269,30 @@ def td_error_plot(argvs=sys.argv[1:]):
                     T_q = q_estimate[
                         f"{exp}/{seed_run}/model_iteration={idx_iteration-1}"
                     ].copy()
-                    print("Just got the T_q = ", T_q[195:205])
+                    print("Just got the T_q = ", T_q[2768:2778])
                     T_q = np.roll(T_q, -1, axis=0)
-                    # print("Rolled T_q = ", T_q[195:205])
+                    # print("Rolled T_q = ", T_q[2768:2778])
                     for idx, (pos, _) in enumerate(
                         sorted(rb["next_observations_trunc"].items())
                     ):
                         T_q[pos] = q_estimate[
                             f"{exp}/{seed_run}/model_iteration={idx_iteration-1}_trunc_next_states"
                         ][idx]
-                    # print("Adjusted for trunc T_q = ", T_q[195:205])
+                    # print("Adjusted for trunc T_q = ", T_q[2768:2778])
                     T_q[rb["last_transition_next_obs"][0]] = q_estimate[
                         f"{exp}/{seed_run}/model_iteration={idx_iteration-1}_last_transition"
                     ]
-                    # print("Adjusted for last obs T_q = ", T_q[195:205])
+                    # print("Adjusted for last obs T_q = ", T_q[2768:2778])
                     T_q = rb["reward"] + p["gamma"] * np.max(T_q, axis=1) * (
                         1 - rb["done"]
                     )
 
-                    print("Final T_q = ", T_q[195:205])
+                    print("Final T_q = ", T_q[2768:2778])
                     print(
                         "q = ",
                         q_estimate[f"{exp}/{seed_run}/model_iteration={idx_iteration}"][
                             np.arange(rb_size), rb["action"]
-                        ][195:205],
+                        ][2768:2778],
                     )
 
                     td_error[exp][idx_seed, idx_iteration - 1] = np.linalg.norm(
@@ -362,20 +360,20 @@ def td_error_plot(argvs=sys.argv[1:]):
 
     q_estimate = dict()
 
-    for model_key, model_wts in models.items():
+    for model_key, model in models.items():
         evaluate(
             model_key,
-            model_wts,
+            model["network"],
             q_estimate,
-            agent,
+            DQNNet(env, model["hidden_layers"]),
             torch.Tensor(states_grid),
         )
         for action in range(env.n_actions):
             evaluate(
                 model_key + f"_next_states_action={action}",
-                model_wts,
+                model["network"],
                 q_estimate,
-                agent,
+                DQNNet(env, model["hidden_layers"]),
                 torch.Tensor(next_states_grid[:, action, :]),
             )
 
@@ -524,16 +522,14 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
         [scaling[i, j] for i in range(p["n_states_x"]) for j in range(p["n_states_v"])]
     )
 
-    agent = DQNNet(env)
-
     q_estimate = dict()
 
-    for model_key, model_wts in models.items():
+    for model_key, model in models.items():
         evaluate(
             model_key,
-            model_wts,
+            model["network"],
             q_estimate,
-            agent,
+            DQNNet(env, model["hidden_layers"]),
             torch.Tensor(states_grid),
         )
 
@@ -615,7 +611,7 @@ def run_traj(agent, state, action, env, horizon, gamma):
     discount = gamma
 
     while not absorbing and step < horizon:
-        action = np.argmax(agent(torch.Tensor(state)).detach().numpy())
+        action = np.argmax(agent(torch.Tensor(env.state)).detach().numpy())
         _, reward, absorbing = env.step(action)
         performance += discount * reward
         discount *= gamma
@@ -625,11 +621,17 @@ def run_traj(agent, state, action, env, horizon, gamma):
 
 
 def compute_iterated_value(
-    model_key, model_wts, states_x, states_v, iterated_q_shared, horizon, gamma
+    model_key,
+    model,
+    states_x,
+    states_v,
+    iterated_q_shared,
+    horizon,
+    gamma,
 ):
     env = CarOnHill()
-    agent = DQNNet(env)
-    agent.load_state_dict(model_wts)
+    agent = DQNNet(env, model["hidden_layers"])
+    agent.load_state_dict(model["network"])
     agent.eval()
     for idx_state_x, state_x in enumerate(states_x):
         for idx_state_v, state_v in enumerate(states_v):
@@ -734,7 +736,6 @@ def plot_iterated_values(argvs=sys.argv[1:]):
     )
 
     env = CarOnHill()
-    agent = DQNNet(env)
     boxes_x_size = (2 * env.max_pos) / (p["n_states_x"] - 1)
     states_x_boxes = (
         np.linspace(-env.max_pos, env.max_pos + boxes_x_size, p["n_states_x"] + 1)
@@ -767,12 +768,12 @@ def plot_iterated_values(argvs=sys.argv[1:]):
 
     q_estimate = dict()
 
-    for model_key, model_wts in models.items():
+    for model_key, model in models.items():
         evaluate(
             model_key,
-            model_wts,
+            model["network"],
             q_estimate,
-            agent,
+            DQNNet(env, model["hidden_layers"]),
             torch.Tensor(states_grid),
         )
 
@@ -781,13 +782,13 @@ def plot_iterated_values(argvs=sys.argv[1:]):
     iterated_q_shared = manager.dict()
 
     processes = []
-    for model_key, model_wts in models.items():
+    for model_key, model in models.items():
         processes.append(
             multiprocessing.Process(
                 target=compute_iterated_value,
                 args=(
                     model_key,
-                    model_wts,
+                    model,
                     states_x,
                     states_v,
                     iterated_q_shared,
@@ -906,7 +907,7 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         ylabel="$|| Q^{*} - Q^{\pi_i}||_2$",
         x_val=range(1, num_bellman_iterations + 1, 1),
         y_val=opt_gap_q,
-        title="Difference from optimal Q on grid",
+        title="Difference of Q_pi from optimal Q on grid",
         ticksize=10,
     )
     plot_value(
@@ -914,7 +915,7 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         ylabel="$|| V^{*} - V^{\pi_i}||_2$",
         x_val=range(1, num_bellman_iterations + 1, 1),
         y_val=opt_gap_v,
-        title="Difference from optimal V on grid",
+        title="Difference of V_pi from optimal V on grid",
         ticksize=10,
     )
     plot_value(
@@ -930,6 +931,6 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         ylabel="$|| V^{i} - V^{\pi_i}||_2$",
         x_val=range(1, num_bellman_iterations + 1, 1),
         y_val=iter_gap_v,
-        title="Difference of estimated V from optimal V on grid",
+        title="Difference of estimated V from iterated V on grid",
         ticksize=10,
     )
