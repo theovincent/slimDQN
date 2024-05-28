@@ -25,33 +25,27 @@ def train(
 
     save_replay_buffer_store(rb, p["save_path"])
 
-    linear_lr_schedule = lambda step: 1 - step / p["n_fitting_steps"] * (
+    n_grad_steps = p["n_fitting_steps"] * int(
+        np.ceil(p["replay_capacity"] / p["batch_size"])
+    )
+    linear_lr_schedule = lambda step: 1 - step / n_grad_steps * (
         1 - p["end_lr"] / p["start_lr"]
     )
 
     for idx_bellman_iteration in tqdm(range(p["n_bellman_iterations"])):
-        best_loss = float("inf")
-        patience = 0
         scheduler = LambdaLR(agent.optimizer, lr_lambda=linear_lr_schedule)
-        grad_step = 0
-        for grad_step in range(p["n_fitting_steps"]):
-            cumulative_loss = 0
-            for _ in range(int(np.ceil(p["replay_capacity"] / p["batch_size"]))):
-                loss = agent.update_online_params(0, rb)
-                cumulative_loss += loss
-            if cumulative_loss < best_loss:
-                patience = 0
-                best_loss = cumulative_loss
-            else:
-                patience += 1
-
-            if patience > p["patience"]:
-                break
+        for _ in range(n_grad_steps):
+            agent.update_online_params(0, rb)
             scheduler.step()
-        print(f"Ran Bellman iteration {idx_bellman_iteration} for {grad_step} steps")
         agent.update_target_params(0)
 
         model_path = os.path.join(
             p["save_path"], f"model_iteration={idx_bellman_iteration}"
         )
-        torch.save(agent.q_network.state_dict(), model_path)
+        torch.save(
+            {
+                "hidden_layers": agent.q_network.hidden_layers,
+                "network": agent.q_network.state_dict(),
+            },
+            model_path,
+        )
