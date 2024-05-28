@@ -4,7 +4,9 @@ from slimRL.environments.car_on_hill import CarOnHill
 from experiments.base.plot_iqm import get_iqm_and_conf_parallel
 
 
-def plot_on_grid(values, n_states_x, n_states_v, zeros_to_nan=False, tick_size=2):
+def plot_on_grid(
+    values, n_states_x, n_states_v, zeros_to_nan=False, tick_size=2, cmap="viridis"
+):
 
     plt.rc("font", size=10, family="serif", serif="Times New Roman")
     plt.rc("lines", linewidth=1)
@@ -19,7 +21,7 @@ def plot_on_grid(values, n_states_x, n_states_v, zeros_to_nan=False, tick_size=2
     if zeros_to_nan:
         values = np.where(values == 0, np.nan, values)
 
-    colors = ax.pcolormesh(x, v, values, shading="nearest")
+    colors = ax.pcolormesh(x, v, values, shading="nearest", cmap=cmap)
 
     ax.set_xticks(states_x[::tick_size])
     ax.set_xticklabels(np.around(states_x[::tick_size], 1), rotation="vertical")

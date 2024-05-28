@@ -934,3 +934,52 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         title="Difference of estimated V from iterated V on grid",
         ticksize=10,
     )
+
+
+def plot_policy(argvs=sys.argv[1:]):
+    parser = argparse.ArgumentParser("Plot policy on grid for a given model.")
+    parser.add_argument(
+        "-m",
+        "--model",
+        help="Model path.",
+        type=str,
+        required=True,
+    )
+    parser.add_argument(
+        "-nx",
+        "--n_states_x",
+        help="Discretization for position (x).",
+        type=int,
+        default=17,
+    )
+    parser.add_argument(
+        "-nv",
+        "--n_states_v",
+        help="Discretization for velocity (v).",
+        type=int,
+        default=17,
+    )
+    args = parser.parse_args(argvs)
+    p = vars(args)
+
+    env = CarOnHill()
+    model = torch.load(p["model"])
+    env = CarOnHill()
+    states_x = np.linspace(-env.max_pos, env.max_pos, p["n_states_x"])
+    states_v = np.linspace(-env.max_velocity, env.max_velocity, p["n_states_v"])
+    states_grid = np.array([[x, v] for x in states_x for v in states_v])
+
+    q_estimate = dict()
+
+    evaluate(
+        "eval",
+        model["network"],
+        q_estimate,
+        DQNNet(env, model["hidden_layers"]),
+        torch.Tensor(states_grid),
+    )
+
+    policy = (q_estimate["eval"][:, 1] > q_estimate["eval"][:, 0]).astype(float)
+    policy = 2 * (policy - np.min(policy)) / (np.max(policy) - np.min(policy)) - 1
+    policy = policy.reshape(p["n_states_x"], p["n_states_v"])
+    plot_on_grid(policy, policy.shape[0], policy.shape[1], cmap="PRGn")
