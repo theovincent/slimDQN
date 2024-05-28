@@ -8,10 +8,11 @@ class DQNNet(nn.Module):
     def __init__(self, env, hidden_layers: list):
         super().__init__()
         self.env = env
+        self.hidden_layers = hidden_layers
         layers = []
         input_size = np.array(self.env.observation_shape).prod()
 
-        for hidden_size in hidden_layers:
+        for hidden_size in self.hidden_layers:
             layers.append(nn.Linear(input_size, hidden_size))
             layers.append(nn.ReLU())
             input_size = hidden_size
@@ -19,7 +20,7 @@ class DQNNet(nn.Module):
         layers.append(nn.Linear(input_size, env.n_actions))
 
         self.network = nn.Sequential(*layers)
-        print(self.network)
+        # print(self.network)
 
     def forward(self, x):
         return self.network(x)
