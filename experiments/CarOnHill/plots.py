@@ -558,12 +558,22 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
     for exp, result_path in results_folder.items():
         opt_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations))
         opt_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations))
+        opt_gap_grid = np.zeros(
+            (num_seeds, num_bellman_iterations, p["n_states_x"] * p["n_states_v"], 2)
+        )
         idx_seed = 0
         for seed_run in os.listdir(result_path):
             if not os.path.isfile(os.path.join(result_path, seed_run)):
                 for idx_iteration in range(num_bellman_iterations):
                     q = q_estimate[f"{exp}/{seed_run}/model_iteration={idx_iteration}"]
                     v = np.max(q, axis=-1)
+                    opt_gap_grid[idx_seed, idx_iteration] = np.sqrt(
+                        np.multiply(
+                            np.square(opt_q - q),
+                            np.where(scaling[:, np.newaxis] > 0, 1, np.nan),
+                        )
+                    )
+                    # opt_gap_grid[idx_seed, idx_iteration] = np.square(opt_q - q)
                     opt_gap_q[exp][idx_seed, idx_iteration] = np.sqrt(
                         np.sum(
                             np.multiply(
@@ -582,6 +592,18 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
                         )
                     )
                 idx_seed += 1
+
+        opt_gap_grid = np.mean(opt_gap_grid, axis=(0, -1))
+        opt_gap_grid = opt_gap_grid.reshape(
+            num_bellman_iterations, p["n_states_x"], p["n_states_v"]
+        )
+        for idx_iter in range(num_bellman_iterations):
+            plt = plot_on_grid(
+                opt_gap_grid[idx_iter],
+                opt_gap_grid[idx_iter].shape[0],
+                opt_gap_grid[idx_iter].shape[1],
+            )
+            plt.savefig(f"/Users/yogeshtripathi/optdiff={idx_iter}.png")
 
         print(opt_gap_q[exp], opt_gap_v[exp])
 
@@ -798,8 +820,11 @@ def plot_iterated_values(argvs=sys.argv[1:]):
             )
         )
 
-    for i in range(int(np.ceil(len(processes) / 8.0))):
-        proc_list = processes[i * 8 : min((i + 1) * 8, len(processes))]
+    num_processes = 32
+    for i in range(int(np.ceil(len(processes) / float(num_processes)))):
+        proc_list = processes[
+            i * num_processes : min((i + 1) * num_processes, len(processes))
+        ]
         for process in proc_list:
             process.start()
 
@@ -838,13 +863,9 @@ def plot_iterated_values(argvs=sys.argv[1:]):
 
     opt_gap_q = {}
     opt_gap_v = {}
-    iter_gap_q = {}
-    iter_gap_v = {}
     for exp, result_path in results_folder.items():
         opt_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations))
         opt_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations))
-        iter_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations))
-        iter_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations))
         idx_seed = 0
         for seed_run in os.listdir(result_path):
             if not os.path.isfile(os.path.join(result_path, seed_run)):
@@ -852,7 +873,6 @@ def plot_iterated_values(argvs=sys.argv[1:]):
                     q_i = q_estimate[
                         f"{exp}/{seed_run}/model_iteration={idx_iteration}"
                     ]
-                    v_i = np.max(q_i, axis=-1)
                     q_pi_i = iterated_q[
                         f"{exp}/{seed_run}/model_iteration={idx_iteration}"
                     ]
@@ -881,26 +901,9 @@ def plot_iterated_values(argvs=sys.argv[1:]):
                             )
                         )
                     )
-                    iter_gap_q[exp][idx_seed, idx_iteration] = np.sqrt(
-                        np.sum(
-                            np.multiply(
-                                np.square(q_i - q_pi_i),
-                                scaling[:, np.newaxis],
-                            )
-                        )
-                    )
+                idx_seed += 1
 
-                    iter_gap_v[exp][idx_seed, idx_iteration] = np.sqrt(
-                        np.sum(
-                            np.multiply(
-                                np.square(v_i - v_pi_i),
-                                scaling,
-                            )
-                        )
-                    )
-                idx_seed = 0
-
-        print(opt_gap_q[exp], opt_gap_v[exp], iter_gap_q[exp], iter_gap_v[exp])
+        print(opt_gap_q[exp], opt_gap_v[exp])
 
     plot_value(
         xlabel="Bellman iteration",
@@ -918,33 +921,24 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         title="Difference of V_pi from optimal V on grid",
         ticksize=10,
     )
-    plot_value(
-        xlabel="Bellman iteration",
-        ylabel="$|| Q^{i} - Q^{\pi_i}||_2$",
-        x_val=range(1, num_bellman_iterations + 1, 1),
-        y_val=iter_gap_q,
-        title="Difference of estimated Q from iterated Q on grid",
-        ticksize=10,
-    )
-    plot_value(
-        xlabel="Bellman iteration",
-        ylabel="$|| V^{i} - V^{\pi_i}||_2$",
-        x_val=range(1, num_bellman_iterations + 1, 1),
-        y_val=iter_gap_v,
-        title="Difference of estimated V from iterated V on grid",
-        ticksize=10,
-    )
 
 
 def plot_policy(argvs=sys.argv[1:]):
     parser = argparse.ArgumentParser("Plot policy on grid for a given model.")
     parser.add_argument(
-        "-m",
-        "--model",
-        help="Model path.",
+        "-e",
+        "--experiment_folder",
+        help="Give the path to experiment folders from logs/ to plot policy",
         type=str,
         required=True,
     )
+    # parser.add_argument(
+    #     "-bi",
+    #     "--bellman_iteration",
+    #     help="The Bellman iteration to plot policy",
+    #     type=int,
+    #     required=True,
+    # )
     parser.add_argument(
         "-nx",
         "--n_states_x",
@@ -962,24 +956,51 @@ def plot_policy(argvs=sys.argv[1:]):
     args = parser.parse_args(argvs)
     p = vars(args)
 
-    env = CarOnHill()
-    model = torch.load(p["model"])
-    env = CarOnHill()
-    states_x = np.linspace(-env.max_pos, env.max_pos, p["n_states_x"])
-    states_v = np.linspace(-env.max_velocity, env.max_velocity, p["n_states_v"])
-    states_grid = np.array([[x, v] for x in states_x for v in states_v])
+    for i in range(30):
+        p["bellman_iteration"] = i
+        base_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "../CarOnHill/logs",
+        )
 
-    q_estimate = dict()
+        exp_folder = os.path.join(base_path, p["experiment_folder"])
+        assert os.path.exists(exp_folder), f"{exp_folder} not found"
 
-    evaluate(
-        "eval",
-        model["network"],
-        q_estimate,
-        DQNNet(env, model["hidden_layers"]),
-        torch.Tensor(states_grid),
-    )
+        models = {}
+        num_seeds = 0
+        for seed_run in os.listdir(exp_folder):
+            if not os.path.isfile(os.path.join(exp_folder, seed_run)):
+                num_seeds += 1
+                models[seed_run] = torch.load(
+                    os.path.join(
+                        exp_folder,
+                        seed_run,
+                        f"model_iteration={p['bellman_iteration']}",
+                    )
+                )
 
-    policy = (q_estimate["eval"][:, 1] > q_estimate["eval"][:, 0]).astype(float)
-    policy = 2 * (policy - np.min(policy)) / (np.max(policy) - np.min(policy)) - 1
-    policy = policy.reshape(p["n_states_x"], p["n_states_v"])
-    plot_on_grid(policy, policy.shape[0], policy.shape[1], cmap="PRGn")
+        env = CarOnHill()
+        states_x = np.linspace(-env.max_pos, env.max_pos, p["n_states_x"])
+        states_v = np.linspace(-env.max_velocity, env.max_velocity, p["n_states_v"])
+        states_grid = np.array([[x, v] for x in states_x for v in states_v])
+
+        q_estimate = dict()
+
+        for key, model in models.items():
+            evaluate(
+                key,
+                model["network"],
+                q_estimate,
+                DQNNet(env, model["hidden_layers"]),
+                torch.Tensor(states_grid),
+            )
+
+        policy = np.zeros((num_seeds, states_grid.shape[0]))
+        for idx, (key, model) in enumerate(models.items()):
+            policy[idx] = (q_estimate[key][:, 1] > q_estimate[key][:, 0]).astype(float)
+
+        policy = np.mean(policy, axis=0)
+        policy = 2 * (policy - np.min(policy)) / (np.max(policy) - np.min(policy)) - 1
+        policy = policy.reshape(p["n_states_x"], p["n_states_v"])
+        plt = plot_on_grid(policy, policy.shape[0], policy.shape[1], cmap="PRGn")
+        plt.savefig(f"/Users/yogeshtripathi/policy={p['bellman_iteration']}.png")

@@ -37,7 +37,7 @@ def plot_on_grid(
     fig.tight_layout()
     fig.canvas.draw()
 
-    plt.show()
+    return plt
 
 
 def plot_value(xlabel, ylabel, x_val, y_val, **kwargs):
@@ -65,4 +65,5 @@ def plot_value(xlabel, ylabel, x_val, y_val, **kwargs):
 
     plt.legend()
     plt.tight_layout()
-    plt.show()
+
+    return plt
