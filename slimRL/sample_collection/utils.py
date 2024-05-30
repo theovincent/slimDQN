@@ -52,7 +52,7 @@ def save_replay_buffer_store(rb: ReplayBuffer, save_path):
     )
     json.dump(
         rb_store,
-        open(os.path.join(save_path, f"replay_buffer.json"), "w"),
+        open(os.path.join(save_path, "..", "replay_buffer.json"), "w"),
     )
 
 
@@ -75,3 +75,23 @@ def load_replay_buffer_store(rb_path):
         np.array(rb_store["last_transition_next_obs"][1]),
     )
     return rb_store
+
+
+def update_replay_buffer(env, agent, rb, p):
+    if os.path.exists(os.path.join(p["save_path"], "..", "replay_buffer.json")):
+        print("Replay buffer already exists. Loading...")
+        rb._store = load_replay_buffer_store(
+            os.path.join(p["save_path"], "..", "replay_buffer.json")
+        )
+        rb.episode_end_indices = set(np.where(rb._store["done"])[0].tolist())
+        rb.episode_trunc_next_states = rb._store["next_observations_trunc"].copy()
+        rb.add_count = len(rb._store["observation"])
+    else:
+        env.reset()
+        for steps in range(p["replay_capacity"]):
+            collect_single_sample(env, agent, rb, p, 0)
+        assert sum(rb._store["reward"] == 1) > 0, "No positive reward sampled. Rerun!"
+        print(
+            f"Replay buffer filled with {sum(rb._store['reward'] == 1)} success samples."
+        )
+        save_replay_buffer_store(rb, p["save_path"])

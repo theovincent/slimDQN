@@ -2,14 +2,13 @@ import os
 import sys
 import argparse
 import torch
-import random
 from experiments.base.parser import fqi_parser
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.networks.architectures.DQN import BasicDQN
 from experiments.base.FQI import train
 from experiments.base.logger import prepare_logs
-from slimRL.sample_collection.utils import collect_single_sample
+from slimRL.sample_collection.utils import update_replay_buffer
 
 
 def run(argvs=sys.argv[1:]):
@@ -34,7 +33,6 @@ def run(argvs=sys.argv[1:]):
     rb = ReplayBuffer(
         observation_shape=env.observation_shape,
         replay_capacity=p["replay_capacity"],
-        batch_size=p["batch_size"],
         update_horizon=p["update_horizon"],
         gamma=p["gamma"],
     )
@@ -51,12 +49,6 @@ def run(argvs=sys.argv[1:]):
         target_update_frequency=-1,
     )
 
-    env.reset()
-    for steps in range(p["replay_capacity"]):
-        collect_single_sample(env, agent, rb, p, 0)
-
-    assert sum(rb._store["reward"] == 1) > 0, "No positive reward sampled. Rerun!"
-
-    print(f"Replay buffer filled with {sum(rb._store['reward'] == 1)} success samples.")
+    update_replay_buffer(env, agent, rb, p)
 
     train(p, agent, rb)

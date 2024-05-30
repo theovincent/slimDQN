@@ -7,8 +7,6 @@ import torch
 from torch.optim.lr_scheduler import LambdaLR
 from slimRL.networks.architectures.DQN import BasicDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
-from slimRL.sample_collection.utils import save_replay_buffer_store
-from slimRL.sample_collection.schedules import linear_schedule
 
 
 def train(
@@ -23,8 +21,6 @@ def train(
     np.random.seed(p["seed"])
     torch.manual_seed(p["seed"])
 
-    save_replay_buffer_store(rb, p["save_path"])
-
     n_grad_steps = p["n_fitting_steps"] * int(
         np.ceil(p["replay_capacity"] / p["batch_size"])
     )
@@ -35,7 +31,7 @@ def train(
     for idx_bellman_iteration in tqdm(range(p["n_bellman_iterations"])):
         scheduler = LambdaLR(agent.optimizer, lr_lambda=linear_lr_schedule)
         for _ in range(n_grad_steps):
-            agent.update_online_params(0, rb)
+            agent.update_online_params(0, p["batch_size"], rb)
             scheduler.step()
         agent.update_target_params(0)
 

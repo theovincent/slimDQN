@@ -71,9 +71,11 @@ class DQN:
         q_val = network(states)
         return q_val
 
-    def update_online_params(self, step: int, replay_buffer: ReplayBuffer):
+    def update_online_params(
+        self, step: int, batch_size: int, replay_buffer: ReplayBuffer
+    ):
         if step % self.train_frequency == 0:
-            batch_samples = replay_buffer.sample_transition_batch()
+            batch_samples = replay_buffer.sample_transition_batch(batch_size)
 
             loss = self.learn_on_batch(batch_samples)
             return loss

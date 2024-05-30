@@ -32,10 +32,10 @@ def run(argvs=sys.argv[1:]):
     rb = ReplayBuffer(
         observation_shape=env.observation_shape,
         replay_capacity=p["replay_capacity"],
-        batch_size=p["batch_size"],
         update_horizon=p["update_horizon"],
         gamma=p["gamma"],
     )
+
     agent = BasicDQN(
         env,
         hidden_layers=p["hidden_layers"],

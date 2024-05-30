@@ -28,7 +28,6 @@ class ReplayBuffer(object):
         self,
         observation_shape,
         replay_capacity,
-        batch_size,
         update_horizon=1,
         gamma=0.99,
         max_sample_attempts=1000,
@@ -41,7 +40,6 @@ class ReplayBuffer(object):
         self._reward_dtype = reward_dtype
         self._observation_shape = observation_shape
         self._replay_capacity = replay_capacity
-        self._batch_size = batch_size
         self._update_horizon = update_horizon
         self._gamma = gamma
         self._observation_dtype = observation_dtype
@@ -55,7 +53,6 @@ class ReplayBuffer(object):
         self._next_experience_is_episode_start = True
         self.episode_end_indices = set()
         self.episode_trunc_next_states = dict()
-        self.valid_transition_indices = set()
 
     def _create_storage(self):
         self._store = {}
@@ -198,9 +195,7 @@ class ReplayBuffer(object):
 
         return indices
 
-    def sample_transition_batch(self, batch_size=None, indices=None):
-        if batch_size is None:
-            batch_size = self._batch_size
+    def sample_transition_batch(self, batch_size, indices=None):
         if indices is None:
             indices = self.sample_index_batch(batch_size)
         assert len(indices) == batch_size
