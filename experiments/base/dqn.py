@@ -3,6 +3,7 @@ import random
 from tqdm import tqdm
 import numpy as np
 import torch
+from torch.optim.lr_scheduler import LambdaLR
 from slimRL.networks.architectures.DQN import BasicDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.sample_collection.utils import collect_single_sample
@@ -26,6 +27,10 @@ def train(
     env.reset()
     log_rewards = []
     log_lengths = []
+    linear_lr_schedule = lambda step: 1 - step / p["n_epochs"] * (
+        1 - p["end_lr"] / p["start_lr"]
+    )
+    scheduler = LambdaLR(agent.optimizer, lr_lambda=linear_lr_schedule)
 
     for idx_epoch in tqdm(range(p["n_epochs"])):
         epoch_rewards = []
@@ -50,7 +55,7 @@ def train(
                 episode_length = 0
 
             if n_training_steps > p["n_initial_samples"]:
-                agent.update_online_params(n_training_steps, rb)
+                agent.update_online_params(n_training_steps, p["batch_size"], rb)
                 agent.update_target_params(n_training_steps)
 
             idx_training_step += 1
@@ -62,5 +67,6 @@ def train(
         print(
             f"Epoch: {idx_epoch}, Avg. return = {sum(epoch_rewards)/len(epoch_rewards)}, Num episodes = {len(epoch_rewards)}"
         )
+        scheduler.step()
 
     save_logs(p, log_rewards, log_lengths, agent)
