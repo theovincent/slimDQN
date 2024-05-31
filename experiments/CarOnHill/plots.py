@@ -73,8 +73,8 @@ def samples_plot(argvs=sys.argv[1:]):
         rb["reward"],
     )
 
-    plot_on_grid(samples_stats, p["n_states_x"], p["n_states_v"], True)
-    plot_on_grid(rewards_stats, p["n_states_x"], p["n_states_v"], True)
+    plot_on_grid(samples_stats, p["n_states_x"], p["n_states_v"], True).show()
+    plot_on_grid(rewards_stats, p["n_states_x"], p["n_states_v"], True).show()
 
 
 def evaluate(
@@ -212,51 +212,6 @@ def td_error_plot(argvs=sys.argv[1:]):
             torch.Tensor(rb["last_transition_next_obs"][1]),
         )
 
-    print("s = ", rb["observation"][2768:2778])
-    print("a = ", rb["action"][2768:2778])
-    print("r = ", rb["reward"][2768:2778])
-    print("d = ", rb["done"][2768:2778])
-
-    # test_est = {}
-    # m1 = 1
-    # m2 = 35
-    # m3 = 49
-    # test_model1 = torch.load(
-    #     "/Users/yogeshtripathi/RL/slimRL/experiments/CarOnHill/logs/fqi/FQI/seed=30/model_iteration="
-    #     + str(m1)
-    # )
-    # test_model2 = torch.load(
-    #     "/Users/yogeshtripathi/RL/slimRL/experiments/CarOnHill/logs/fqi/FQI/seed=30/model_iteration="
-    #     + str(m2)
-    # )
-    # test_model3 = torch.load(
-    #     "/Users/yogeshtripathi/RL/slimRL/experiments/CarOnHill/logs/fqi/FQI/seed=30/model_iteration="
-    #     + str(m3)
-    # )
-
-    # evaluate(
-    #     str(m1),
-    #     test_model1,
-    #     test_est,
-    #     agent,
-    #     torch.Tensor([-0.5, 0]),
-    # )
-    # evaluate(
-    #     str(m2),
-    #     test_model2,
-    #     test_est,
-    #     agent,
-    #     torch.Tensor([-0.5, 0]),
-    # )
-    # evaluate(
-    #     str(m3),
-    #     test_model3,
-    #     test_est,
-    #     agent,
-    #     torch.Tensor([-0.5, 0]),
-    # )
-    # print("Test estimates = ", test_est)
-
     td_error = {}
     for exp, result_path in results_folder.items():
         td_error[exp] = np.zeros((num_seeds, num_bellman_iterations - 1))
@@ -269,30 +224,18 @@ def td_error_plot(argvs=sys.argv[1:]):
                     T_q = q_estimate[
                         f"{exp}/{seed_run}/model_iteration={idx_iteration-1}"
                     ].copy()
-                    print("Just got the T_q = ", T_q[2768:2778])
                     T_q = np.roll(T_q, -1, axis=0)
-                    # print("Rolled T_q = ", T_q[2768:2778])
                     for idx, (pos, _) in enumerate(
                         sorted(rb["next_observations_trunc"].items())
                     ):
                         T_q[pos] = q_estimate[
                             f"{exp}/{seed_run}/model_iteration={idx_iteration-1}_trunc_next_states"
                         ][idx]
-                    # print("Adjusted for trunc T_q = ", T_q[2768:2778])
                     T_q[rb["last_transition_next_obs"][0]] = q_estimate[
                         f"{exp}/{seed_run}/model_iteration={idx_iteration-1}_last_transition"
                     ]
-                    # print("Adjusted for last obs T_q = ", T_q[2768:2778])
                     T_q = rb["reward"] + p["gamma"] * np.max(T_q, axis=1) * (
                         1 - rb["done"]
-                    )
-
-                    print("Final T_q = ", T_q[2768:2778])
-                    print(
-                        "q = ",
-                        q_estimate[f"{exp}/{seed_run}/model_iteration={idx_iteration}"][
-                            np.arange(rb_size), rb["action"]
-                        ][2768:2778],
                     )
 
                     td_error[exp][idx_seed, idx_iteration - 1] = np.linalg.norm(
@@ -313,7 +256,7 @@ def td_error_plot(argvs=sys.argv[1:]):
         y_val=td_error,
         title="TD error on replay buffer data",
         ticksize=10,
-    )
+    ).show()
 
     boxes_x_size = (2 * env.max_pos) / (p["n_states_x"] - 1)
     states_x_boxes = (
@@ -411,7 +354,7 @@ def td_error_plot(argvs=sys.argv[1:]):
         y_val=td_error,
         title="TD error on grid",
         ticksize=10,
-    )
+    ).show()
 
 
 def diff_from_opt_plot(argvs=sys.argv[1:]):
@@ -558,22 +501,12 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
     for exp, result_path in results_folder.items():
         opt_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations))
         opt_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations))
-        opt_gap_grid = np.zeros(
-            (num_seeds, num_bellman_iterations, p["n_states_x"] * p["n_states_v"], 2)
-        )
         idx_seed = 0
         for seed_run in os.listdir(result_path):
             if not os.path.isfile(os.path.join(result_path, seed_run)):
                 for idx_iteration in range(num_bellman_iterations):
                     q = q_estimate[f"{exp}/{seed_run}/model_iteration={idx_iteration}"]
                     v = np.max(q, axis=-1)
-                    opt_gap_grid[idx_seed, idx_iteration] = np.sqrt(
-                        np.multiply(
-                            np.square(opt_q - q),
-                            np.where(scaling[:, np.newaxis] > 0, 1, np.nan),
-                        )
-                    )
-                    # opt_gap_grid[idx_seed, idx_iteration] = np.square(opt_q - q)
                     opt_gap_q[exp][idx_seed, idx_iteration] = np.sqrt(
                         np.sum(
                             np.multiply(
@@ -593,18 +526,6 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
                     )
                 idx_seed += 1
 
-        opt_gap_grid = np.mean(opt_gap_grid, axis=(0, -1))
-        opt_gap_grid = opt_gap_grid.reshape(
-            num_bellman_iterations, p["n_states_x"], p["n_states_v"]
-        )
-        for idx_iter in range(num_bellman_iterations):
-            plt = plot_on_grid(
-                opt_gap_grid[idx_iter],
-                opt_gap_grid[idx_iter].shape[0],
-                opt_gap_grid[idx_iter].shape[1],
-            )
-            plt.savefig(f"/Users/yogeshtripathi/optdiff={idx_iter}.png")
-
         print(opt_gap_q[exp], opt_gap_v[exp])
 
     plot_value(
@@ -614,7 +535,7 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
         y_val=opt_gap_q,
         title="Difference from optimal Q on grid",
         ticksize=10,
-    )
+    ).show()
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$|| V^{*} - V_{i}||_2$",
@@ -622,7 +543,7 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
         y_val=opt_gap_v,
         title="Difference from optimal V on grid",
         ticksize=10,
-    )
+    ).show()
 
 
 def run_traj(agent, state, action, env, horizon, gamma):
@@ -904,6 +825,8 @@ def plot_iterated_values(argvs=sys.argv[1:]):
                 idx_seed += 1
 
         print(opt_gap_q[exp], opt_gap_v[exp])
+        np.save(f"{results_folder[exp]}/Iter_Q_opt_diff.npy", opt_gap_q[exp])
+        np.save(f"{results_folder[exp]}/Iter_V_opt_diff.npy", opt_gap_v[exp])
 
     plot_value(
         xlabel="Bellman iteration",
@@ -912,7 +835,7 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         y_val=opt_gap_q,
         title="Difference of Q_pi from optimal Q on grid",
         ticksize=10,
-    )
+    ).show()
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$|| V^{*} - V^{\pi_i}||_2$",
@@ -920,7 +843,7 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         y_val=opt_gap_v,
         title="Difference of V_pi from optimal V on grid",
         ticksize=10,
-    )
+    ).show()
 
 
 def plot_policy(argvs=sys.argv[1:]):
@@ -932,13 +855,6 @@ def plot_policy(argvs=sys.argv[1:]):
         type=str,
         required=True,
     )
-    # parser.add_argument(
-    #     "-bi",
-    #     "--bellman_iteration",
-    #     help="The Bellman iteration to plot policy",
-    #     type=int,
-    #     required=True,
-    # )
     parser.add_argument(
         "-nx",
         "--n_states_x",

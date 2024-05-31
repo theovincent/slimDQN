@@ -104,14 +104,14 @@ def plot_optimal_q(argvs=sys.argv[1:]):
         optimal_v,
         optimal_v.shape[0],
         optimal_v.shape[1],
-    )
+    ).show()
     plot_on_grid(
         optimal_q[:, :, 0],
         optimal_v.shape[0],
         optimal_v.shape[1],
-    )
+    ).show()
     plot_on_grid(
         optimal_q[:, :, 1],
         optimal_v.shape[0],
         optimal_v.shape[1],
-    )
+    ).show()
