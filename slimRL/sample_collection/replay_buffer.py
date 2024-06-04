@@ -2,7 +2,8 @@ import collections
 import math
 
 import numpy as np
-import torch
+import jax
+import jax.numpy as jnp
 
 ReplayElement = collections.namedtuple("shape_type", ["name", "shape", "type"])
 
@@ -167,7 +168,7 @@ class ReplayBuffer(object):
 
         return True
 
-    def sample_index_batch(self, batch_size):
+    def sample_index_batch(self, batch_size, batching_key: jax.random.PRNGKey):
         if self.is_full():
             # add_count >= self._replay_capacity
             min_id = self.cursor() - self._replay_capacity
@@ -180,7 +181,11 @@ class ReplayBuffer(object):
         indices = []
         attempt_count = 0
         while len(indices) < batch_size and attempt_count < self._max_sample_attempts:
-            index = np.random.randint(min_id, max_id) % self._replay_capacity
+            batching_key, key = jax.random.split(batching_key)
+            index = (
+                jax.random.randint(key, shape=(), minval=min_id, maxval=max_id).item()
+                % self._replay_capacity
+            )
             if self.is_valid_transition(index):
                 indices.append(index)
             else:
@@ -195,9 +200,11 @@ class ReplayBuffer(object):
 
         return indices
 
-    def sample_transition_batch(self, batch_size, indices=None):
+    def sample_transition_batch(
+        self, batch_size, batching_key: jax.random.PRNGKey, indices=None
+    ):
         if indices is None:
-            indices = self.sample_index_batch(batch_size)
+            indices = self.sample_index_batch(batch_size, batching_key)
         assert len(indices) == batch_size
 
         sampled_batch = {
@@ -248,17 +255,15 @@ class ReplayBuffer(object):
                 elif element_type == "dones":
                     element[batch_element] = is_terminal_transition
 
-        sampled_batch["observations"] = torch.tensor(
-            sampled_batch["observations"], dtype=torch.float32
+        sampled_batch["observations"] = jnp.array(
+            sampled_batch["observations"], dtype=jnp.float32
         )
-        sampled_batch["next_observations"] = torch.tensor(
-            sampled_batch["next_observations"], dtype=torch.float32
+        sampled_batch["next_observations"] = jnp.array(
+            sampled_batch["next_observations"], dtype=jnp.float32
         )
-        sampled_batch["rewards"] = torch.tensor(
-            sampled_batch["rewards"], dtype=torch.float32
+        sampled_batch["rewards"] = jnp.array(
+            sampled_batch["rewards"], dtype=jnp.float32
         )
-        sampled_batch["actions"] = torch.tensor(
-            sampled_batch["actions"], dtype=torch.int64
-        )
+        sampled_batch["actions"] = jnp.array(sampled_batch["actions"], dtype=jnp.int32)
 
         return sampled_batch

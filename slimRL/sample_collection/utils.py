@@ -1,21 +1,27 @@
 import os
-import random
 import json
+import jax
+import jax.numpy as jnp
 import numpy as np
-from slimRL.sample_collection.schedules import linear_schedule
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 
 
-def collect_single_sample(env, agent, rb: ReplayBuffer, p, n_training_steps: int):
-    epsilon = linear_schedule(
-        p.get("end_epsilon", 1),  # default values are to handle FQI and keep epsilon=1
-        p.get("duration_epsilon", -1),
-        n_training_steps,
-    )
-    if random.random() < epsilon:
-        action = random.randint(0, env.n_actions - 1)
+def collect_single_sample(
+    exploration_key,
+    env,
+    agent,
+    rb: ReplayBuffer,
+    p,
+    epsilon_schedule,
+    n_training_steps: int,
+):
+
+    sample_key, epsilon_key = jax.random.split(exploration_key)
+
+    if jax.random.uniform(epsilon_key) < epsilon_schedule(n_training_steps):
+        action = jax.random.choice(sample_key, jnp.arange(env.n_actions)).item()
     else:
-        action = agent.best_action(env.state)
+        action = agent.best_action(agent.params, env.state).item()
 
     obs = env.state.copy()
     next_obs, reward, termination = env.step(action)

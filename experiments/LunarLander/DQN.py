@@ -1,7 +1,8 @@
 import os
 import sys
 import argparse
-import torch
+import jax
+import optax
 from experiments.base.parser import dqn_parser
 from slimRL.environments.lunar_lander import LunarLander
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
@@ -26,7 +27,7 @@ def run(argvs=sys.argv[1:]):
 
     prepare_logs(p)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    q_key, train_key = jax.random.split(jax.random.PRNGKey(p["seed"]))
 
     env = LunarLander()
     rb = ReplayBuffer(
@@ -36,14 +37,18 @@ def run(argvs=sys.argv[1:]):
         gamma=p["gamma"],
     )
     agent = BasicDQN(
+        q_key,
         env,
         hidden_layers=p["hidden_layers"],
-        device=device,
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],
-        lr=p["start_lr"],
+        lr_schedule=optax.linear_schedule(
+            p["start_lr"],
+            p["end_lr"],
+            (p["n_epochs"] * p["n_training_steps_per_epoch"]) / p["update_to_data"],
+        ),
         adam_eps=p["lr_epsilon"],
         train_frequency=p["update_to_data"],
         target_update_frequency=p["target_update_period"],
     )
-    train(p, agent, env, rb)
+    train(train_key, p, agent, env, rb)

@@ -1,98 +1,112 @@
-import torch
-import torch.nn as nn
-import torch.optim as optim
+import optax
+import jax
+from flax.core import FrozenDict
+from functools import partial
+import flax.linen as nn
+import jax.numpy as jnp
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 
 
 class DQN:
     def __init__(
         self,
+        q_key: jax.random.PRNGKey,
+        q_inputs: dict,
         gamma: float,
         update_horizon: int,
-        target_network: nn.Module,
         q_network: nn.Module,
-        optimizer: optim.Optimizer,
+        optimizer,
         loss_type: str,
         train_frequency: int,
         target_update_frequency: int,
     ):
+        self.q_key = q_key
         self.gamma = gamma
         self.update_horizon = update_horizon
-        self.target_network = target_network
         self.q_network = q_network
+        self.params = self.q_network.init(self.q_key, **q_inputs)
+        self.target_params = self.params
         self.optimizer = optimizer
+        self.optimizer_state = self.optimizer.init(self.params)
         self.loss_type = loss_type
         self.train_frequency = train_frequency
         self.target_update_frequency = target_update_frequency
 
-    def loss_on_batch(self, td_target, estimate):
-        return self.loss(self.loss_type)(estimate, td_target)
+    @partial(jax.jit, static_argnames="self")
+    def loss(
+        self,
+        params: FrozenDict,
+        params_target: FrozenDict,
+        sample: jnp.ndarray,
+    ):
+        target = self.compute_target(params_target, sample)
+        q_value = self.apply(params, sample["observations"])[sample["actions"]]
+        return self.metric(q_value - target, ord=self.loss_type)
+
+    @partial(jax.jit, static_argnames="self")
+    def loss_on_batch(self, params: FrozenDict, params_target: FrozenDict, samples):
+        return jax.vmap(self.loss, in_axes=(None, None, 0))(
+            params, params_target, samples
+        ).mean()
 
     @staticmethod
-    def loss(order) -> nn.modules.loss:
-        if order == "huber":
-            return nn.HuberLoss()
-        elif order == "1":
-            return nn.L1Loss()
-        elif order == "2":
-            return nn.MSELoss()
+    def metric(error: jnp.ndarray, ord: str):
+        if ord == "huber":
+            return optax.huber_loss(error, 0)
+        elif ord == "1":
+            return jnp.abs(error)
+        elif ord == "2":
+            return jnp.square(error)
 
-    def learn_on_batch(self, batch_samples):
-        target = self.compute_target(batch_samples)
-        curr_estimate = self.compute_curr_estimate(batch_samples)
-        loss = self.loss_on_batch(target, curr_estimate)
-
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-
-        return loss
-
-    def compute_target(self, data):
-        with torch.no_grad():
-            target_max, _ = self.compute_qval(
-                self.target_network, data["next_observations"]
-            ).max(dim=1)
-            td_target = data["rewards"].flatten() + (
-                self.gamma**self.update_horizon
-            ) * target_max * (1 - data["dones"].flatten())
-        return td_target
-
-    def compute_curr_estimate(self, data):
-        q_val = (
-            self.compute_qval(self.q_network, data["observations"])
-            .gather(1, data["actions"][:, None])
-            .squeeze()
+    @partial(jax.jit, static_argnames="self")
+    def learn_on_batch(
+        self,
+        params: FrozenDict,
+        params_target: FrozenDict,
+        optimizer_state,
+        batch_samples: jnp.ndarray,
+    ):
+        loss, grad_loss = jax.value_and_grad(self.loss_on_batch)(
+            params, params_target, batch_samples
         )
-        return q_val
+        updates, optimizer_state = self.optimizer.update(grad_loss, optimizer_state)
+        params = optax.apply_updates(params, updates)
 
-    @staticmethod
-    def compute_qval(network, states):
-        q_val = network(states)
-        return q_val
+        return params, optimizer_state, loss
+
+    @partial(jax.jit, static_argnames="self")
+    def apply(self, params: FrozenDict, state: jnp.ndarray):
+        return self.q_network.apply(params, state)
+
+    @partial(jax.jit, static_argnames="self")
+    def compute_target(self, params: FrozenDict, sample):
+        return sample["rewards"] + (1 - sample["dones"]) * self.gamma * jnp.max(
+            self.apply(params, sample["next_observations"])
+        )
 
     def update_online_params(
         self, step: int, batch_size: int, replay_buffer: ReplayBuffer
     ):
         if step % self.train_frequency == 0:
-            batch_samples = replay_buffer.sample_transition_batch(batch_size)
+            self.q_key, batching_key = jax.random.split(self.q_key)
+            batch_samples = replay_buffer.sample_transition_batch(
+                batch_size, batching_key
+            )
 
-            loss = self.learn_on_batch(batch_samples)
+            self.params, self.optimizer_state, loss = self.learn_on_batch(
+                self.params,
+                self.target_params,
+                self.optimizer_state,
+                batch_samples,
+            )
+
             return loss
-        return None
+        return jnp.nan
 
     def update_target_params(self, step: int):
         if step % self.target_update_frequency == 0:
-            for target_network_param, q_network_param in zip(
-                self.target_network.parameters(), self.q_network.parameters()
-            ):
-                target_network_param.data.copy_(q_network_param.data)
+            self.target_params = self.params.copy()
 
-    def best_action(self, state: torch.tensor):
-        with torch.no_grad():
-            action = (
-                torch.argmax(self.compute_qval(self.q_network, torch.Tensor(state)))
-                .cpu()
-                .numpy()
-            )
-        return action
+    @partial(jax.jit, static_argnames="self")
+    def best_action(self, params: FrozenDict, state: jnp.ndarray):
+        return jnp.argmax(self.apply(params, state)).astype(jnp.int8)

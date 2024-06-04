@@ -1,7 +1,6 @@
 import os
 import json
-import numpy as np
-import torch
+import pickle
 from slimRL.networks.architectures.DQN import BasicDQN
 
 SHARED_PARAMS = [
@@ -122,10 +121,7 @@ def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: BasicDQN):
 
     json.dump(log_rewards, open(rewards_path, "w"))
     json.dump(log_lengths, open(lengths_path, "w"))
-    torch.save(
-        {
-            "hidden_layers": agent.q_network.hidden_layers,
-            "network": agent.q_network.state_dict(),
-        },
-        model_path,
-    )
+    model = {}
+    model["params"] = agent.params
+    model["hidden_layers"] = agent.q_network.hidden_layers
+    pickle.dump(model, open(model_path, "wb"))

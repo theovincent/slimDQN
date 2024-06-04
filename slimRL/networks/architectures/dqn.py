@@ -1,58 +1,62 @@
-import numpy as np
-import torch.nn as nn
-import torch.optim as optim
+import optax
+import jax
+import jax.numpy as jnp
+import flax.linen as nn
 from slimRL.networks.DQN import DQN
 
 
 class DQNNet(nn.Module):
-    def __init__(self, env, hidden_layers: list):
-        super().__init__()
-        self.env = env
-        self.hidden_layers = hidden_layers
+    env: object
+    hidden_layers: list
+
+    def setup(self):
+        self.initializer = nn.initializers.variance_scaling(
+            scale=1.0, mode="fan_avg", distribution="truncated_normal"
+        )
         layers = []
-        input_size = np.array(self.env.observation_shape).prod()
 
         for hidden_size in self.hidden_layers:
-            layers.append(nn.Linear(input_size, hidden_size))
-            layers.append(nn.ReLU())
-            input_size = hidden_size
+            layers.append(nn.Dense(hidden_size, kernel_init=self.initializer))
+            layers.append(nn.relu)
 
-        layers.append(nn.Linear(input_size, env.n_actions))
+        layers.append(nn.Dense(self.env.n_actions, kernel_init=self.initializer))
 
-        self.network = nn.Sequential(*layers)
+        self.network = nn.Sequential(layers)
         # print(self.network)
 
-    def forward(self, x):
-        return self.network(x)
+    @nn.compact
+    def __call__(self, state):
+        return self.network(state)
 
 
 class BasicDQN(DQN):
     def __init__(
         self,
+        q_key: jax.random.PRNGKey,
         env,
-        device,
         hidden_layers: list,
         gamma: float,
         update_horizon: int,
-        lr: float,
+        lr_schedule: optax.Schedule,
         adam_eps: float,
         train_frequency: int,
         target_update_frequency: int,
         loss_type: str = "huber",
     ):
         self.env = env
-        self.device = device
-        self.lr = lr
-        self.adam_eps = adam_eps
-        q_network = DQNNet(env, hidden_layers).to(self.device)
-        optimizer = optim.Adam(q_network.parameters(), lr=self.lr, eps=self.adam_eps)
-        target_network = DQNNet(env, hidden_layers).to(self.device)
-        target_network.load_state_dict(q_network.state_dict())
-
+        self.learning_rate_schedule = lr_schedule
+        optimizer = optax.adam(self.learning_rate_schedule, eps=adam_eps)
+        q_network = DQNNet(env, hidden_layers)
+        q_inputs = {
+            "state": jnp.zeros(
+                jnp.array(self.env.observation_shape).prod(), dtype=jnp.float32
+            )
+        }
         super().__init__(
+            q_key,
+            q_inputs,
             gamma,
             update_horizon,
-            target_network,
             q_network,
             optimizer,
             loss_type,

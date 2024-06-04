@@ -1,6 +1,7 @@
 import sys
 import argparse
-import torch
+import pickle
+import jax.numpy as jnp
 from slimRL.environments.lunar_lander import LunarLander
 from slimRL.networks.architectures.DQN import DQNNet
 
@@ -37,15 +38,13 @@ def run(argvs=sys.argv[1:]):
     args = parser.parse_args(argvs)
 
     env = LunarLander(render_mode="human")
-    model = torch.load(args.model)
-    agent = DQNNet(env, model["hidden_layers"])
-    agent.load_state_dict(model["network"])
-    agent.eval()
+    model = pickle.load(open(args.model, "rb"))
+    q_network = DQNNet(env, model["hidden_layers"])
 
     obs = env.reset()
     for _ in range(args.steps):
         env.env.render()
-        action = torch.argmax(agent(torch.Tensor(obs))).numpy()
+        action = jnp.argmax(q_network.apply(model["params"], env.state)).item()
         next_obs, reward, termination = env.step(action)
 
         if termination or env.n_steps > args.horizon:

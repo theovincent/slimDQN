@@ -1,9 +1,7 @@
 import time
-import random
 from tqdm import tqdm
-import numpy as np
-import torch
-from torch.optim.lr_scheduler import LambdaLR
+import jax
+import optax
 from slimRL.networks.architectures.DQN import BasicDQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.sample_collection.utils import collect_single_sample
@@ -11,6 +9,7 @@ from experiments.base.logger import save_logs
 
 
 def train(
+    key: jax.random.PRNGKey,
     p: dict,
     agent: BasicDQN,
     env,
@@ -19,18 +18,14 @@ def train(
 
     print(f"{p['env']}__{p['algo']}__{p['seed']}__{int(time.time())}")
 
-    random.seed(p["seed"])
-    np.random.seed(p["seed"])
-    torch.manual_seed(p["seed"])
+    epsilon_schedule = optax.linear_schedule(
+        1.0, p.get("end_epsilon", 1), p.get("duration_epsilon", -1)
+    )
 
     n_training_steps = 0
     env.reset()
     log_rewards = []
     log_lengths = []
-    linear_lr_schedule = lambda step: 1 - step / p["n_epochs"] * (
-        1 - p["end_lr"] / p["start_lr"]
-    )
-    scheduler = LambdaLR(agent.optimizer, lr_lambda=linear_lr_schedule)
 
     for idx_epoch in tqdm(range(p["n_epochs"])):
         epoch_rewards = []
@@ -42,8 +37,9 @@ def train(
 
         while idx_training_step < p["n_training_steps_per_epoch"] or not has_reset:
 
+            key, exploration_key = jax.random.split(key)
             reward, has_reset = collect_single_sample(
-                env, agent, rb, p, n_training_steps
+                exploration_key, env, agent, rb, p, epsilon_schedule, n_training_steps
             )
 
             episode_reward += reward
@@ -67,6 +63,5 @@ def train(
         print(
             f"Epoch: {idx_epoch}, Avg. return = {sum(epoch_rewards)/len(epoch_rewards)}, Num episodes = {len(epoch_rewards)}"
         )
-        scheduler.step()
 
     save_logs(p, log_rewards, log_lengths, agent)
