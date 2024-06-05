@@ -19,7 +19,7 @@ def train(
     print(f"{p['env']}__{p['algo']}__{p['seed']}__{int(time.time())}")
 
     epsilon_schedule = optax.linear_schedule(
-        1.0, p.get("end_epsilon", 1), p.get("duration_epsilon", -1)
+        1.0, p["end_epsilon"], p["duration_epsilon"]
     )
 
     n_training_steps = 0
