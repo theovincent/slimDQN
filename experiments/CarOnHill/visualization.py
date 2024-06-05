@@ -1,6 +1,7 @@
 import sys
 import argparse
-import torch
+import pickle
+import jax.numpy as jnp
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.architectures.DQN import DQNNet
 from slimRL.environments.visualization.car_on_hill import render
@@ -38,17 +39,15 @@ def run(argvs=sys.argv[1:]):
     args = parser.parse_args(argvs)
 
     env = CarOnHill()
-    model_params = torch.load(args.model)
-    agent = DQNNet(env, model_params["hidden_layers"])
-    agent.load_state_dict(model_params["network"])
-    agent.eval()
+    model = pickle.load(open(args.model, "rb"))
+    q_network = DQNNet(env, model["hidden_layers"])
 
     obs = env.reset()
 
     total_reward = 0
     for _ in range(args.steps):
         render(env)
-        action = torch.argmax(agent(torch.Tensor(obs))).numpy()
+        action = jnp.argmax(q_network.apply(model["params"], env.state)).item()
         next_obs, reward, termination = env.step(action)
         total_reward += reward
 

@@ -1,7 +1,8 @@
 import os
 import sys
 import argparse
-import torch
+import jax
+import optax
 from experiments.base.parser import fqi_parser
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
@@ -27,7 +28,7 @@ def run(argvs=sys.argv[1:]):
 
     prepare_logs(p)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    q_key, explore_key = jax.random.split(jax.random.PRNGKey(p["seed"]))
 
     env = CarOnHill()
     rb = ReplayBuffer(
@@ -38,17 +39,28 @@ def run(argvs=sys.argv[1:]):
     )
 
     agent = BasicDQN(
+        q_key,
         env,
         hidden_layers=p["hidden_layers"],
-        device=device,
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],
-        lr=p["start_lr"],
+        lr_schedule=optax.linear_schedule(
+            p["start_lr"],
+            p["end_lr"],
+            int(
+                (
+                    p["n_bellman_iterations"]
+                    * p["n_fitting_steps"]
+                    * p["replay_capacity"]
+                )
+                / p["batch_size"]
+            ),
+        ),
         adam_eps=p["lr_epsilon"],
         train_frequency=-1,
         target_update_frequency=-1,
     )
 
-    update_replay_buffer(env, agent, rb, p)
+    update_replay_buffer(explore_key, env, agent, rb, p)
 
     train(p, agent, rb)

@@ -1,5 +1,6 @@
 import os
 import json
+import optax
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -83,7 +84,7 @@ def load_replay_buffer_store(rb_path):
     return rb_store
 
 
-def update_replay_buffer(env, agent, rb, p):
+def update_replay_buffer(key, env, agent, rb, p):
     if os.path.exists(os.path.join(p["save_path"], "..", "replay_buffer.json")):
         print("Replay buffer already exists. Loading...")
         rb._store = load_replay_buffer_store(
@@ -95,7 +96,16 @@ def update_replay_buffer(env, agent, rb, p):
     else:
         env.reset()
         for steps in range(p["replay_capacity"]):
-            collect_single_sample(env, agent, rb, p, 0)
+            key, sample_key = jax.random.split(key)
+            collect_single_sample(
+                sample_key,
+                env,
+                agent,
+                rb,
+                p,
+                optax.linear_schedule(1.0, 1.0, -1),
+                0,
+            )
         assert sum(rb._store["reward"] == 1) > 0, "No positive reward sampled. Rerun!"
         print(
             f"Replay buffer filled with {sum(rb._store['reward'] == 1)} success samples."
