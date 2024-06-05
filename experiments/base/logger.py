@@ -14,6 +14,7 @@ SHARED_PARAMS = [
     "target_update_period",
     "n_initial_samples",
     "horizon",
+    "hidden_layers",
 ]
 
 AGENT_PARAMS = {
