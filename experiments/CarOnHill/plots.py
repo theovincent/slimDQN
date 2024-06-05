@@ -2,7 +2,9 @@ import os
 import sys
 import argparse
 import numpy as np
-import torch
+import jax.numpy as jnp
+import pickle
+from flax.core import FrozenDict
 import multiprocessing
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.architectures.DQN import DQNNet
@@ -73,21 +75,29 @@ def samples_plot(argvs=sys.argv[1:]):
         rb["reward"],
     )
 
-    plot_on_grid(samples_stats, p["n_states_x"], p["n_states_v"], True).show()
-    plot_on_grid(rewards_stats, p["n_states_x"], p["n_states_v"], True).show()
+    plt_save_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../CarOnHill/logs/plots",
+        f"RB={p['replay_buffer_path'].replace('/', '@')}_nx={p['n_states_x']}_nv={p['n_states_v']}",
+    )
+
+    plot_on_grid(samples_stats, p["n_states_x"], p["n_states_v"], True).savefig(
+        plt_save_path + "_samples.png"
+    )
+    plot_on_grid(rewards_stats, p["n_states_x"], p["n_states_v"], True).savefig(
+        plt_save_path + "_rewards.png"
+    )
 
 
 def evaluate(
     model_key: str,
-    model_wts: torch.Tensor,
+    params: FrozenDict,
     q_estimate: dict,
-    agent,
-    observations: torch.Tensor,
+    q_network: DQNNet,
+    observations: jnp.ndarray,
 ):
 
-    agent.load_state_dict(model_wts)
-    agent.eval()
-    q_estimate[model_key] = agent(observations).detach().numpy()
+    q_estimate[model_key] = np.array(q_network.apply(params, observations))
     print(f"Done {model_key}")
 
 
@@ -164,8 +174,8 @@ def td_error_plot(argvs=sys.argv[1:]):
             if not os.path.isfile(os.path.join(result_path, seed_run)):
                 for iteration in os.listdir(os.path.join(result_path, seed_run)):
                     if "model" in iteration:
-                        models[f"{exp}/{seed_run}/{iteration}"] = torch.load(
-                            os.path.join(result_path, seed_run, iteration)
+                        models[f"{exp}/{seed_run}/{iteration}"] = pickle.load(
+                            open(os.path.join(result_path, seed_run, iteration), "rb")
                         )
 
     num_bellman_iterations = len(
@@ -185,19 +195,19 @@ def td_error_plot(argvs=sys.argv[1:]):
     for model_key, model in models.items():
         evaluate(
             model_key,
-            model["network"],
+            model["params"],
             q_estimate,
             DQNNet(env, model["hidden_layers"]),
-            torch.Tensor(rb["observation"]),
+            jnp.array(rb["observation"]),
         )
         if len(rb["next_observations_trunc"]) > 0:
             evaluate(
                 model_key
                 + "_trunc_next_states",  # evaluate the Q value for next observations for truncated states
-                model["network"],
+                model["params"],
                 q_estimate,
                 DQNNet(env, model["hidden_layers"]),
-                torch.Tensor(
+                jnp.array(
                     np.array(
                         [v for _, v in sorted(rb["next_observations_trunc"].items())]
                     )
@@ -206,10 +216,10 @@ def td_error_plot(argvs=sys.argv[1:]):
         evaluate(
             model_key
             + "_last_transition",  # evaluate the Q value for next observation for the last recorded transition
-            model["network"],
+            model["params"],
             q_estimate,
             DQNNet(env, model["hidden_layers"]),
-            torch.Tensor(rb["last_transition_next_obs"][1]),
+            jnp.array(rb["last_transition_next_obs"][1]),
         )
 
     td_error = {}
@@ -249,6 +259,13 @@ def td_error_plot(argvs=sys.argv[1:]):
 
         print(td_error[exp])
 
+    expts = "_".join([i.replace("/", "@") for i in p["experiment_folders"]])
+    plt_save_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../CarOnHill/logs/plots",
+        f"exp={expts}_RB={p['replay_buffer_path'].replace('/', '@')}_nx={p['n_states_x']}_nv={p['n_states_v']}",
+    )
+
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$||\Gamma Q_{i-1} - Q_{i}||_2$",
@@ -256,7 +273,7 @@ def td_error_plot(argvs=sys.argv[1:]):
         y_val=td_error,
         title="TD error on replay buffer data",
         ticksize=10,
-    ).show()
+    ).savefig(plt_save_path + "_TD_error_RB.png")
 
     boxes_x_size = (2 * env.max_pos) / (p["n_states_x"] - 1)
     states_x_boxes = (
@@ -306,18 +323,18 @@ def td_error_plot(argvs=sys.argv[1:]):
     for model_key, model in models.items():
         evaluate(
             model_key,
-            model["network"],
+            model["params"],
             q_estimate,
             DQNNet(env, model["hidden_layers"]),
-            torch.Tensor(states_grid),
+            jnp.array(states_grid),
         )
         for action in range(env.n_actions):
             evaluate(
                 model_key + f"_next_states_action={action}",
-                model["network"],
+                model["params"],
                 q_estimate,
                 DQNNet(env, model["hidden_layers"]),
-                torch.Tensor(next_states_grid[:, action, :]),
+                jnp.array(next_states_grid[:, action, :]),
             )
 
     td_error = {}
@@ -354,7 +371,7 @@ def td_error_plot(argvs=sys.argv[1:]):
         y_val=td_error,
         title="TD error on grid",
         ticksize=10,
-    ).show()
+    ).sh.savefig(plt_save_path + "_TD_error_grid.png")
 
 
 def diff_from_opt_plot(argvs=sys.argv[1:]):
@@ -424,8 +441,8 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
             if not os.path.isfile(os.path.join(result_path, seed_run)):
                 for iteration in os.listdir(os.path.join(result_path, seed_run)):
                     if "model" in iteration:
-                        models[f"{exp}/{seed_run}/{iteration}"] = torch.load(
-                            os.path.join(result_path, seed_run, iteration)
+                        models[f"{exp}/{seed_run}/{iteration}"] = pickle.load(
+                            open(os.path.join(result_path, seed_run, iteration), "rb")
                         )
 
     num_bellman_iterations = len(set(i.split("/")[-1] for i in models.keys()))
@@ -470,10 +487,10 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
     for model_key, model in models.items():
         evaluate(
             model_key,
-            model["network"],
+            model["params"],
             q_estimate,
             DQNNet(env, model["hidden_layers"]),
-            torch.Tensor(states_grid),
+            jnp.array(states_grid),
         )
 
     opt_q = np.load(
@@ -528,6 +545,13 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
 
         print(opt_gap_q[exp], opt_gap_v[exp])
 
+    expts = "_".join([i.replace("/", "@") for i in p["experiment_folders"]])
+    plt_save_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../CarOnHill/logs/plots",
+        f"exp={expts}_RB={p['replay_buffer_path'].replace('/', '@')}_nx={p['n_states_x']}_nv={p['n_states_v']}",
+    )
+
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$|| Q^{*} - Q_{i}||_2$",
@@ -535,7 +559,7 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
         y_val=opt_gap_q,
         title="Difference from optimal Q on grid",
         ticksize=10,
-    ).show()
+    ).savefig(plt_save_path + "_Q_opt_diff.png")
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$|| V^{*} - V_{i}||_2$",
@@ -543,10 +567,10 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
         y_val=opt_gap_v,
         title="Difference from optimal V on grid",
         ticksize=10,
-    ).show()
+    ).savefig(plt_save_path + "_V_opt_diff.png")
 
 
-def run_traj(agent, state, action, env, horizon, gamma):
+def run_traj(q_network, params, state, action, env, horizon, gamma):
     env.reset(state)
     _, reward, absorbing = env.step(action)
     step = 1
@@ -554,7 +578,7 @@ def run_traj(agent, state, action, env, horizon, gamma):
     discount = gamma
 
     while not absorbing and step < horizon:
-        action = np.argmax(agent(torch.Tensor(env.state)).detach().numpy())
+        action = jnp.argmax(q_network.apply(params, jnp.array(env.state))).item()
         _, reward, absorbing = env.step(action)
         performance += discount * reward
         discount *= gamma
@@ -573,15 +597,19 @@ def compute_iterated_value(
     gamma,
 ):
     env = CarOnHill()
-    agent = DQNNet(env, model["hidden_layers"])
-    agent.load_state_dict(model["network"])
-    agent.eval()
+    q_network = DQNNet(env, model["hidden_layers"])
     for idx_state_x, state_x in enumerate(states_x):
         for idx_state_v, state_v in enumerate(states_v):
             for action in range(env.n_actions):
                 iterated_q_shared[(model_key, idx_state_x, idx_state_v, action)] = (
                     run_traj(
-                        agent, np.array([state_x, state_v]), action, env, horizon, gamma
+                        q_network,
+                        model["params"],
+                        jnp.array([state_x, state_v]),
+                        action,
+                        env,
+                        horizon,
+                        gamma,
                     )
                 )
     print(f"Parallel Done with {model_key}")
@@ -651,182 +679,223 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         assert os.path.exists(exp_folder), f"{exp_folder} not found"
         results_folder[exp] = exp_folder
 
-    rb_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "../CarOnHill/logs",
-        p["replay_buffer_path"],
-    )
-
-    assert os.path.exists(rb_path), f"Required replay buffer {rb_path} not found"
-
-    rb = load_replay_buffer_store(rb_path)
-    rb_size = rb["observation"].shape[0]
-
-    models = {}
+    run_flag = False
+    opt_gap_q, opt_gap_v = {}, {}
+    num_seeds, num_bellman_iterations = 0, 0
     for exp, result_path in results_folder.items():
-        for seed_run in os.listdir(result_path):
-            if not os.path.isfile(os.path.join(result_path, seed_run)):
-                for iteration in os.listdir(os.path.join(result_path, seed_run)):
-                    if "model" in iteration:
-                        models[f"{exp}/{seed_run}/{iteration}"] = torch.load(
-                            os.path.join(result_path, seed_run, iteration)
+        if os.path.exists(
+            f"{results_folder[exp]}/Iter_Q_opt_diff.npy"
+        ) and os.path.exists(f"{results_folder[exp]}/Iter_V_opt_diff.npy"):
+            opt_gap_q[exp] = np.load(f"{results_folder[exp]}/Iter_Q_opt_diff.npy")
+            opt_gap_v[exp] = np.load(f"{results_folder[exp]}/Iter_V_opt_diff.npy")
+            num_seeds, num_bellman_iterations = opt_gap_q[exp].shape
+        else:
+            run_flag = True
+
+    if run_flag:
+        rb_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "../CarOnHill/logs",
+            p["replay_buffer_path"],
+        )
+
+        assert os.path.exists(rb_path), f"Required replay buffer {rb_path} not found"
+
+        rb = load_replay_buffer_store(rb_path)
+        rb_size = rb["observation"].shape[0]
+
+        models = {}
+        for exp, result_path in results_folder.items():
+            for seed_run in os.listdir(result_path):
+                if not os.path.isfile(os.path.join(result_path, seed_run)):
+                    for iteration in os.listdir(os.path.join(result_path, seed_run)):
+                        if "model" in iteration:
+                            models[f"{exp}/{seed_run}/{iteration}"] = pickle.load(
+                                open(
+                                    os.path.join(result_path, seed_run, iteration), "rb"
+                                )
+                            )
+
+        num_bellman_iterations = len(set(i.split("/")[-1] for i in models.keys()))
+        num_seeds = len(set(i.split("/")[-2] for i in models.keys()))
+        print(
+            f"Bellman iterations = {num_bellman_iterations}, Num seeds = {num_seeds}, RB size = {rb_size}"
+        )
+
+        env = CarOnHill()
+        boxes_x_size = (2 * env.max_pos) / (p["n_states_x"] - 1)
+        states_x_boxes = (
+            np.linspace(-env.max_pos, env.max_pos + boxes_x_size, p["n_states_x"] + 1)
+            - boxes_x_size / 2
+        )
+        boxes_v_size = (2 * env.max_velocity) / (p["n_states_v"] - 1)
+        states_v_boxes = (
+            np.linspace(
+                -env.max_velocity, env.max_velocity + boxes_v_size, p["n_states_v"] + 1
+            )
+            - boxes_v_size / 2
+        )
+
+        samples_stats, _, _ = count_samples(
+            rb["observation"][:, 0],
+            rb["observation"][:, 1],
+            states_x_boxes,
+            states_v_boxes,
+            rb["reward"],
+        )
+        scaling = samples_stats / samples_stats.sum()
+
+        states_x = np.linspace(-env.max_pos, env.max_pos, p["n_states_x"])
+        states_v = np.linspace(-env.max_velocity, env.max_velocity, p["n_states_v"])
+        states_grid = np.array([[x, v] for x in states_x for v in states_v])
+
+        scaling = np.array(
+            [
+                scaling[i, j]
+                for i in range(p["n_states_x"])
+                for j in range(p["n_states_v"])
+            ]
+        )
+
+        q_estimate = dict()
+
+        for model_key, model in models.items():
+            evaluate(
+                model_key,
+                model["params"],
+                q_estimate,
+                DQNNet(env, model["hidden_layers"]),
+                jnp.array(states_grid),
+            )
+
+        manager = multiprocessing.Manager()
+
+        iterated_q_shared = manager.dict()
+
+        processes = []
+        for model_key, model in models.items():
+            processes.append(
+                multiprocessing.Process(
+                    target=compute_iterated_value,
+                    args=(
+                        model_key,
+                        model,
+                        states_x,
+                        states_v,
+                        iterated_q_shared,
+                        p["horizon"],
+                        p["gamma"],
+                    ),
+                )
+            )
+
+        num_processes = 32
+        for i in range(int(np.ceil(len(processes) / float(num_processes)))):
+            proc_list = processes[
+                i * num_processes : min((i + 1) * num_processes, len(processes))
+            ]
+            for process in proc_list:
+                process.start()
+
+            for process in proc_list:
+                process.join()
+
+        iterated_q = {}
+        for model_key in models.keys():
+            iterated_q[model_key] = np.zeros(
+                (len(states_x), len(states_v), env.n_actions)
+            )
+            for idx_state_x, _ in enumerate(states_x):
+                for idx_state_v, _ in enumerate(states_v):
+                    for action in range(env.n_actions):
+                        iterated_q[model_key][idx_state_x, idx_state_v, action] = (
+                            iterated_q_shared[
+                                (model_key, idx_state_x, idx_state_v, action)
+                            ]
                         )
 
-    num_bellman_iterations = len(set(i.split("/")[-1] for i in models.keys()))
-    num_seeds = len(set(i.split("/")[-2] for i in models.keys()))
-    print(
-        f"Bellman iterations = {num_bellman_iterations}, Num seeds = {num_seeds}, RB size = {rb_size}"
-    )
-
-    env = CarOnHill()
-    boxes_x_size = (2 * env.max_pos) / (p["n_states_x"] - 1)
-    states_x_boxes = (
-        np.linspace(-env.max_pos, env.max_pos + boxes_x_size, p["n_states_x"] + 1)
-        - boxes_x_size / 2
-    )
-    boxes_v_size = (2 * env.max_velocity) / (p["n_states_v"] - 1)
-    states_v_boxes = (
-        np.linspace(
-            -env.max_velocity, env.max_velocity + boxes_v_size, p["n_states_v"] + 1
-        )
-        - boxes_v_size / 2
-    )
-
-    samples_stats, _, _ = count_samples(
-        rb["observation"][:, 0],
-        rb["observation"][:, 1],
-        states_x_boxes,
-        states_v_boxes,
-        rb["reward"],
-    )
-    scaling = samples_stats / samples_stats.sum()
-
-    states_x = np.linspace(-env.max_pos, env.max_pos, p["n_states_x"])
-    states_v = np.linspace(-env.max_velocity, env.max_velocity, p["n_states_v"])
-    states_grid = np.array([[x, v] for x in states_x for v in states_v])
-
-    scaling = np.array(
-        [scaling[i, j] for i in range(p["n_states_x"]) for j in range(p["n_states_v"])]
-    )
-
-    q_estimate = dict()
-
-    for model_key, model in models.items():
-        evaluate(
-            model_key,
-            model["network"],
-            q_estimate,
-            DQNNet(env, model["hidden_layers"]),
-            torch.Tensor(states_grid),
-        )
-
-    manager = multiprocessing.Manager()
-
-    iterated_q_shared = manager.dict()
-
-    processes = []
-    for model_key, model in models.items():
-        processes.append(
-            multiprocessing.Process(
-                target=compute_iterated_value,
-                args=(
-                    model_key,
-                    model,
-                    states_x,
-                    states_v,
-                    iterated_q_shared,
-                    p["horizon"],
-                    p["gamma"],
-                ),
+        opt_q = np.load(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "../CarOnHill/logs/Q_nx=17_nv=17.npy",
             )
         )
-
-    num_processes = 32
-    for i in range(int(np.ceil(len(processes) / float(num_processes)))):
-        proc_list = processes[
-            i * num_processes : min((i + 1) * num_processes, len(processes))
-        ]
-        for process in proc_list:
-            process.start()
-
-        for process in proc_list:
-            process.join()
-
-    iterated_q = {}
-    for model_key in models.keys():
-        iterated_q[model_key] = np.zeros((len(states_x), len(states_v), env.n_actions))
-        for idx_state_x, _ in enumerate(states_x):
-            for idx_state_v, _ in enumerate(states_v):
-                for action in range(env.n_actions):
-                    iterated_q[model_key][idx_state_x, idx_state_v, action] = (
-                        iterated_q_shared[(model_key, idx_state_x, idx_state_v, action)]
-                    )
-
-    opt_q = np.load(
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "../CarOnHill/logs/Q_nx=17_nv=17.npy",
+        opt_q = np.array(
+            [
+                opt_q[i, j]
+                for i in range(p["n_states_x"])
+                for j in range(p["n_states_v"])
+            ]
         )
-    )
-    opt_q = np.array(
-        [opt_q[i, j] for i in range(p["n_states_x"]) for j in range(p["n_states_v"])]
-    )
 
-    opt_v = np.load(
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "../CarOnHill/logs/V_nx=17_nv=17.npy",
+        opt_v = np.load(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "../CarOnHill/logs/V_nx=17_nv=17.npy",
+            )
         )
-    )
-    opt_v = np.array(
-        [opt_v[i, j] for i in range(p["n_states_x"]) for j in range(p["n_states_v"])]
-    )
+        opt_v = np.array(
+            [
+                opt_v[i, j]
+                for i in range(p["n_states_x"])
+                for j in range(p["n_states_v"])
+            ]
+        )
 
-    opt_gap_q = {}
-    opt_gap_v = {}
-    for exp, result_path in results_folder.items():
-        opt_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations))
-        opt_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations))
-        idx_seed = 0
-        for seed_run in os.listdir(result_path):
-            if not os.path.isfile(os.path.join(result_path, seed_run)):
-                for idx_iteration in range(num_bellman_iterations):
-                    q_i = q_estimate[
-                        f"{exp}/{seed_run}/model_iteration={idx_iteration}"
-                    ]
-                    q_pi_i = iterated_q[
-                        f"{exp}/{seed_run}/model_iteration={idx_iteration}"
-                    ]
-                    q_pi_i = np.array(
-                        [
-                            q_pi_i[i, j]
-                            for i in range(p["n_states_x"])
-                            for j in range(p["n_states_v"])
+        opt_gap_q = {}
+        opt_gap_v = {}
+        for exp, result_path in results_folder.items():
+            opt_gap_q[exp] = np.zeros((num_seeds, num_bellman_iterations))
+            opt_gap_v[exp] = np.zeros((num_seeds, num_bellman_iterations))
+            idx_seed = 0
+            for seed_run in os.listdir(result_path):
+                if not os.path.isfile(os.path.join(result_path, seed_run)):
+                    for idx_iteration in range(num_bellman_iterations):
+                        q_i = q_estimate[
+                            f"{exp}/{seed_run}/model_iteration={idx_iteration}"
                         ]
-                    )
-                    v_pi_i = q_pi_i[np.arange(q_pi_i.shape[0]), np.argmax(q_i, axis=-1)]
-                    opt_gap_q[exp][idx_seed, idx_iteration] = np.sqrt(
-                        np.sum(
-                            np.multiply(
-                                np.square(opt_q - q_pi_i),
-                                scaling[:, np.newaxis],
+                        q_pi_i = iterated_q[
+                            f"{exp}/{seed_run}/model_iteration={idx_iteration}"
+                        ]
+                        q_pi_i = np.array(
+                            [
+                                q_pi_i[i, j]
+                                for i in range(p["n_states_x"])
+                                for j in range(p["n_states_v"])
+                            ]
+                        )
+                        v_pi_i = q_pi_i[
+                            np.arange(q_pi_i.shape[0]), np.argmax(q_i, axis=-1)
+                        ]
+                        opt_gap_q[exp][idx_seed, idx_iteration] = np.sqrt(
+                            np.sum(
+                                np.multiply(
+                                    np.square(opt_q - q_pi_i),
+                                    scaling[:, np.newaxis],
+                                )
                             )
                         )
-                    )
 
-                    opt_gap_v[exp][idx_seed, idx_iteration] = np.sqrt(
-                        np.sum(
-                            np.multiply(
-                                np.square(opt_v - v_pi_i),
-                                scaling,
+                        opt_gap_v[exp][idx_seed, idx_iteration] = np.sqrt(
+                            np.sum(
+                                np.multiply(
+                                    np.square(opt_v - v_pi_i),
+                                    scaling,
+                                )
                             )
                         )
-                    )
-                idx_seed += 1
+                    idx_seed += 1
 
-        print(opt_gap_q[exp], opt_gap_v[exp])
-        np.save(f"{results_folder[exp]}/Iter_Q_opt_diff.npy", opt_gap_q[exp])
-        np.save(f"{results_folder[exp]}/Iter_V_opt_diff.npy", opt_gap_v[exp])
+            print(opt_gap_q[exp], opt_gap_v[exp])
+            np.save(f"{results_folder[exp]}/Iter_Q_opt_diff.npy", opt_gap_q[exp])
+            np.save(f"{results_folder[exp]}/Iter_V_opt_diff.npy", opt_gap_v[exp])
+
+    expts = "_".join([i.replace("/", "@") for i in p["experiment_folders"]])
+    plt_save_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../CarOnHill/logs/plots",
+        f"exp={expts}_RB={p['replay_buffer_path'].replace('/', '@')}_nx={p['n_states_x']}_nv={p['n_states_v']}",
+    )
 
     plot_value(
         xlabel="Bellman iteration",
@@ -835,7 +904,7 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         y_val=opt_gap_q,
         title="Difference of Q_pi from optimal Q on grid",
         ticksize=10,
-    ).show()
+    ).savefig(plt_save_path + "_Iter_Q_opt_diff.png")
     plot_value(
         xlabel="Bellman iteration",
         ylabel="$|| V^{*} - V^{\pi_i}||_2$",
@@ -843,7 +912,7 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         y_val=opt_gap_v,
         title="Difference of V_pi from optimal V on grid",
         ticksize=10,
-    ).show()
+    ).savefig(plt_save_path + "_Iter_V_opt_diff.png")
 
 
 def plot_policy(argvs=sys.argv[1:]):
@@ -887,11 +956,14 @@ def plot_policy(argvs=sys.argv[1:]):
         for seed_run in os.listdir(exp_folder):
             if not os.path.isfile(os.path.join(exp_folder, seed_run)):
                 num_seeds += 1
-                models[seed_run] = torch.load(
-                    os.path.join(
-                        exp_folder,
-                        seed_run,
-                        f"model_iteration={p['bellman_iteration']}",
+                models[seed_run] = pickle.load(
+                    open(
+                        os.path.join(
+                            exp_folder,
+                            seed_run,
+                            f"model_iteration={p['bellman_iteration']}",
+                        ),
+                        "rb",
                     )
                 )
 
@@ -905,10 +977,10 @@ def plot_policy(argvs=sys.argv[1:]):
         for key, model in models.items():
             evaluate(
                 key,
-                model["network"],
+                model["params"],
                 q_estimate,
                 DQNNet(env, model["hidden_layers"]),
-                torch.Tensor(states_grid),
+                jnp.array(states_grid),
             )
 
         policy = np.zeros((num_seeds, states_grid.shape[0]))
