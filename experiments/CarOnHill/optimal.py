@@ -104,14 +104,30 @@ def plot_optimal_q(argvs=sys.argv[1:]):
         optimal_v,
         optimal_v.shape[0],
         optimal_v.shape[1],
-    ).show()
+    ).savefig(
+        os.path.join(
+            save_path, "plots", f"V*_nx={p['n_states_x']}_nv={p['n_states_v']}.png"
+        )
+    )
     plot_on_grid(
         optimal_q[:, :, 0],
         optimal_v.shape[0],
         optimal_v.shape[1],
-    ).show()
+    ).savefig(
+        os.path.join(
+            save_path,
+            "plots",
+            f"Q*(left)_nx={p['n_states_x']}_nv={p['n_states_v']}.png",
+        )
+    )
     plot_on_grid(
         optimal_q[:, :, 1],
         optimal_v.shape[0],
         optimal_v.shape[1],
-    ).show()
+    ).savefig(
+        os.path.join(
+            save_path,
+            "plots",
+            f"Q*(right)_nx={p['n_states_x']}_nv={p['n_states_v']}.png",
+        )
+    )
