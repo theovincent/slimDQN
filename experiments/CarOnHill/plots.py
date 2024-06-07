@@ -371,7 +371,7 @@ def td_error_plot(argvs=sys.argv[1:]):
         y_val=td_error,
         title="TD error on grid",
         ticksize=10,
-    ).sh.savefig(plt_save_path + "_TD_error_grid.png")
+    ).savefig(plt_save_path + "_TD_error_grid.png")
 
 
 def diff_from_opt_plot(argvs=sys.argv[1:]):
