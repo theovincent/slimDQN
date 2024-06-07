@@ -32,7 +32,7 @@ class DQN:
         self.train_frequency = train_frequency
         self.target_update_frequency = target_update_frequency
 
-    @partial(jax.jit, static_argnames="self")
+    # @partial(jax.jit, static_argnames="self")
     def loss(
         self,
         params: FrozenDict,
@@ -43,7 +43,7 @@ class DQN:
         q_value = self.apply(params, sample["observations"])[sample["actions"]]
         return self.metric(q_value - target, ord=self.loss_type)
 
-    @partial(jax.jit, static_argnames="self")
+    # @partial(jax.jit, static_argnames="self")
     def loss_on_batch(self, params: FrozenDict, params_target: FrozenDict, samples):
         return jax.vmap(self.loss, in_axes=(None, None, 0))(
             params, params_target, samples
@@ -74,11 +74,11 @@ class DQN:
 
         return params, optimizer_state, loss
 
-    @partial(jax.jit, static_argnames="self")
+    # @partial(jax.jit, static_argnames="self")
     def apply(self, params: FrozenDict, state: jnp.ndarray):
         return self.q_network.apply(params, state)
 
-    @partial(jax.jit, static_argnames="self")
+    # @partial(jax.jit, static_argnames="self")
     def compute_target(self, params: FrozenDict, sample):
         return sample["rewards"] + (1 - sample["dones"]) * self.gamma * jnp.max(
             self.apply(params, sample["next_observations"])
@@ -107,6 +107,6 @@ class DQN:
         if step % self.target_update_frequency == 0:
             self.target_params = self.params.copy()
 
-    @partial(jax.jit, static_argnames="self")
+    # @partial(jax.jit, static_argnames="self")
     def best_action(self, params: FrozenDict, state: jnp.ndarray):
         return jnp.argmax(self.apply(params, state)).astype(jnp.int8)
