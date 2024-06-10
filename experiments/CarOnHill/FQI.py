@@ -28,7 +28,7 @@ def run(argvs=sys.argv[1:]):
 
     prepare_logs(p)
 
-    q_key, explore_key = jax.random.split(jax.random.PRNGKey(p["seed"]))
+    q_key = jax.random.PRNGKey(p["seed"])
 
     env = CarOnHill()
     rb = ReplayBuffer(
@@ -44,12 +44,12 @@ def run(argvs=sys.argv[1:]):
         hidden_layers=p["hidden_layers"],
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],
-        lr=lr,
+        lr=p["lr"],
         adam_eps=p["lr_epsilon"],
         train_frequency=-1,
         target_update_frequency=-1,
     )
 
-    update_replay_buffer(explore_key, env, agent, rb, p)
+    update_replay_buffer(jax.random.PRNGKey(0), env, agent, rb, p)
 
     train(p, agent, rb)
