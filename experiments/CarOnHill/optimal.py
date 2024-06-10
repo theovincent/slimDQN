@@ -83,17 +83,15 @@ def plot_optimal_q(argvs=sys.argv[1:]):
         os.path.dirname(os.path.abspath(__file__)),
         "../CarOnHill/logs",
     )
-    optimal_v = np.load(f"{save_path}/V_nx={p['n_states_x']}_nv={p['n_states_v']}.npy")
-    optimal_q = np.load(f"{save_path}/Q_nx={p['n_states_x']}_nv={p['n_states_v']}.npy")
+    optimal_v = np.load(f"{save_path}/V*_nx={p['n_states_x']}_nv={p['n_states_v']}.npy")
+    optimal_q = np.load(f"{save_path}/Q*_nx={p['n_states_x']}_nv={p['n_states_v']}.npy")
 
     plot_on_grid(
         optimal_v,
         optimal_v.shape[0],
         optimal_v.shape[1],
     ).savefig(
-        os.path.join(
-            save_path, "plots", f"V*_nx={p['n_states_x']}_nv={p['n_states_v']}.png"
-        )
+        os.path.join(save_path, f"V*_nx={p['n_states_x']}_nv={p['n_states_v']}.pdf")
     )
     plot_on_grid(
         optimal_q[:, :, 0],
@@ -102,8 +100,7 @@ def plot_optimal_q(argvs=sys.argv[1:]):
     ).savefig(
         os.path.join(
             save_path,
-            "plots",
-            f"Q*(left)_nx={p['n_states_x']}_nv={p['n_states_v']}.png",
+            f"Q*(left)_nx={p['n_states_x']}_nv={p['n_states_v']}.pdf",
         )
     )
     plot_on_grid(
@@ -113,7 +110,6 @@ def plot_optimal_q(argvs=sys.argv[1:]):
     ).savefig(
         os.path.join(
             save_path,
-            "plots",
-            f"Q*(right)_nx={p['n_states_x']}_nv={p['n_states_v']}.png",
+            f"Q*(right)_nx={p['n_states_x']}_nv={p['n_states_v']}.pdf",
         )
     )
