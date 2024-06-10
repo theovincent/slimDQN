@@ -3,38 +3,34 @@ import scipy.stats
 from multiprocessing import Pool
 
 
-def compute_epoch_mean_conf(args):
-    array, num_seeds, bootstraps, cut_off = args
-    mean = scipy.stats.trim_mean(np.sort(array), proportiontocut=0.25, axis=None)
+def compute_epoch_iqm_conf(array, n_seeds, n_bootstraps):
+    iqm = scipy.stats.trim_mean(np.sort(array), proportiontocut=0.25, axis=None)
 
-    bootstrap_means = np.zeros(bootstraps)
-    for i in range(bootstraps):
-        vals = np.random.choice(array, size=num_seeds)
-        bootstrap_means[i] = scipy.stats.trim_mean(
+    bootstrap_iqms = np.zeros(n_bootstraps)
+    for i in range(n_bootstraps):
+        vals = np.random.choice(array, size=n_seeds)
+        bootstrap_iqms[i] = scipy.stats.trim_mean(
             np.sort(vals), proportiontocut=0.25, axis=None
         )
 
-    conf = np.percentile(bootstrap_means, [cut_off, 100 - cut_off])
+    confs = np.percentile(bootstrap_iqms, [2.5, 97.5])
 
-    return mean, conf
+    return iqm, confs
 
 
-def get_iqm_and_conf_parallel(array, bootstraps=2000, percentile=0.95):
-    num_seeds, epochs = array.shape
-    if num_seeds == 1:
+def get_iqm_and_conf_parallel(array, n_bootstraps=2000):
+    n_seeds, n_epochs = array.shape
+    if n_seeds == 1:
         return array.reshape(-1), np.stack([array.reshape(-1), array.reshape(-1)])
 
-    cut_off = (1.0 - percentile) / 2
-    args = [
-        (array[:, epoch], num_seeds, bootstraps, cut_off * 100)
-        for epoch in range(epochs)
-    ]
+    with Pool(n_epochs) as pool:
+        results = pool.starmap(
+            compute_epoch_iqm_conf,
+            [(array[:, epoch], n_seeds, n_bootstraps) for epoch in range(n_epochs)],
+        )
 
-    with Pool() as pool:
-        results = pool.map(compute_epoch_mean_conf, args)
-
-    means, confs = zip(*results)
-    mean = np.array(means)
+    iqms, confs = zip(*results)
+    iqm = np.array(iqms)
     conf = np.stack(confs, axis=1)
 
-    return mean, conf
+    return iqm, conf
