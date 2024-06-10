@@ -22,9 +22,8 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
         "-hl",
         "--hidden_layers",
         nargs="*",
-        default=[],
         help="Hidden layer sizes.",
-        required=False,
+        required=True,
     )
 
     parser.add_argument(
@@ -56,7 +55,7 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
         "--gamma",
         help="Discounting factor gamma.",
         type=float,
-        default=0.99,
+        required=True,
     )
 
     parser.add_argument(
@@ -76,22 +75,6 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
-        "-T",
-        "--target_update_period",
-        help="Update period for target Q-network.",
-        type=int,
-        default=40,
-    )
-
-    parser.add_argument(
-        "-n_init",
-        "--n_initial_samples",
-        help="No. of initial samples before training begins.",
-        type=int,
-        default=2000,
-    )
-
-    parser.add_argument(
         "-H",
         "--horizon",
         help="Horizon for truncation.",
@@ -107,6 +90,22 @@ def online_parser(parser: argparse.ArgumentParser) -> None:
         help="No. of data points to collect per online Q-network update.",
         type=int,
         default=4,
+    )
+
+    parser.add_argument(
+        "-T",
+        "--target_update_period",
+        help="Update period for target Q-network.",
+        type=int,
+        default=40,
+    )
+
+    parser.add_argument(
+        "-n_init",
+        "--n_initial_samples",
+        help="No. of initial samples before training begins.",
+        type=int,
+        default=2000,
     )
 
     parser.add_argument(
@@ -133,7 +132,7 @@ def fqi_parser(parser: argparse.ArgumentParser) -> None:
         "--n_bellman_iterations",
         help="No. of Bellman iterations to perform.",
         type=int,
-        default=20,
+        required=True,
     )
 
     parser.add_argument(
@@ -141,7 +140,7 @@ def fqi_parser(parser: argparse.ArgumentParser) -> None:
         "--n_fitting_steps",
         help="No. of gradient update steps to perform per Bellman iteration.",
         type=int,
-        default=15,
+        default=5,
     )
 
 
