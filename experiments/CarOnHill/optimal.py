@@ -37,14 +37,7 @@ def run(argvs=sys.argv[1:]):
         "--gamma",
         help="Discounting.",
         type=float,
-        default=0.99,
-    )
-    parser.add_argument(
-        "-par",
-        "--num_parallel_processes",
-        help="No. of parallel processes to run at a time.",
-        type=int,
-        default=4,
+        default=0.95,
     )
     args = parser.parse_args(argvs)
     p = vars(args)
@@ -55,7 +48,6 @@ def run(argvs=sys.argv[1:]):
         p["n_states_v"],
         p["horizon"],
         p["gamma"],
-        p["num_parallel_processes"],
     )
     t2 = time.time()
     print("Time taken (mins) = ", (t2 - t1) / 60)
@@ -64,14 +56,8 @@ def run(argvs=sys.argv[1:]):
         os.path.dirname(os.path.abspath(__file__)),
         "../CarOnHill/logs",
     )
-    np.save(f"{save_path}/V_nx={p['n_states_x']}_nv={p['n_states_v']}.npy", optimal_v)
-    np.save(f"{save_path}/Q_nx={p['n_states_x']}_nv={p['n_states_v']}.npy", optimal_q)
-
-    plot_on_grid(
-        optimal_v,
-        p["n_states_x"],
-        p["n_states_v"],
-    )
+    np.save(f"{save_path}/V*_nx={p['n_states_x']}_nv={p['n_states_v']}.npy", optimal_v)
+    np.save(f"{save_path}/Q*_nx={p['n_states_x']}_nv={p['n_states_v']}.npy", optimal_q)
 
 
 def plot_optimal_q(argvs=sys.argv[1:]):

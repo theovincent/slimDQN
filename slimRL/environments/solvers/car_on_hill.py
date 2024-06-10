@@ -55,9 +55,7 @@ def compute_optimal_q_value(
     )
 
 
-def compute_optimal_values(
-    n_states_x, n_states_v, horizon, gamma, num_parallel_processes
-):
+def compute_optimal_values(n_states_x, n_states_v, horizon, gamma):
 
     env = CarOnHill()
     states_x = np.linspace(-env.max_pos, env.max_pos, n_states_x)
@@ -89,18 +87,12 @@ def compute_optimal_values(
                     )
                 )
 
-    for i in range(int(np.ceil(len(processes) / num_parallel_processes))):
-        proc_list = processes[
-            i
-            * num_parallel_processes : min(
-                (i + 1) * num_parallel_processes, len(processes)
-            )
-        ]
-        for process in proc_list:
-            process.start()
+    for process in processes:
+        process.start()
 
-        for process in proc_list:
-            process.join()
+    for process in processes:
+        process.join()
+
     for idx_state_x, state_x in enumerate(states_x):
         for idx_state_v, state_v in enumerate(states_v):
             for action in range(2):
