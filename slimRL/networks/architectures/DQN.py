@@ -37,15 +37,15 @@ class BasicDQN(DQN):
         hidden_layers: list,
         gamma: float,
         update_horizon: int,
-        lr_schedule: optax.Schedule,
+        lr: float,
         adam_eps: float,
         train_frequency: int,
         target_update_frequency: int,
         loss_type: str = "huber",
     ):
         self.env = env
-        self.learning_rate_schedule = lr_schedule
-        optimizer = optax.adam(self.learning_rate_schedule, eps=adam_eps)
+        self.lr = lr
+        optimizer = optax.adam(self.lr, eps=adam_eps)
         q_network = DQNNet(env, hidden_layers)
         q_inputs = {
             "state": jnp.zeros(

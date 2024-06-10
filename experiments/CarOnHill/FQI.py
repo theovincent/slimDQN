@@ -44,18 +44,7 @@ def run(argvs=sys.argv[1:]):
         hidden_layers=p["hidden_layers"],
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],
-        lr_schedule=optax.linear_schedule(
-            p["start_lr"],
-            p["end_lr"],
-            int(
-                (
-                    p["n_bellman_iterations"]
-                    * p["n_fitting_steps"]
-                    * p["replay_capacity"]
-                )
-                / p["batch_size"]
-            ),
-        ),
+        lr=lr,
         adam_eps=p["lr_epsilon"],
         train_frequency=-1,
         target_update_frequency=-1,

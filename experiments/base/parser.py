@@ -60,19 +60,11 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
-        "-start_lr",
-        "--start_lr",
+        "-lr",
+        "--lr",
         help="Starting learning rate for Adam optimizer.",
         type=float,
         default=1e-3,
-    )
-
-    parser.add_argument(
-        "-end_lr",
-        "--end_lr",
-        help="Ending learning rate for Adam optimizer.",
-        type=float,
-        default=5e-7,
     )
 
     parser.add_argument(
