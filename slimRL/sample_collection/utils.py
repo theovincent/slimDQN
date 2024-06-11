@@ -66,8 +66,13 @@ def save_replay_buffer_store(rb: ReplayBuffer, save_path):
 def load_replay_buffer_store(rb_path):
 
     rb_store = json.load(open(rb_path, "r"))
+    next_obs_keys = [int(idx) for idx in rb_store["next_observations_trunc"]] + [
+        rb_store["last_transition_next_obs"][0]
+    ]
     for key in ["observation", "action", "reward", "done"]:
-        rb_store[key] = np.array(rb_store[key])
+        rb_store[key] = np.array(
+            [val for idx, val in enumerate(rb_store[key]) if idx not in next_obs_keys]
+        )
 
     next_obs_keys = list(rb_store["next_observations_trunc"])
     for key in next_obs_keys:

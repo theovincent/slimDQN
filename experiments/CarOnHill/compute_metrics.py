@@ -44,22 +44,21 @@ def run_traj(q_network, params, state, action, env, horizon, gamma):
 
 
 def compute_iterated_value(
-    idx_iteration,
+    idx_iteration: int,
     model,
     states_x,
     states_v,
-    iterated_q,
+    iterated_q: list,
     horizon,
     gamma,
 ):
     env = CarOnHill()
     q_network = DQNNet(env, model["hidden_layers"])
+    q_pi_iteration = np.zeros((len(states_x), len(states_v), env.n_actions))
     for idx_state_x, state_x in enumerate(states_x):
         for idx_state_v, state_v in enumerate(states_v):
             for action in range(env.n_actions):
-                iterated_q[idx_iteration][idx_state_x * len(states_v) + idx_state_v][
-                    action
-                ] = run_traj(
+                q_pi_iteration[idx_state_x, idx_state_v, action] = run_traj(
                     q_network,
                     model["params"],
                     jnp.array([state_x, state_v]),
@@ -68,6 +67,8 @@ def compute_iterated_value(
                     horizon,
                     gamma,
                 )
+    iterated_q[idx_iteration] = q_pi_iteration.reshape(-1, env.n_actions)
+    print(np.isnan(q_pi_iteration.reshape(-1, env.n_actions)).sum())
     print(f"Done compute_iterated_value {idx_iteration}")
 
 
@@ -86,9 +87,21 @@ def run(argvs=sys.argv[1:]):
         "-s",
         "--seeds",
         nargs="+",
-        help="Give all the seed values to generate metrics for",
+        help="Give all the seed values to generate metrics for (runs for all seeds if not specified)",
         required=False,
-        default=[],
+        default=None,
+    )
+    parser.add_argument(
+        "-td",
+        "--td",
+        action="store_true",
+        help="Give this flag to compute TD error components(Q_i and T Q_{i-1}) for every iteration on data and grid",
+    )
+    parser.add_argument(
+        "-perf",
+        "--performance",
+        action="store_true",
+        help="Give this flag to compute Q_pi_i for every iteration on grid",
     )
     parser.add_argument(
         "-nx",
@@ -160,44 +173,21 @@ def run(argvs=sys.argv[1:]):
             rewards_grid[i, action] = reward
             dones_grid[i, action] = done
 
-    observations_rb = rb["observation"][
-        [
-            str(i) not in rb["next_observations_trunc"]
-            for i in range(rb["observation"].shape[0])
-        ]
-    ]
-    rewards_rb = rb["reward"][
-        [
-            str(i) not in rb["next_observations_trunc"]
-            for i in range(rb["observation"].shape[0])
-        ]
-    ]
-    dones_rb = rb["done"][
-        [
-            str(i) not in rb["next_observations_trunc"]
-            for i in range(rb["observation"].shape[0])
-        ]
-    ]
-
-    samples_stats, _, _ = count_samples(
-        observations_rb[:, 0],
-        observations_rb[:, 1],
+    samples_stats, _, rewards_stats = count_samples(
+        rb["observation"][:, 0],
+        rb["observation"][:, 1],
         states_x_boxes,
         states_v_boxes,
-        rewards_rb,
+        rb["reward"],
     )
-    scaling = samples_stats / samples_stats.sum()
 
-    args = parser.parse_args(argvs)
-
-    p = vars(args)
-
-    rb_size = observations_rb.shape[0]
+    np.save(os.path.join(experiment_folder_path, "samples_stats.npy"), samples_stats)
+    np.save(os.path.join(experiment_folder_path, "rewards_stats.npy"), rewards_stats)
+    rb_size = rb["observation"].shape[0]
 
     models = {}
     num_bellman_iterations = -1
-    num_seeds = 0
-    if len(p["seeds"]) == 0:
+    if p["seeds"] is None:
         seed_runs = [
             seed_run
             for seed_run in os.listdir(experiment_folder_path)
@@ -205,6 +195,7 @@ def run(argvs=sys.argv[1:]):
         ]
     else:
         seed_runs = [f"seed={seed}" for seed in p["seeds"]]
+    num_seeds = len(seed_runs)
 
     for seed_run in seed_runs:
         iteration_runs = [
@@ -231,25 +222,17 @@ def run(argvs=sys.argv[1:]):
         f"Num seeds = {num_seeds}, Bellman iterations = {num_bellman_iterations}, RB size = {rb_size}"
     )
 
-    processes = []
-    manager = multiprocessing.Manager()
-    q_i_rb = manager.dict()
-    q_i_grid = manager.dict()
-    q_i_grid_next_obs = manager.dict()
-    for seed_run in seed_runs:
-        q_i_rb[seed_run] = manager.list(
-            list(np.nan * np.zeros((num_bellman_iterations, rb_size, 2)))
-        )
-        q_i_grid[seed_run] = manager.list(
-            list(
-                np.nan
-                * np.zeros(
-                    (num_bellman_iterations, p["n_states_x"] * p["n_states_v"], 2)
-                )
+    if p["td"]:
+        processes = []
+        manager = multiprocessing.Manager()
+        q_i_rb = manager.dict()
+        q_i_grid = manager.dict()
+        q_i_grid_next_obs = manager.dict()
+        for seed_run in seed_runs:
+            q_i_rb[seed_run] = manager.list(
+                list(np.nan * np.zeros((num_bellman_iterations, rb_size, 2)))
             )
-        )
-        for action in range(env.n_actions):
-            q_i_grid_next_obs[seed_run + f"action={action}"] = manager.list(
+            q_i_grid[seed_run] = manager.list(
                 list(
                     np.nan
                     * np.zeros(
@@ -257,90 +240,8 @@ def run(argvs=sys.argv[1:]):
                     )
                 )
             )
-        for idx_iteration in range(num_bellman_iterations):
-            processes.append(
-                multiprocessing.Process(
-                    target=evaluate,
-                    args=(
-                        idx_iteration,
-                        models[f"{seed_run}/model_iteration={idx_iteration}"],
-                        q_i_rb[seed_run],
-                        jnp.array(observations_rb),
-                    ),
-                )
-            )
-            processes.append(
-                multiprocessing.Process(
-                    target=evaluate,
-                    args=(
-                        idx_iteration,
-                        models[f"{seed_run}/model_iteration={idx_iteration}"],
-                        q_i_grid[seed_run],
-                        jnp.array(states_grid),
-                    ),
-                )
-            )
             for action in range(env.n_actions):
-                multiprocessing.Process(
-                    target=evaluate,
-                    args=(
-                        idx_iteration,
-                        models[f"{seed_run}/model_iteration={idx_iteration}"],
-                        q_i_grid_next_obs[seed_run + f"action={action}"],
-                        jnp.array(next_states_grid[:, action, :]),
-                    ),
-                )
-
-    for process in processes:
-        process.start()
-
-    for process in processes:
-        process.join()
-
-    for seed_run in seed_runs:
-        np.save(
-            os.path.join(experiment_folder_path, seed_run, "q_i_rb.npy"),
-            q_i_rb[seed_run],
-        )
-        np.save(
-            os.path.join(experiment_folder_path, seed_run, "q_i_grid.npy"),
-            q_i_grid[seed_run],
-        )
-        T_q_rb = np.zeros((num_bellman_iterations - 1, rb_size))
-        T_q_grid = np.zeros(
-            (num_bellman_iterations - 1, p["n_states_x"] * p["n_states_v"], 2)
-        )
-        for idx_iteration in range(1, num_bellman_iterations):
-            T_q_rb_iteration = np.array(q_i_rb[seed_run][idx_iteration - 1])
-            T_q_rb_iteration = np.roll(T_q_rb_iteration, -1, axis=0)
-            T_q_rb_iteration = rewards_rb + GAMMA * np.max(T_q_rb_iteration, axis=1) * (
-                1 - dones_rb
-            )
-            T_q_rb[idx_iteration - 1] = T_q_rb_iteration
-            T_q_grid_iteration = np.stack(
-                [
-                    q_i_grid_next_obs[seed_run + f"action={action}"][idx_iteration - 1]
-                    for action in range(env.n_actions)
-                ],
-                axis=-1,
-            )
-            # print(T_q_grid_iteration.shape)
-            T_q_grid_iteration = rewards_grid + GAMMA * np.max(
-                T_q_grid_iteration, axis=-1
-            ) * (1 - dones_grid)
-            T_q_grid[idx_iteration - 1] = T_q_grid_iteration
-        np.save(os.path.join(experiment_folder_path, seed_run, "T_q_rb.npy"), T_q_rb)
-        np.save(
-            os.path.join(experiment_folder_path, seed_run, "T_q_grid.npy"), T_q_grid
-        )
-
-    processes = []
-    manager = multiprocessing.Manager()
-    q_pi_i = manager.dict()
-    for seed_run in seed_runs:
-        for idx_iteration in range(num_bellman_iterations):
-            for action in range(env.n_actions):
-                q_pi_i[seed_run + f"action={action}"] = manager.list(
+                q_i_grid_next_obs[seed_run + f"action={action}"] = manager.list(
                     list(
                         np.nan
                         * np.zeros(
@@ -352,6 +253,105 @@ def run(argvs=sys.argv[1:]):
                         )
                     )
                 )
+            for idx_iteration in range(num_bellman_iterations):
+                processes.append(
+                    multiprocessing.Process(
+                        target=evaluate,
+                        args=(
+                            idx_iteration,
+                            models[f"{seed_run}/model_iteration={idx_iteration}"],
+                            q_i_rb[seed_run],
+                            jnp.array(rb["observation"]),
+                        ),
+                    )
+                )
+                processes.append(
+                    multiprocessing.Process(
+                        target=evaluate,
+                        args=(
+                            idx_iteration,
+                            models[f"{seed_run}/model_iteration={idx_iteration}"],
+                            q_i_grid[seed_run],
+                            jnp.array(states_grid),
+                        ),
+                    )
+                )
+                for action in range(env.n_actions):
+                    processes.append(
+                        multiprocessing.Process(
+                            target=evaluate,
+                            args=(
+                                idx_iteration,
+                                models[f"{seed_run}/model_iteration={idx_iteration}"],
+                                q_i_grid_next_obs[seed_run + f"action={action}"],
+                                jnp.array(next_states_grid[:, action, :]),
+                            ),
+                        )
+                    )
+
+        for process in processes:
+            process.start()
+
+        for process in processes:
+            process.join()
+
+        for seed_run in seed_runs:
+            np.save(
+                os.path.join(experiment_folder_path, seed_run, "q_i_rb.npy"),
+                q_i_rb[seed_run],
+            )
+            np.save(
+                os.path.join(experiment_folder_path, seed_run, "q_i_grid.npy"),
+                q_i_grid[seed_run],
+            )
+            T_q_rb = np.zeros((num_bellman_iterations - 1, rb_size))
+            T_q_grid = np.nan * np.zeros(
+                (num_bellman_iterations - 1, p["n_states_x"] * p["n_states_v"], 2)
+            )
+            for idx_iteration in range(1, num_bellman_iterations):
+                T_q_rb_iteration = np.array(q_i_rb[seed_run][idx_iteration - 1])
+                T_q_rb_iteration = np.roll(T_q_rb_iteration, -1, axis=0)
+                T_q_rb_iteration = rb["reward"] + GAMMA * np.max(
+                    T_q_rb_iteration, axis=1
+                ) * (1 - rb["done"])
+                T_q_rb[idx_iteration - 1] = T_q_rb_iteration
+                T_q_grid_iteration = np.stack(
+                    [
+                        q_i_grid_next_obs[seed_run + f"action={action}"][
+                            idx_iteration - 1
+                        ]
+                        for action in range(env.n_actions)
+                    ],
+                    axis=-1,
+                )
+                T_q_grid_iteration = rewards_grid + GAMMA * np.max(
+                    T_q_grid_iteration, axis=-1
+                ) * (1 - dones_grid)
+                T_q_grid[idx_iteration - 1] = T_q_grid_iteration
+            np.save(
+                os.path.join(experiment_folder_path, seed_run, "T_q_rb.npy"), T_q_rb
+            )
+            np.save(
+                os.path.join(experiment_folder_path, seed_run, "T_q_grid.npy"), T_q_grid
+            )
+    if p["performance"]:
+        processes = []
+        manager = multiprocessing.Manager()
+        q_pi_i = manager.dict()
+        for seed_run in seed_runs:
+            q_pi_i[seed_run] = manager.list(
+                list(
+                    np.nan
+                    * np.zeros(
+                        (
+                            num_bellman_iterations,
+                            p["n_states_x"] * p["n_states_v"],
+                            2,
+                        )
+                    )
+                )
+            )
+            for idx_iteration in range(num_bellman_iterations):
                 processes.append(
                     multiprocessing.Process(
                         target=compute_iterated_value,
@@ -360,27 +360,21 @@ def run(argvs=sys.argv[1:]):
                             models[f"{seed_run}/model_iteration={idx_iteration}"],
                             states_x,
                             states_v,
-                            q_pi_i[seed_run + f"action={action}"],
+                            q_pi_i[seed_run],
                             p["horizon"],
                             GAMMA,
                         ),
                     )
                 )
 
-    for process in processes:
-        process.start()
+        for process in processes:
+            process.start()
 
-    for process in processes:
-        process.join()
+        for process in processes:
+            process.join()
 
-    for seed_run in seed_runs:
-        np.save(
-            os.path.join(experiment_folder_path, seed_run, "q_pi_i.npy"),
-            np.stack(
-                [
-                    q_pi_i[seed_run + f"action={action}"]
-                    for action in range(env.n_actions)
-                ],
-                axis=-1,
-            ),
-        )
+        for seed_run in seed_runs:
+            np.save(
+                os.path.join(experiment_folder_path, seed_run, "q_pi_i.npy"),
+                q_pi_i[seed_run],
+            )

@@ -137,7 +137,7 @@ def td_error_plot(argvs=sys.argv[1:]):
         type=float,
         help="Gamma for TD error",
         required=False,
-        default=0.99,
+        default=0.95,
     )
     args = parser.parse_args(argvs)
 
@@ -496,7 +496,7 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
     opt_q = np.load(
         os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            f"../CarOnHill/logs/Q_nx={p['n_states_x']}_nv={p['n_states_v']}.npy",
+            f"../CarOnHill/logs/Q*_nx={p['n_states_x']}_nv={p['n_states_v']}.npy",
         )
     )
     opt_q = np.array(
@@ -506,7 +506,7 @@ def diff_from_opt_plot(argvs=sys.argv[1:]):
     opt_v = np.load(
         os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            f"../CarOnHill/logs/V_nx={p['n_states_x']}_nv={p['n_states_v']}.npy",
+            f"../CarOnHill/logs/V*_nx={p['n_states_x']}_nv={p['n_states_v']}.npy",
         )
     )
     opt_v = np.array(
@@ -659,7 +659,7 @@ def plot_iterated_values(argvs=sys.argv[1:]):
         "--gamma",
         help="Gamma.",
         type=float,
-        default=0.99,
+        default=0.95,
     )
     args = parser.parse_args(argvs)
 
@@ -789,16 +789,11 @@ def plot_iterated_values(argvs=sys.argv[1:]):
                 )
             )
 
-        num_processes = 32
-        for i in range(int(np.ceil(len(processes) / float(num_processes)))):
-            proc_list = processes[
-                i * num_processes : min((i + 1) * num_processes, len(processes))
-            ]
-            for process in proc_list:
-                process.start()
+        for process in processes:
+            process.start()
 
-            for process in proc_list:
-                process.join()
+        for process in processes:
+            process.join()
 
         iterated_q = {}
         for model_key in models.keys():
@@ -991,4 +986,8 @@ def plot_policy(argvs=sys.argv[1:]):
         policy = 2 * (policy - np.min(policy)) / (np.max(policy) - np.min(policy)) - 1
         policy = policy.reshape(p["n_states_x"], p["n_states_v"])
         plt = plot_on_grid(policy, policy.shape[0], policy.shape[1], cmap="PRGn")
-        plt.savefig(f"/Users/yogeshtripathi/policy={p['bellman_iteration']}.png")
+        base_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "../CarOnHill/logs/plots",
+        )
+        plt.savefig(os.path.join(base_path, f"policy={p['bellman_iteration']}.png"))
