@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from slimRL.environments.car_on_hill import CarOnHill
-from experiments.base.plot_iqm import get_iqm_and_conf_parallel
+from experiments.base.iqm import get_iqm_and_conf_parallel
 from experiments.CarOnHill.optimal import NX, NV
 
 
@@ -52,8 +52,15 @@ def plot_value(xlabel, ylabel, x_val, y_val, **kwargs):
     plt.xlabel(xlabel, fontsize=kwargs.get("fontsize", 15))
     plt.ylabel(ylabel, fontsize=kwargs.get("fontsize", 15))
     plt.title(kwargs.get("title", ""))
-    ax.set_xticks(x_val[:: kwargs.get("ticksize", 2)] + [x_val[-1]])
-    ax.set_xlim(x_val[0], x_val[-1])
+    ax.set_xlim((0, kwargs.get("xlim_high", x_val[-1]) + 1))
+    ax.set_xticks([0] + [idx * 1e5 for idx in range(1, 6)])
+
+    plt.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+    plt.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
+    plt.grid()
+    ax.set_xticks(kwargs.get("xticks", []))
+    ax.set_xticks(x_val[:: kwargs.get("ticksize", 2)] + [x_val[-1] + 1])
+    ax.set_xlim(x_val[0], x_val[-1] + 1)
 
     for exp in y_val:
         y_iqm, y_cnf = get_iqm_and_conf_parallel(y_val[exp])
@@ -69,6 +76,8 @@ def plot_value(xlabel, ylabel, x_val, y_val, **kwargs):
             alpha=0.3,
         )
 
+    plt.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
+    plt.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
     plt.legend()
     plt.grid()
 
