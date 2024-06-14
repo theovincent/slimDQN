@@ -58,13 +58,33 @@ def run(argvs=sys.argv[1:]):
             open(os.path.join(result, "..", "parameters.json"), "r")
         )
 
+    env_steps = (
+        parameters[experiment]["n_epochs"]
+        * parameters[experiment]["n_training_steps_per_epoch"]
+    )
     plot_value(
-        "Env steps",
-        "IQM Total reward",
-        np.arange(0, returns[exp].shape[1]).tolist(),
-        returns,
+        xlabel="Env steps",
+        ylabel="IQM Total reward",
+        x_val=np.arange(
+            0,
+            env_steps,
+            parameters[experiment]["n_training_steps_per_epoch"],
+        ).tolist(),
+        y_val=returns,
+        xlim=(
+            0,
+            env_steps,
+        ),
+        xticks=[0]
+        + [
+            idx * 10 ** (int(np.log10(env_steps)))
+            for idx in range(
+                1, int(np.ceil(env_steps / 10 ** (int(np.log10(env_steps))))) + 1
+            )
+        ],
         ticksize=25,
         title="Sample Efficiency Curve - LunarLander",
         fontsize=20,
         linewidth=3,
+        sci_x=True,
     ).savefig(os.path.join(base_path, p["experiment_folders"][0], f"iqm_sec.pdf"))
