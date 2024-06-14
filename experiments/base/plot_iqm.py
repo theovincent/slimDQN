@@ -3,14 +3,26 @@ import sys
 import json
 import argparse
 import numpy as np
-import matplotlib.pyplot as plt
-from experiments.base.iqm import get_iqm_and_conf_parallel
-from experiments.base.parser import plot_parser
+from experiments.CarOnHill.plot_utils import plot_value
 
 
 def run(argvs=sys.argv[1:]):
     parser = argparse.ArgumentParser("Plot IQM against epochs.")
-    plot_parser(parser)
+    parser.add_argument(
+        "-e",
+        "--experiment_folders",
+        nargs="+",
+        help="Give the path to all experiment folders to plot from logs/",
+        required=True,
+    )
+
+    parser.add_argument(
+        "-env",
+        "--env",
+        help="Environment folder name.",
+        type=str,
+        required=True,
+    )
     args = parser.parse_args(argvs)
 
     p = vars(args)
@@ -31,15 +43,8 @@ def run(argvs=sys.argv[1:]):
         assert os.path.exists(exp_folder), f"{exp_folder} not found"
         results_folder.append(exp_folder)
 
-    plt.rc("font", size=10, family="serif", serif="Times New Roman")
-    plt.rc("lines", linewidth=1)
-    fig = plt.figure(f"Returns for {p['env']}")
-    ax = fig.add_subplot(111)
-    plt.xlabel("Epochs")
-    plt.ylabel("IQM total reward")
-    plt.title(f"{p['env']}")
-
     returns = {}
+    parameters = {}
     for result in results_folder:
         experiment = result.split("logs")[-1][1:]
         returns[experiment] = np.array(
@@ -49,20 +54,17 @@ def run(argvs=sys.argv[1:]):
                 if "rewards" in f
             ]
         )
+        parameters[experiment] = json.load(
+            open(os.path.join(result, "..", "parameters.json"), "r")
+        )
 
-    for exp in returns:
-        iqm, iqm_ci = get_iqm_and_conf_parallel(returns[exp])
-        ax.plot(
-            range(1, returns[exp].shape[1] + 1, 1),
-            iqm,
-            label=exp,
-        )
-        ax.fill_between(
-            range(1, returns[exp].shape[1] + 1, 1),
-            iqm_ci[0],
-            iqm_ci[1],
-            alpha=0.3,
-        )
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+    plot_value(
+        "Env steps",
+        "IQM Total reward",
+        np.arange(0, returns[exp].shape[1]).tolist(),
+        returns,
+        ticksize=25,
+        title="Sample Efficiency Curve - LunarLander",
+        fontsize=20,
+        linewidth=3,
+    ).savefig(os.path.join(base_path, p["experiment_folders"][0], f"iqm_sec.pdf"))
