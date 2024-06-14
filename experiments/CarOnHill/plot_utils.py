@@ -80,5 +80,6 @@ def plot_value(xlabel, ylabel, x_val, y_val, **kwargs):
     plt.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
     plt.legend()
     plt.grid()
+    plt.tight_layout()
 
     return plt
