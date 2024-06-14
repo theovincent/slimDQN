@@ -10,8 +10,12 @@ parse_arguments $@
 for (( seed=$FIRST_SEED; seed<=$LAST_SEED; seed++ ))
 do
     echo "launch train fqi"
-    command="car_on_hill_fqi -e $EXPERIMENT_NAME -rb $RB_CAPACITY -bi $N_BELLMAN_ITERATIONS -hl $HIDDEN_LAYER -s $seed -gamma $GAMMA"
+    command="car_on_hill_fqi -e $EXPERIMENT_NAME -bi $N_BELLMAN_ITERATIONS -hl $HIDDEN_LAYER -s $seed -gamma $GAMMA"
 
+    if [[ ! -z $RB_CAPACITY ]]; then
+        command="$command -rb $RB_CAPACITY"
+    fi
+    
     if [[ ! -z $BATCH_SIZE ]]; then
         command="$command -B $BATCH_SIZE"
     fi
