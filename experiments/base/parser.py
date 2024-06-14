@@ -152,7 +152,7 @@ def dqn_parser(parser: argparse.ArgumentParser) -> None:
         "--n_epochs",
         help="No. of epochs to train the DQN for.",
         type=int,
-        default=10000,
+        default=100,
     )
 
     parser.add_argument(
@@ -160,23 +160,5 @@ def dqn_parser(parser: argparse.ArgumentParser) -> None:
         "--n_training_steps_per_epoch",
         help="Max. no. of training steps per epoch.",
         type=int,
-        default=5000,
-    )
-
-
-def plot_parser(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
-        "-e",
-        "--experiment_folders",
-        nargs="+",
-        help="Give the path to all experiment folders to plot from logs/",
-        required=True,
-    )
-
-    parser.add_argument(
-        "-env",
-        "--env",
-        help="Environment folder name.",
-        type=str,
-        required=True,
+        default=2000,
     )
