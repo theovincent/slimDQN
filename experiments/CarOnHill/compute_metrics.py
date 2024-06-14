@@ -9,6 +9,7 @@ from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.architectures.DQN import DQNNet
 from slimRL.sample_collection.count_samples import count_samples
 from slimRL.sample_collection.utils import load_replay_buffer_store
+from experiments.CarOnHill.optimal import NX, NV
 
 
 def evaluate(
@@ -104,22 +105,6 @@ def run(argvs=sys.argv[1:]):
         help="Give this flag to compute Q_pi_i for every iteration on grid",
     )
     parser.add_argument(
-        "-nx",
-        "--n_states_x",
-        type=int,
-        help="No. of values to discretize x into",
-        required=False,
-        default=17,
-    )
-    parser.add_argument(
-        "-nv",
-        "--n_states_v",
-        type=int,
-        help="No. of values to discretize v into",
-        required=False,
-        default=17,
-    )
-    parser.add_argument(
         "-H",
         "--horizon",
         help="Horizon for computing performance loss.",
@@ -144,20 +129,17 @@ def run(argvs=sys.argv[1:]):
     GAMMA = 0.95
     multiprocessing.set_start_method("spawn", force=True)
 
-    boxes_x_size = (2 * env.max_pos) / (p["n_states_x"] - 1)
+    boxes_x_size = (2 * env.max_pos) / (NX - 1)
     states_x_boxes = (
-        np.linspace(-env.max_pos, env.max_pos + boxes_x_size, p["n_states_x"] + 1)
-        - boxes_x_size / 2
+        np.linspace(-env.max_pos, env.max_pos + boxes_x_size, NX + 1) - boxes_x_size / 2
     )
-    boxes_v_size = (2 * env.max_velocity) / (p["n_states_v"] - 1)
+    boxes_v_size = (2 * env.max_velocity) / (NV - 1)
     states_v_boxes = (
-        np.linspace(
-            -env.max_velocity, env.max_velocity + boxes_v_size, p["n_states_v"] + 1
-        )
+        np.linspace(-env.max_velocity, env.max_velocity + boxes_v_size, NV + 1)
         - boxes_v_size / 2
     )
-    states_x = np.linspace(-env.max_pos, env.max_pos, p["n_states_x"])
-    states_v = np.linspace(-env.max_velocity, env.max_velocity, p["n_states_v"])
+    states_x = np.linspace(-env.max_pos, env.max_pos, NX)
+    states_v = np.linspace(-env.max_velocity, env.max_velocity, NV)
     states_grid = np.array([[x, v] for x in states_x for v in states_v])
     next_states_grid = np.zeros(
         (states_grid.shape[0], env.n_actions, states_grid.shape[-1])
@@ -233,12 +215,7 @@ def run(argvs=sys.argv[1:]):
                 list(np.nan * np.zeros((num_bellman_iterations, rb_size, 2)))
             )
             q_i_grid[seed_run] = manager.list(
-                list(
-                    np.nan
-                    * np.zeros(
-                        (num_bellman_iterations, p["n_states_x"] * p["n_states_v"], 2)
-                    )
-                )
+                list(np.nan * np.zeros((num_bellman_iterations, NX * NV, 2)))
             )
             for action in range(env.n_actions):
                 q_i_grid_next_obs[seed_run + f"action={action}"] = manager.list(
@@ -247,7 +224,7 @@ def run(argvs=sys.argv[1:]):
                         * np.zeros(
                             (
                                 num_bellman_iterations,
-                                p["n_states_x"] * p["n_states_v"],
+                                NX * NV,
                                 2,
                             )
                         )
@@ -305,9 +282,7 @@ def run(argvs=sys.argv[1:]):
                 q_i_grid[seed_run],
             )
             T_q_rb = np.zeros((num_bellman_iterations - 1, rb_size))
-            T_q_grid = np.nan * np.zeros(
-                (num_bellman_iterations - 1, p["n_states_x"] * p["n_states_v"], 2)
-            )
+            T_q_grid = np.nan * np.zeros((num_bellman_iterations - 1, NX * NV, 2))
             for idx_iteration in range(1, num_bellman_iterations):
                 T_q_rb_iteration = np.array(q_i_rb[seed_run][idx_iteration - 1])
                 T_q_rb_iteration = np.roll(T_q_rb_iteration, -1, axis=0)
@@ -345,7 +320,7 @@ def run(argvs=sys.argv[1:]):
                     * np.zeros(
                         (
                             num_bellman_iterations,
-                            p["n_states_x"] * p["n_states_v"],
+                            NX * NV,
                             2,
                         )
                     )
