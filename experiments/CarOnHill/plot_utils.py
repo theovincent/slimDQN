@@ -19,7 +19,8 @@ def plot_on_grid(values, shared_cmap, zeros_to_nan=False, **kwargs):
         ncols=ncols,
         sharex=True,
         sharey=True,
-        figsize=(ncols * 7, nrows * 5.5),
+        # figsize=(ncols * 8, nrows * 5.5),
+        figsize=(5 * ncols, 5 * nrows),
     )
 
     if nrows == 1:
@@ -74,6 +75,7 @@ def plot_on_grid(values, shared_cmap, zeros_to_nan=False, **kwargs):
         for idx, (key, val) in enumerate(values.items()):
             fig.colorbar(colors[idx], ax=ax[idx // 3][idx % 3])
     fig.suptitle(kwargs.get("title", ""), fontsize=25)
+    plt.tight_layout()
 
     return plt
 
