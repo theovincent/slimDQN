@@ -8,7 +8,7 @@ from flax.core import FrozenDict
 import multiprocessing
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.architectures.DQN import DQNNet
-from slimRL.sample_collection.count_samples import count_samples
+from experiments.CarOnHill.sample_utils import count_samples
 from slimRL.sample_collection.utils import load_replay_buffer_store
 from experiments.CarOnHill.plot_utils import plot_on_grid, plot_value
 
