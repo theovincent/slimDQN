@@ -81,7 +81,7 @@ class DQN:
     # @partial(jax.jit, static_argnames="self")
     def compute_target(self, params: FrozenDict, sample):
         return sample["rewards"] + (1 - sample["dones"]) * self.gamma * jnp.max(
-            self.apply(params, sample["next_observations"])
+            self.apply(params, sample["next_observations"]), axis=-1
         )
 
     def update_online_params(
