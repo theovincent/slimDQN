@@ -74,11 +74,11 @@ class DQN:
 
         return params, optimizer_state, loss
 
-    # @partial(jax.jit, static_argnames="self")
+    @partial(jax.jit, static_argnames="self")
     def apply(self, params: FrozenDict, state: jnp.ndarray):
         return self.q_network.apply(params, state)
 
-    # @partial(jax.jit, static_argnames="self")
+    @partial(jax.jit, static_argnames="self")
     def compute_target(self, params: FrozenDict, sample):
         return sample["rewards"] + (1 - sample["dones"]) * self.gamma * jnp.max(
             self.apply(params, sample["next_observations"]), axis=-1
@@ -107,6 +107,6 @@ class DQN:
         if step % self.target_update_frequency == 0:
             self.target_params = self.params.copy()
 
-    # @partial(jax.jit, static_argnames="self")
+    @partial(jax.jit, static_argnames="self")
     def best_action(self, params: FrozenDict, state: jnp.ndarray):
         return jnp.argmax(self.apply(params, state)).astype(jnp.int8)

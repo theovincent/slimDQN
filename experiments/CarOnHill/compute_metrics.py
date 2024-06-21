@@ -6,28 +6,27 @@ import argparse
 import numpy as np
 import jax
 import jax.numpy as jnp
-import pickle
-import time
 import multiprocess
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.architectures.DQN import BasicDQN
 from experiments.CarOnHill.sample_utils import compute_state_and_reward_distribution
 from slimRL.sample_collection.utils import load_replay_buffer_store
+from experiments.base.logger import pickle_load
 from experiments.CarOnHill.optimal import NX, NV
 
 
-def evaluate_qs(q: BasicDQN, observations_for_q_i, samples_for_tq_i, params):
+def evaluate_and_save_q_and_tq(
+    q: BasicDQN, params_list, rb, states_grid, experiment_folder_path, seed_runs
+):
+    def evaluate_q_i(q_apply, params, evaluation_observations, q_i, idx_iteration):
+        q_i[idx_iteration] = np.array(q_apply(params, evaluation_observations))
 
-    def evaluate_q_i(q, params, q_i, evaluation_observations, idx_iteration):
-        q_i[idx_iteration] = np.array(q(params, evaluation_observations))
-        print(f"Done iteration={idx_iteration}")
-
+    observations_for_q_i = jnp.concatenate([rb["observations"], states_grid], axis=0)
     processes = []
-    n_seeds, n_bellman_iterations = len(params), len(params[0])
+    n_seeds, n_bellman_iterations = len(params_list), len(params_list[0])
     manager = multiprocess.Manager()
     q_i = manager.dict()
     tq_i = manager.dict()
-
     for idx_seed in range(n_seeds):
         q_i[idx_seed] = manager.list([np.nan for _ in range(n_bellman_iterations)])
         tq_i[idx_seed] = manager.list(
@@ -39,9 +38,9 @@ def evaluate_qs(q: BasicDQN, observations_for_q_i, samples_for_tq_i, params):
                     target=evaluate_q_i,
                     args=(
                         q.apply,
-                        params[idx_seed][idx_iteration],
-                        q_i[idx_seed],
+                        params_list[idx_seed][idx_iteration],
                         observations_for_q_i,
+                        q_i[idx_seed],
                         idx_iteration,
                     ),
                 )
@@ -51,9 +50,9 @@ def evaluate_qs(q: BasicDQN, observations_for_q_i, samples_for_tq_i, params):
                     target=evaluate_q_i,
                     args=(
                         q.compute_target,
-                        params[idx_seed][idx_iteration],
+                        params_list[idx_seed][idx_iteration],
+                        rb,
                         tq_i[idx_seed],
-                        samples_for_tq_i,
                         idx_iteration,
                     ),
                 )
@@ -63,46 +62,68 @@ def evaluate_qs(q: BasicDQN, observations_for_q_i, samples_for_tq_i, params):
         process.start()
     for process in processes:
         process.join()
-    return q_i, tq_i
+
+    rb_size = rb["observations"].shape[0]
+    for idx_seed, seed_run in enumerate(seed_runs):
+        np.save(
+            os.path.join(experiment_folder_path, seed_run, "q_rb.npy"),
+            np.array(q_i[idx_seed])[:, :rb_size, :],
+        )
+        np.save(
+            os.path.join(experiment_folder_path, seed_run, "q_grid.npy"),
+            np.array(q_i[idx_seed])[:, rb_size:, :],
+        )
+        np.save(
+            os.path.join(experiment_folder_path, seed_run, "Tq_rb.npy"),
+            np.array(tq_i[idx_seed]),
+        )
 
 
-def evaluate_q_pi_i_s_a(best_action, params, state, action, env, horizon, gamma):
-    env.reset(state)
-    _, reward, absorbing = env.step(action)
-    performance = reward
-    discount = gamma
+def evaluate_and_save_q_pis(
+    q: BasicDQN,
+    params_list,
+    states_grid,
+    horizon,
+    gamma,
+    env,
+    experiment_folder_path,
+    seed_runs,
+):
+    def evaluate_q_pi_i(
+        q_best_action, params, states_grid, env, horizon, gamma, q_pi, idx_iteration
+    ):
+        def evaluate_q_pi_i_s_a(
+            q_best_action, params, state, action, env, horizon, gamma
+        ):
+            env.reset(state)
+            _, reward, absorbing = env.step(action)
+            performance = reward
+            discount = gamma
 
-    while not absorbing and env.n_steps < horizon:
-        action = best_action(params, jnp.array(env.state))
-        _, reward, absorbing = env.step(action)
-        performance += discount * reward
-        discount *= gamma
+            while not absorbing and env.n_steps < horizon:
+                action = q_best_action(params, jnp.array(env.state))
+                _, reward, absorbing = env.step(action)
+                performance += discount * reward
+                discount *= gamma
 
-    return performance
+            return performance
 
-
-def evaluate_q_pis(q: BasicDQN, params, horizon, gamma, env):
-    states_x = np.linspace(-env.max_pos, env.max_pos, NX)
-    states_v = np.linspace(-env.max_velocity, env.max_velocity, NV)
-
-    def evaluate_q_pi_i(best_action, params, env, horizon, gamma, q_pi, idx_iteration):
-        q_pi_i = np.zeros((NX, NV, env.n_actions))
-        for idx_state_x, state_x in enumerate(states_x):
-            for idx_state_v, state_v in enumerate(states_v):
-                for action in range(env.n_actions):
-                    q_pi_i[idx_state_x, idx_state_v, action] = evaluate_q_pi_i_s_a(
-                        best_action,
-                        params,
-                        jnp.array([state_x, state_v]),
-                        action,
-                        env,
-                        horizon,
-                        gamma,
-                    )
-        q_pi[idx_iteration] = q_pi_i.reshape(-1, env.n_actions)
+        q_pi_i = np.zeros((NX * NV, env.n_actions))
+        for idx_state, state in enumerate(states_grid):
+            for action in range(env.n_actions):
+                q_pi_i[idx_state, action] = evaluate_q_pi_i_s_a(
+                    q_best_action,
+                    params,
+                    jnp.array(state),
+                    action,
+                    env,
+                    horizon,
+                    gamma,
+                )
+        q_pi[idx_iteration] = q_pi_i
         print(f"Done q_pi_i for i={idx_iteration}")
 
-    n_seeds, n_bellman_iterations = len(params), len(params[0])
+    n_seeds, n_bellman_iterations = len(params_list), len(params_list[0])
     manager = multiprocess.Manager()
     q_pi = manager.dict()
     processes = []
@@ -117,7 +138,8 @@ def evaluate_q_pis(q: BasicDQN, params, horizon, gamma, env):
                     target=evaluate_q_pi_i,
                     args=(
                         q.best_action,
-                        params[idx_seed][idx_iteration],
+                        params_list[idx_seed][idx_iteration],
+                        states_grid,
                         copy.deepcopy(env),
                         horizon,
                         gamma,
@@ -129,10 +151,14 @@ def evaluate_q_pis(q: BasicDQN, params, horizon, gamma, env):
 
     for process in processes:
         process.start()
-
     for process in processes:
         process.join()
-    return q_pi
+
+    for idx_seed, seed_run in enumerate(seed_runs):
+        np.save(
+            os.path.join(experiment_folder_path, seed_run, "q_pi.npy"),
+            np.array(q_pi[idx_seed]),
+        )
 
 
 def run(argvs=sys.argv[1:]):
@@ -156,7 +182,7 @@ def run(argvs=sys.argv[1:]):
     )
     parser.add_argument(
         "-ae",
-        "--approximation_error",
+        "--approximation_error_components",
         action="store_true",
         help="Give this flag to compute Approximation error components(Q_i and T Q_{i-1}) for every iteration on data and grid",
     )
@@ -171,7 +197,6 @@ def run(argvs=sys.argv[1:]):
     p = vars(args)
 
     multiprocess.set_start_method("spawn", force=True)
-    env = CarOnHill()
 
     experiment_folder_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
@@ -186,7 +211,6 @@ def run(argvs=sys.argv[1:]):
     rb = load_replay_buffer_store(
         os.path.join(experiment_folder_path, "replay_buffer.json")
     )
-    rb_size = rb["observations"].shape[0]
     samples_stats, rewards_stats = compute_state_and_reward_distribution(rb)
     np.save(os.path.join(experiment_folder_path, "samples_stats.npy"), samples_stats)
     np.save(os.path.join(experiment_folder_path, "rewards_stats.npy"), rewards_stats)
@@ -199,8 +223,8 @@ def run(argvs=sys.argv[1:]):
         ]
     else:
         seed_runs = [f"seed={seed}" for seed in p["seeds"]]
-    n_seeds = len(seed_runs)
 
+    env = CarOnHill()
     q = BasicDQN(
         q_key=jax.random.PRNGKey(0),
         env=env,
@@ -209,94 +233,45 @@ def run(argvs=sys.argv[1:]):
         update_horizon=-1,
         lr=-1,
         adam_eps=-1,
-        train_frequency=0,
-        target_update_frequency=0,
+        train_frequency=-1,
+        target_update_frequency=-1,
     )
 
-    params = []
-    n_bellman_iterations = -1
-
-    for idx_seed, seed_run in enumerate(seed_runs):
-        params.append([])
-        n_seed_iterations = len(
+    params_list = []
+    for seed_run in seed_runs:
+        params_list.append(
             [
-                model_iteration
-                for model_iteration in os.listdir(
-                    os.path.join(experiment_folder_path, seed_run)
-                )
-                if "model_iteration" in model_iteration
-            ]
-        )
-        if n_bellman_iterations == -1:
-            n_bellman_iterations = n_seed_iterations
-        assert (
-            n_bellman_iterations == n_seed_iterations
-        ), "Required the same number of bellman iterations for all seeds"
-        for idx_iteration in range(n_bellman_iterations):
-            params[idx_seed].append(
-                pickle.load(
-                    open(
-                        os.path.join(
-                            experiment_folder_path,
-                            seed_run,
-                            f"model_iteration={idx_iteration}",
-                        ),
-                        "rb",
+                pickle_load(
+                    os.path.join(
+                        experiment_folder_path,
+                        seed_run,
+                        f"model_iteration={idx_iteration}",
                     )
                 )["params"]
-            )
-
-    print(
-        f"Num seeds = {n_seeds}, Bellman iterations = {n_bellman_iterations}, RB size = {rb_size}"
-    )
-
-    if p["approximation_error"]:
-        t1 = time.time()
-        states_grid = np.array(
-            [
-                [x, v]
-                for x in np.linspace(-env.max_pos, env.max_pos, NX)
-                for v in np.linspace(-env.max_velocity, env.max_velocity, NV)
+                for idx_iteration in range(parameters["n_bellman_iterations"] + 1)
             ]
         )
 
-        observations_for_q_i = jnp.concatenate(
-            [jnp.array(rb["observations"]), jnp.array(states_grid)], axis=0
+    states_grid = np.array(
+        [
+            [x, v]
+            for x in np.linspace(-env.max_pos, env.max_pos, NX)
+            for v in np.linspace(-env.max_velocity, env.max_velocity, NV)
+        ]
+    )
+    if p["approximation_error_components"]:
+        evaluate_and_save_q_and_tq(
+            q, params_list, rb, states_grid, experiment_folder_path, seed_runs
         )
-
-        q_i, tq_i = evaluate_qs(
-            q=q,
-            observations_for_q_i=observations_for_q_i,
-            samples_for_tq_i=rb,
-            params=params,
-        )
-        t2 = time.time()
-        print(f"Time taken to compute q_i = {t2-t1}")
-
-        for idx_seed, seed_run in enumerate(seed_runs):
-            np.save(
-                os.path.join(experiment_folder_path, seed_run, "q_rb.npy"),
-                np.array(q_i[idx_seed])[:, :rb_size, :],
-            )
-            np.save(
-                os.path.join(experiment_folder_path, seed_run, "q_grid.npy"),
-                np.array(q_i[idx_seed])[:, rb_size:, :],
-            )
-            np.save(
-                os.path.join(experiment_folder_path, seed_run, "Tq_rb.npy"),
-                np.array(tq_i[idx_seed]),
-            )
 
     if p["performance"]:
-        t1 = time.time()
-        q_pi = evaluate_q_pis(
-            q, params, parameters["horizon"], parameters["gamma"], env
+        evaluate_and_save_q_pis(
+            q,
+            params_list,
+            states_grid,
+            parameters["horizon"],
+            parameters["gamma"],
+            env,
+            experiment_folder_path,
+            seed_runs,
         )
-        t2 = time.time()
-        print(f"Time taken to compute q_pi_i = {t2-t1}")
-
-        for idx_seed, seed_run in enumerate(seed_runs):
-            np.save(
-                os.path.join(experiment_folder_path, seed_run, "q_pi.npy"),
-                np.array(q_pi[idx_seed]),
-            )
