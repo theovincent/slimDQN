@@ -4,11 +4,11 @@ from slimRL.environments.car_on_hill import CarOnHill
 from experiments.CarOnHill.optimal import NX, NV
 
 
-def count_samples(rb):
+def compute_state_and_reward_distribution(rb):
 
-    xs = (rb["observation"][:, 0]).reshape(-1)
-    vs = (rb["observation"][:, 1]).reshape(-1)
-    rewards = rb["reward"].reshape(-1)
+    xs = (rb["observations"][:, 0]).reshape(-1)
+    vs = (rb["observations"][:, 1]).reshape(-1)
+    rewards = rb["rewards"].reshape(-1)
 
     env = CarOnHill()
 

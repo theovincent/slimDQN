@@ -40,9 +40,10 @@ def save_replay_buffer_store(rb: ReplayBuffer, save_path):
 
     rb_store = {}
 
-    for key in ["observation", "action", "reward", "done"]:
+    for key in ["observations", "actions", "rewards", "dones"]:
         rb_store[key] = rb._store[key].tolist()
 
+    # rb_store["drop_idx"] = []
     rb_store["next_observations_trunc"] = {}
     for key in rb._store["next_observations_trunc"]:
         rb_store["next_observations_trunc"][key] = rb._store["next_observations_trunc"][
@@ -69,11 +70,20 @@ def load_replay_buffer_store(rb_path):
     next_obs_keys = [int(idx) for idx in rb_store["next_observations_trunc"]] + [
         rb_store["last_transition_next_obs"][0]
     ]
-    for key in ["observation", "action", "reward", "done"]:
+    rb_store["next_observations"] = np.array(
+        [
+            val
+            for idx, val in enumerate(np.roll(rb_store["observations"], -1, axis=0))
+            if idx not in next_obs_keys
+        ]
+    )
+    for key in ["observations", "actions", "rewards", "dones"]:
         rb_store[key] = np.array(
             [val for idx, val in enumerate(rb_store[key]) if idx not in next_obs_keys]
         )
 
+    # for key in ["observation", "action", "reward", "done"]:
+    #     del rb_store[key]
     next_obs_keys = list(rb_store["next_observations_trunc"])
     for key in next_obs_keys:
         rb_store["next_observations_trunc"][int(key)] = np.array(
@@ -95,12 +105,12 @@ def update_replay_buffer(key, env, agent, rb, p):
         rb._store = load_replay_buffer_store(
             os.path.join(p["save_path"], "..", "replay_buffer.json")
         )
-        rb.episode_end_indices = set(np.where(rb._store["done"])[0].tolist())
+        rb.episode_end_indices = set(np.where(rb._store["dones"])[0].tolist())
         rb.episode_trunc_next_states = rb._store["next_observations_trunc"].copy()
-        rb.add_count = len(rb._store["observation"])
+        rb.add_count = len(rb._store["observations"])
     else:
         env.reset()
-        for steps in range(p["replay_capacity"]):
+        for _ in range(p["replay_capacity"]):
             key, sample_key = jax.random.split(key)
             collect_single_sample(
                 sample_key,
@@ -111,8 +121,8 @@ def update_replay_buffer(key, env, agent, rb, p):
                 optax.linear_schedule(1.0, 1.0, -1),
                 0,
             )
-        assert sum(rb._store["reward"] == 1) > 0, "No positive reward sampled. Rerun!"
+        assert sum(rb._store["rewards"] == 1) > 0, "No positive reward sampled. Rerun!"
         print(
-            f"Replay buffer filled with {sum(rb._store['reward'] == 1)} success samples."
+            f"Replay buffer filled with {sum(rb._store['rewards'] == 1)} success samples."
         )
         save_replay_buffer_store(rb, p["save_path"])

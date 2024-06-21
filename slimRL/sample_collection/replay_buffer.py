@@ -67,11 +67,11 @@ class ReplayBuffer(object):
     def get_storage_signature(self):
         storage_elements = [
             ReplayElement(
-                "observation", self._observation_shape, self._observation_dtype
+                "observations", self._observation_shape, self._observation_dtype
             ),
-            ReplayElement("action", (), self._action_dtype),
-            ReplayElement("reward", (), self._reward_dtype),
-            ReplayElement("done", (), self._terminal_dtype),
+            ReplayElement("actions", (), self._action_dtype),
+            ReplayElement("rewards", (), self._reward_dtype),
+            ReplayElement("dones", (), self._terminal_dtype),
         ]
 
         return storage_elements
@@ -156,14 +156,14 @@ class ReplayBuffer(object):
             # The indices and next_indices must be smaller than the cursor.
             if index >= self.cursor() - self._update_horizon:
                 for i in range(index, self.cursor()):
-                    if self._store["done"][i]:
+                    if self._store["dones"][i]:
                         return True
                 return False
 
         # If the episode ends before the update horizon, without a terminal signal,
         # it is invalid.
         for i in modulo_range(index, self._update_horizon, self._replay_capacity):
-            if i in self.episode_end_indices and not self._store["done"][i]:
+            if i in self.episode_end_indices and not self._store["dones"][i]:
                 return False
 
         return True
@@ -224,7 +224,7 @@ class ReplayBuffer(object):
                 (state_index + j) % self._replay_capacity
                 for j in range(self._update_horizon)
             ]
-            trajectory_terminals = self._store["done"][trajectory_indices]
+            trajectory_terminals = self._store["dones"][trajectory_indices]
             is_terminal_transition = trajectory_terminals.any()
             if not is_terminal_transition:
                 trajectory_length = self._update_horizon
@@ -235,21 +235,21 @@ class ReplayBuffer(object):
                 :trajectory_length
             ]
             trajectory_rewards = self.get_range(
-                self._store["reward"], state_index, next_state_index
+                self._store["rewards"], state_index, next_state_index
             )
 
             for element_type, element in sampled_batch.items():
                 if element_type == "observations":
-                    element[batch_element] = self._store["observation"][state_index]
+                    element[batch_element] = self._store["observations"][state_index]
                 elif element_type == "actions":
-                    element[batch_element] = self._store["action"][state_index]
+                    element[batch_element] = self._store["actions"][state_index]
                 elif element_type == "rewards":
                     # compute the discounted sum of rewards in the trajectory.
                     element[batch_element] = np.sum(
                         trajectory_discount_vector * trajectory_rewards, axis=0
                     )
                 elif element_type == "next_observations":
-                    element[batch_element] = self._store["observation"][
+                    element[batch_element] = self._store["observations"][
                         next_state_index % self._replay_capacity
                     ]
                 elif element_type == "dones":
