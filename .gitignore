@@ -160,6 +160,8 @@ cython_debug/
 .idea/
 .venv/
 env/
+env_cpu/
+env_gpu/
 
 **.json
 **.npy
