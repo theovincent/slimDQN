@@ -7,7 +7,7 @@ parse_arguments $@
 [ -d experiments/LunarLander/logs/$EXPERIMENT_NAME/DQN/error ] || mkdir -p experiments/LunarLander/logs/$EXPERIMENT_NAME/DQN/error
 
 echo "launch train dqn"
-submission_train_dqn="sbatch -J L_train_dqn --array=$FIRST_SEED-$LAST_SEED --cpus-per-task=3 --mem-per-cpu=750Mc --time=3:30:00 -p amd,amd2"
+submission_train_dqn="sbatch -J L_train_dqn --array=$FIRST_SEED-$LAST_SEED --cpus-per-task=3 --mem-per-cpu=750M --time=30:00 -p stud"
 submission_train_dqn="$submission_train_dqn --output=experiments/LunarLander/logs/$EXPERIMENT_NAME/DQN/out/train_dqn_%a.out --error=experiments/LunarLander/logs/$EXPERIMENT_NAME/DQN/error/train_dqn_%a.out)"
 submission_train_dqn="$submission_train_dqn launch_job/lunar_lander/train_dqn.sh -e $EXPERIMENT_NAME -hl $HIDDEN_LAYER -gamma $GAMMA"
 
@@ -63,4 +63,4 @@ if [[ ! -z $N_TRAINING_STEPS_PER_EPOCH ]]; then
     submission_train_dqn="$submission_train_dqn -spe $N_TRAINING_STEPS_PER_EPOCH"
 fi
 
-submission_train_dqn=$(submission_train_dqn)
+$submission_train_dqn
