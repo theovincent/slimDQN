@@ -1,7 +1,7 @@
 import sys
 import argparse
-import pickle
 import jax.numpy as jnp
+from experiments.base.logger import pickle_load
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.architectures.DQN import DQNNet
 from slimRL.environments.visualization.car_on_hill import render
@@ -39,7 +39,7 @@ def run(argvs=sys.argv[1:]):
     args = parser.parse_args(argvs)
 
     env = CarOnHill()
-    model = pickle.load(open(args.model, "rb"))
+    model = pickle_load(args.model)
     q_network = DQNNet(env, model["hidden_layers"])
 
     obs = env.reset()

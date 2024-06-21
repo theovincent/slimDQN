@@ -115,6 +115,14 @@ def prepare_logs(p: dict):
     store_params(p)
 
 
+def pickle_load(path):
+    return pickle.load(open(path, "rb"))
+
+
+def pickle_dump(obj, path):
+    return pickle.dump(obj, open(path, "wb"))
+
+
 def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: BasicDQN):
 
     rewards_path = os.path.join(p["save_path"], "rewards_seed=" + str(p["seed"]))
@@ -127,4 +135,4 @@ def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: BasicDQN):
         "params": jax.device_get(agent.params),
         "hidden_layers": agent.q_network.hidden_layers,
     }
-    pickle.dump(model, open(model_path, "wb"))
+    pickle_dump(model, open(model_path, "wb"))
