@@ -83,7 +83,7 @@ def run(argvs=sys.argv[1:]):
             )
         ],
         ticksize=25,
-        title="Sample Efficiency Curve - LunarLander",
+        title=f"Sample Efficiency Curve - {p['env']}",
         fontsize=20,
         linewidth=3,
         sci_x=True,

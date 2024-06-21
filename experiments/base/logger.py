@@ -1,6 +1,7 @@
 import os
 import json
 import pickle
+import jax
 from slimRL.networks.architectures.DQN import BasicDQN
 
 SHARED_PARAMS = [
@@ -122,7 +123,8 @@ def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: BasicDQN):
 
     json.dump(log_rewards, open(rewards_path, "w"))
     json.dump(log_lengths, open(lengths_path, "w"))
-    model = {}
-    model["params"] = agent.params
-    model["hidden_layers"] = agent.q_network.hidden_layers
+    model = {
+        "params": jax.device_get(agent.params),
+        "hidden_layers": agent.q_network.hidden_layers,
+    }
     pickle.dump(model, open(model_path, "wb"))

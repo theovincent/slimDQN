@@ -2,7 +2,7 @@
 
 
 import numpy as np
-import multiprocessing
+import multiprocess
 from slimRL.environments.car_on_hill import CarOnHill
 
 
@@ -61,7 +61,7 @@ def compute_optimal_values(n_states_x, n_states_v, horizon, gamma):
     states_x = np.linspace(-env.max_pos, env.max_pos, n_states_x)
     states_v = np.linspace(-env.max_velocity, env.max_velocity, n_states_v)
 
-    manager = multiprocessing.Manager()
+    manager = multiprocess.Manager()
     optimal_q = np.zeros((n_states_x, n_states_v, 2))
     optimal_v = np.zeros((n_states_x, n_states_v))
 
@@ -73,7 +73,7 @@ def compute_optimal_values(n_states_x, n_states_v, horizon, gamma):
             for action in range(2):
                 eval_state = np.array([state_x, state_v])
                 processes.append(
-                    multiprocessing.Process(
+                    multiprocess.Process(
                         target=compute_optimal_q_value,
                         args=(
                             eval_state,
