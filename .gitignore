@@ -162,7 +162,10 @@ cython_debug/
 env/
 env_cpu/
 env_gpu/
+env_test/
 
 **.json
 **.npy
 experiments/**/logs/*
+experiments/**/error/*
+experiments/**/out/*
