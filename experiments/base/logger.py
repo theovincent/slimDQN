@@ -135,4 +135,4 @@ def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: BasicDQN):
         "params": jax.device_get(agent.params),
         "hidden_layers": agent.q_network.hidden_layers,
     }
-    pickle_dump(model, open(model_path, "wb"))
+    pickle_dump(model, model_path)

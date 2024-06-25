@@ -5,9 +5,9 @@ parse_arguments $@
 
 if [[ $GPU = true ]]
 then
-    source env_gpu/bin/activate
+    source env/bin/activate
 else
-    source env_cpu/bin/activate
+    source env/bin/activate
 fi
 
 
