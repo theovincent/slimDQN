@@ -93,6 +93,10 @@ def plot_value(xlabel, ylabel, x_val, y_val, xlim, xticks, **kwargs):
     plt.title(kwargs.get("title", ""))
     ax.set_xlim(xlim)
     ax.set_xticks(xticks)
+    if kwargs.get("yticks", None) is not None:
+        ax.set_yticks(kwargs.get("yticks"))
+    if kwargs.get("ylim", None) is not None:
+        ax.set_ylim(kwargs.get("ylim"))
 
     for exp in y_val:
         y_iqm, y_cnf = get_iqm_and_conf_parallel(y_val[exp])
@@ -112,7 +116,7 @@ def plot_value(xlabel, ylabel, x_val, y_val, xlim, xticks, **kwargs):
         plt.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
     if kwargs.get("sci_y", False):
         plt.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
-    plt.legend()
+    plt.legend(loc="lower right")
     plt.grid()
     plt.tight_layout()
 

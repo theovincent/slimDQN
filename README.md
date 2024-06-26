@@ -14,6 +14,11 @@ Welcome to **`slimRL`** - a gateway to mastering Deep Q-Network (DQN) and Fitted
 ✅ Easy to use with [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) and custom environments 🏋️‍♂️
 ✅ Get comprehensive insights for LunarLander and CarOnHill. 📊
 
+<p align="center">
+  <img width=70% src="images/sec_lunarlander.gif">
+</p>
+
+
 Let's dive in!
 
 ## User installation
