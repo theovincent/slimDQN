@@ -15,7 +15,7 @@ Welcome to **`slimRL`** - a playground for Deep Q-Network (DQN) and Fitted Q Ite
 ✅ Get comprehensive insights for LunarLander and CarOnHill. 📊
 
 <p align="center">
-  <img width=45% src="images/sec_lunarlander.gif">
+  <img width=47% src="images/sec_lunarlander.gif">
   <img width=51% src="images/pol_lunarlander.gif">
 </p>
 
