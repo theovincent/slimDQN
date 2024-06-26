@@ -4,16 +4,15 @@
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Welcome to **slimRL** - a gateway to mastering Deep Q-Network (DQN) and Fitted Q Iteration (FQI) algorithms in Reinforcement Learning!🎉 Whether you're a researcher, student, or just curious about RL, slimRL provides a clear, concise, and customizable path to understanding and implementing these powerful algorithms. The simplicity of the implementation allows you to tailor the experimental setup to your requirements. 
+Welcome to **`slimRL`** - a gateway to mastering Deep Q-Network (DQN) and Fitted Q Iteration (FQI) algorithms in Reinforcement Learning!🎉 Whether you're a researcher, student, or just curious about RL, `slimRL` provides a clear, concise, and customizable path to understanding and implementing these powerful algorithms. The simplicity of the implementation allows you to tailor the experimental setup to your requirements. 
 
 ### 🚀 Key advantages 
 ✅ Learn the essentials without the clutter 🧹\
 ✅ Easily modifiable to implement new research ideas in Online and Offline RL 💬\
-✅ Allows quick tailoring for conference reviews and rebuttals ✂️\
+✅ Allows quick tailoring for reviews and rebuttals ✂️\
 ✅ Smooth transfer from theory to practice for RL learners ➡️\
-✅ Easy to use with [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) and custom environments 🏋️‍♂️\
-
-
+✅ Easy to use with [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) and custom environments 🏋️‍♂️
+✅ Get comprehensive insights for LunarLander and CarOnHill. 📊
 
 Let's dive in!
 
@@ -31,19 +30,38 @@ If you are using GPU, update jax with CUDA dependencies:
 pip install -U "jax[cuda12]"
 ```
 
-## Run the experiments
-All the experiments can be ran the same way by simply replacing the name of the environment, here is an example for CarOnHill.
-
-The following command line runs the training and the evaluation of all the algorithms, one after the other:
-```Bash
-launch_job/car_on_hill/launch_local.sh -e "test" -rb 50000 -bi 30 -hl 40 20 -frs 10 -lrs 29 -gamma 0.95
-
-```
-
-Once all the trainings are done, you can generate the figures shown in the paper by running the jupyter notebook file located at *experiments/CarOnHill/plots.ipynb*. In the first cell of the notebook, please make sure to change the *experiment_name* as needed. 
-
-## Run the tests
-Run all tests with
+### Run the tests
+To verify that everything is working correctly, run the tests as:
 ```Bash
 pytest
+```
+It should take a few seconds to complete.
+
+## Running experiments
+`slimRL` provides support for Car-on-hill, Lunar Lander and Chain environments. However, you can extend it to [gym](https://github.com/Farama-Foundation/Gymnasium) environments by replicating the setup for LunarLander.
+
+### Training
+
+To train a DQN agent on LunarLander on your local system, run (provide the `-g` flag if you want to use GPU):
+```Bash
+launch_job/lunar_lander/launch_local.sh -e "test_local" -hl 100 100 -gamma 0.99 -frs 0 -lrs 0 -E 100 -spe 2000
+```
+It trains a DQN agent with 2 hidden layers of size 100, for a single random seed (add more seeds by changing `-lrs` parameter) for 100 epochs, with 2000 steps per epoch.
+
+#### To train on cluster, run:
+```Bash
+launch_job/lunar_lander/launch_gpu.sh -e "test_gpu" -hl 100 100 -gamma 0.99 -frs 0 -lrs 0 -E 100 -spe 2000
+```
+
+### Plotting results
+Once the training is done, you can generate the Sample Efficiency Curve by running:
+```Bash
+plot_iqm -e "test/DQN" -env "LunarLander"
+```
+It generates an [IQM](https://arxiv.org/abs/2108.13264)-based Sample Efficiency Curve, similar to the one shown above.
+
+### Visualizing the behaviour
+To visualize how your trained agent performs, run:
+```Bash
+lunar_lander_vis -m [MODEL_PATH]
 ```
