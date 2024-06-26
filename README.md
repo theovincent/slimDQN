@@ -54,7 +54,7 @@ launch_job/lunar_lander/launch_local.sh -e "test_local" -hl 100 100 -gamma 0.99 
 ```
 It trains a DQN agent with 2 hidden layers of size 100, for a single random seed (add more seeds by changing `-lrs` parameter) for 100 epochs, with 2000 steps per epoch.
 
-#### To train on cluster, run:
+#### To train on cluster
 ```Bash
 launch_job/lunar_lander/launch_gpu.sh -e "test_gpu" -hl 100 100 -gamma 0.99 -frs 0 -lrs 0 -E 100 -spe 2000
 ```
