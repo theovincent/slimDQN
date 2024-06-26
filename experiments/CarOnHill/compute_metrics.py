@@ -21,6 +21,7 @@ def evaluate_and_save_q_and_tq(
     def evaluate_q_i(q_apply, params, evaluation_observations, q_i, idx_iteration):
         q_i[idx_iteration] = np.array(q_apply(params, evaluation_observations))
 
+    # ---------Concatenate RB states and grid states to compute Q_i---------
     observations_for_q_i = jnp.concatenate([rb["observations"], states_grid], axis=0)
     processes = []
     n_seeds, n_bellman_iterations = len(params_list), len(params_list[0])
@@ -121,7 +122,6 @@ def evaluate_and_save_q_pis(
                     gamma,
                 )
         q_pi[idx_iteration] = q_pi_i
-        print(f"Done q_pi_i for i={idx_iteration}")
 
     n_seeds, n_bellman_iterations = len(params_list), len(params_list[0])
     manager = multiprocess.Manager()
@@ -204,10 +204,12 @@ def run(argvs=sys.argv[1:]):
         p["experiment_folder"],
     )
 
+    # ---------Load the model parameters---------
     parameters = json.load(
         open(os.path.join(experiment_folder_path, "parameters.json"), "r")
     )
 
+    # ---------Load the replay buffer and save samples and rewards distribution---------
     rb = load_replay_buffer_store(
         os.path.join(experiment_folder_path, "replay_buffer.json")
     )
@@ -215,6 +217,8 @@ def run(argvs=sys.argv[1:]):
     np.save(os.path.join(experiment_folder_path, "samples_stats.npy"), samples_stats)
     np.save(os.path.join(experiment_folder_path, "rewards_stats.npy"), rewards_stats)
 
+    # ---------Extract all the seeds for computing metrics---------
+    # ---------(Use all seeds, if not provided explicitly)---------
     if p["seeds"] is None:
         seed_runs = [
             seed_run
@@ -224,6 +228,7 @@ def run(argvs=sys.argv[1:]):
     else:
         seed_runs = [f"seed={seed}" for seed in p["seeds"]]
 
+    # ---------Initialize environment and agent---------
     env = CarOnHill()
     q = BasicDQN(
         q_key=jax.random.PRNGKey(0),
@@ -237,6 +242,7 @@ def run(argvs=sys.argv[1:]):
         target_update_frequency=-1,
     )
 
+    # ---------Load all the model weights for all seeds X iterations---------
     params_list = []
     for seed_run in seed_runs:
         params_list.append(
@@ -252,6 +258,7 @@ def run(argvs=sys.argv[1:]):
             ]
         )
 
+    # ---------Initialize grid to compute metrics---------
     states_grid = np.array(
         [
             [x, v]
