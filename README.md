@@ -4,7 +4,7 @@
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Welcome to **`slimRL`** - a playground for Deep Q-Network (DQN) and Fitted Q Iteration (FQI) algorithms in Reinforcement Learning!🎉 Whether you're a researcher, student, or just curious about RL, `slimRL` provides a clear, concise, and customizable path to understanding and implementing these algorithms. The simplicity of the implementation allows you to tailor the experimental setup to your requirements. 
+Welcome to **`slimRL`** - a playground for Deep Q-Network (DQN) and Fitted Q Iteration (FQI) algorithms in Reinforcement Learning!⛳ Whether you're a researcher, student, or just curious about RL, `slimRL` provides a clear, concise, and customizable path to understanding and implementing these algorithms. The simplicity of the implementation allows you to tailor the experimental setup to your requirements. 
 
 ### 🚀 Key advantages 
 ✅ Learn the essentials without the clutter 🧹\
