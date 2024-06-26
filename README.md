@@ -11,7 +11,7 @@ Welcome to **`slimRL`** - a playground for Deep Q-Network (DQN) and Fitted Q Ite
 ✅ Easily modifiable to implement new research ideas in Online and Offline RL 💬\
 ✅ Allows quick tailoring for reviews and rebuttals ✂️\
 ✅ Smooth transfer from theory to practice for RL learners ➡️\
-✅ Easy to use with [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) and custom environments 🏋️‍♂️
+✅ Easy to use with [Gymnasium](https://github.com/Farama-Foundation/Gymnasium) and custom environments 🏋️‍♂️ \
 ✅ Get comprehensive insights for LunarLander and CarOnHill. 📊
 
 <p align="center">
