@@ -1,7 +1,7 @@
 import argparse
 
 
-def base_parser(parser: argparse.ArgumentParser) -> None:
+def base_parser(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-e",
         "--experiment_name",
@@ -23,7 +23,8 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
         "--hidden_layers",
         nargs="*",
         help="Hidden layer sizes.",
-        required=True,
+        required=False,
+        default=[100],
     )
 
     parser.add_argument(
@@ -55,7 +56,8 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
         "--gamma",
         help="Discounting factor gamma.",
         type=float,
-        required=True,
+        required=False,
+        default=0.99,
     )
 
     parser.add_argument(
@@ -83,7 +85,7 @@ def base_parser(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def online_parser(parser: argparse.ArgumentParser) -> None:
+def online_parser(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-utd",
         "--update_to_data",
@@ -125,14 +127,15 @@ def online_parser(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def fqi_parser(parser: argparse.ArgumentParser) -> None:
+def fqi_parser(parser: argparse.ArgumentParser):
     base_parser(parser=parser)
     parser.add_argument(
         "-bi",
         "--n_bellman_iterations",
         help="No. of Bellman iterations to perform.",
         type=int,
-        required=True,
+        required=False,
+        default=30,
     )
 
     parser.add_argument(
@@ -144,7 +147,7 @@ def fqi_parser(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def dqn_parser(parser: argparse.ArgumentParser) -> None:
+def dqn_parser(parser: argparse.ArgumentParser):
     base_parser(parser=parser)
     online_parser(parser=parser)
     parser.add_argument(
