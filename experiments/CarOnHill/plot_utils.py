@@ -24,6 +24,8 @@ def plot_on_grid(values, shared_cmap, zeros_to_nan=False, **kwargs):
 
     if nrows == 1:
         ax = [ax]
+    if ncols == 1:
+        ax = [ax]
 
     env = CarOnHill()
     states_x = np.linspace(-env.max_pos, env.max_pos, NX)
