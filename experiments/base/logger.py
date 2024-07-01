@@ -103,8 +103,9 @@ def store_params(p: dict):
     # sort keys in uniform order and store
     params = {key: params[key] for key in params_order}
 
-    with open(params_path, "w") as f:
+    with open(params_path.replace(".json", ".tmp"), "w") as f:
         json.dump(params, f, indent=4)
+    os.rename(params_path.replace(".json", ".tmp"), params_path)
 
 
 def prepare_logs(p: dict):
