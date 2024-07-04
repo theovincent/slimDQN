@@ -5,7 +5,7 @@ import numpy as np
 class LunarLander:
     def __init__(self, render_mode=None):
         self.env = gym.make("LunarLander-v2", render_mode=render_mode)
-        self.observation_shape = (8,)
+        self.observation_shape = self.env.observation_space.shape
         self.n_actions = self.env.action_space.n
 
     def reset(self, state=None):

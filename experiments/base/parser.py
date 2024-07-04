@@ -30,7 +30,7 @@ def base_parser(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-rb",
         "--replay_capacity",
-        help="Size of replay buffer to use.",
+        help="For DQN: Replay Buffer capacity, For FQI: Dataset size to sample.",
         type=int,
         default=50000,
     )

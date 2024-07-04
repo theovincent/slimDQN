@@ -24,6 +24,7 @@ function parse_arguments() {
             -hl | --hidden_layers)
                 shift
                 HIDDEN_LAYER=""
+                # parse all the layers till next flag encountered
                 while [[ $1 != -* && $# -gt 0 ]]; do
                     HIDDEN_LAYER="$HIDDEN_LAYER $1"
                     shift
