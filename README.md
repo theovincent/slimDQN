@@ -35,11 +35,10 @@ If you are using GPU, run:\
 pip install -U "jax[cuda12]"
 `
 
-To verify that everything is working correctly, run the tests as:\
+To verify that everything is working correctly, run the tests as (take a few seconds to complete):\
 `
 pytest
 `
-It should take a few seconds to complete.
 
 ## Running experiments
 `slimRL` provides support for [Car-On-Hill](https://www.jmlr.org/papers/volume6/ernst05a/ernst05a.pdf) with FQI and [Lunar Lander](https://gymnasium.farama.org/environments/box2d/lunar_lander/) with DQN algorithm. However, you can easily extend it to other [gym](https://github.com/Farama-Foundation/Gymnasium) environments like [Acrobot](https://gymnasium.farama.org/environments/classic_control/acrobot/), [Cart Pole](https://gymnasium.farama.org/environments/classic_control/cart_pole/), [Mountain Car](https://gymnasium.farama.org/environments/classic_control/mountain_car/), by replicating the setup for Lunar Lander.
