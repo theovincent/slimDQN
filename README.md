@@ -35,7 +35,7 @@ If you are using GPU, run:\
 pip install -U "jax[cuda12]"
 `
 
-To verify that everything is working correctly, run the tests as (take a few seconds to complete):\
+To verify that everything is working correctly, run the tests as:\
 `
 pytest
 `
