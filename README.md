@@ -39,7 +39,6 @@ To verify that everything is working correctly, run the tests as:\
 `
 pytest
 `
-
 It should take a few seconds to complete.
 
 ## Running experiments
