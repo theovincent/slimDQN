@@ -54,7 +54,7 @@ It trains a DQN agent with 2 hidden layers of size 100, for a single random seed
 
 To train on cluster:\
 `
-launch_job/lunar_lander/launch_gpu.sh -e "test_gpu" -hl 100 100 -gamma 0.99 -frs 0 -lrs 0 -E 100 -spe 2000
+launch_job/lunar_lander/launch_cluster.sh -e "test_gpu" -g -hl 100 100 -gamma 0.99 -frs 0 -lrs 0 -E 100 -spe 2000
 `
 
 ### Plotting results
