@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **`slimRL`** provides a concise and customizable implementation of Deep Q-Network (DQN) and Fitted Q Iteration (FQI) algorithms in Reinforcement Learning⛳ for Lunar Lander and Car-On-Hill environments. 
-It enables to quickly try proof-of-concept type of experimentation in off-policy Deep RL settings.
+It enables to quickly code and run proof-of-concept type of experimentation in off-policy Deep RL settings.
 
 ### 🚀 Key advantages
 ✅ Easy to read - clears the clutter with minimal lines of code 🧹\
