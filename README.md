@@ -62,7 +62,7 @@ plot_iqm -e "test/DQN" -env "LunarLander"
 ```
 It generates an [IQM](https://arxiv.org/abs/2108.13264)-based Performance Curve, similar to the one shown above.
 
-## To collaborate
+## Collaboration
 To report bugs or suggest improvements, use the [issues page](https://github.com/theovincent/slimRL/issues) of this repository.
 
 
