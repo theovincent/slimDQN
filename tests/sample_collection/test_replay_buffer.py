@@ -21,7 +21,6 @@ class TestReplayBuffer(unittest.TestCase):
         )
 
     def test_add(self):
-        self.assertEqual(self.rb.is_empty(), True)
         for i in range(50):
             self.rb.add(
                 observation=np.random.normal((2, 2)),
@@ -30,7 +29,6 @@ class TestReplayBuffer(unittest.TestCase):
                 terminal=np.random.choice([True, False], p=[0.2, 0.8]),
             )
         self.assertEqual(self.rb.add_count, 50)
-        self.assertEqual(self.rb.is_empty(), False)
         self.assertEqual(self.rb.is_full(), False)
         for i in range(self.rb._replay_capacity):
             self.rb.add(

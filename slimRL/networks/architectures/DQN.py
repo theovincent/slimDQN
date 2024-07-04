@@ -11,7 +11,7 @@ class DQNNet(nn.Module):
 
     def setup(self):
         self.initializer = nn.initializers.variance_scaling(
-            scale=1.0, mode="fan_avg", distribution="truncated_normal"
+            scale=1.0, mode="fan_in", distribution="truncated_normal"
         )
         layers = []
 

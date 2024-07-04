@@ -25,7 +25,7 @@ class DQN:
         self.update_horizon = update_horizon
         self.q_network = q_network
         self.params = self.q_network.init(self.q_key, **q_inputs)
-        self.target_params = self.params
+        self.target_params = self.params.copy()
         self.optimizer = optimizer
         self.optimizer_state = self.optimizer.init(self.params)
         self.loss_type = loss_type
@@ -37,7 +37,7 @@ class DQN:
         self,
         params: FrozenDict,
         params_target: FrozenDict,
-        sample: jnp.ndarray,
+        sample,
     ):
         target = self.compute_target(params_target, sample)
         q_value = self.apply(params, sample["observations"])[sample["actions"]]
@@ -64,7 +64,7 @@ class DQN:
         params: FrozenDict,
         params_target: FrozenDict,
         optimizer_state,
-        batch_samples: jnp.ndarray,
+        batch_samples,
     ):
         loss, grad_loss = jax.value_and_grad(self.loss_on_batch)(
             params, params_target, batch_samples

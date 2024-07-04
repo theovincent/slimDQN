@@ -50,6 +50,6 @@ def run(argvs=sys.argv[1:]):
         target_update_frequency=-1,
     )
 
-    update_replay_buffer(jax.random.PRNGKey(0), env, agent, rb, p)
+    update_replay_buffer(jax.random.PRNGKey(552), env, agent, rb, p)
 
     train(p, agent, rb)

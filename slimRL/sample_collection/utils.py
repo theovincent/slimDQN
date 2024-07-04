@@ -25,9 +25,9 @@ def collect_single_sample(
         action = agent.best_action(agent.params, env.state).item()
 
     obs = env.state.copy()
-    next_obs, reward, termination = env.step(action)
+    _, reward, termination = env.step(action)
     truncation = env.n_steps == p["horizon"]
-    rb.add(obs, action, reward, termination, truncation, next_obs)
+    rb.add(obs, action, reward, termination, truncation)
 
     has_reset = termination or truncation
     if has_reset:
@@ -42,72 +42,52 @@ def save_replay_buffer_store(rb: ReplayBuffer, save_path):
 
     for key in ["observations", "actions", "rewards", "dones"]:
         rb_store[key] = rb._store[key].tolist()
+    rb_store["episode_trunc_indices"] = list(rb.episode_trunc_indices)
+    rb_store["last_added_transition_index"] = rb.last_added_transition_index
+    rb_store["add_count"] = rb.add_count
 
-    # rb_store["drop_idx"] = []
-    rb_store["next_observations_trunc"] = {}
-    for key in rb._store["next_observations_trunc"]:
-        rb_store["next_observations_trunc"][key] = rb._store["next_observations_trunc"][
-            key
-        ].tolist()  # store the next observations for last state of truncated trajectories at rb_store["next_observations_trunc"][index of last state]
-
-    rb_store["last_transition_next_obs"] = (
-        rb._store["last_transition_next_obs"][
-            0
-        ],  # index of last recorded observation in replay buffer
-        rb._store["last_transition_next_obs"][
-            1
-        ].tolist(),  # next state for last recorded observation in replay buffer
-    )
     json.dump(
         rb_store,
         open(os.path.join(save_path, "..", "replay_buffer.json"), "w"),
     )
 
 
-def load_replay_buffer_store(rb_path):
-
-    rb_store = json.load(open(rb_path, "r"))
-    next_obs_keys = [int(idx) for idx in rb_store["next_observations_trunc"]] + [
-        rb_store["last_transition_next_obs"][0]
-    ]
-    rb_store["next_observations"] = np.array(
+def load_valid_transitions(rb_path):
+    rb_store = json.load(open(os.path.join(rb_path), "r"))
+    valid_indices = set(np.arange(len(rb_store["observations"]))) - set(
+        rb_store["episode_trunc_indices"]
+    )
+    if not rb_store["dones"][rb_store["last_added_transition_index"]]:
+        valid_indices.discard(rb_store["last_added_transition_index"])
+    valid_transitions = {}
+    valid_transitions["next_observations"] = np.array(
         [
             val
             for idx, val in enumerate(np.roll(rb_store["observations"], -1, axis=0))
-            if idx not in next_obs_keys
+            if idx in valid_indices
         ]
     )
     for key in ["observations", "actions", "rewards", "dones"]:
-        rb_store[key] = np.array(
-            [val for idx, val in enumerate(rb_store[key]) if idx not in next_obs_keys]
+        valid_transitions[key] = np.array(
+            [val for idx, val in enumerate(rb_store[key]) if idx in valid_indices]
         )
-
-    # for key in ["observation", "action", "reward", "done"]:
-    #     del rb_store[key]
-    next_obs_keys = list(rb_store["next_observations_trunc"])
-    for key in next_obs_keys:
-        rb_store["next_observations_trunc"][int(key)] = np.array(
-            rb_store["next_observations_trunc"].pop(
-                key
-            )  # as index is dumped by json in str format, pop removes str key from dict and adds an int key
-        )
-
-    rb_store["last_transition_next_obs"] = (
-        rb_store["last_transition_next_obs"][0],
-        np.array(rb_store["last_transition_next_obs"][1]),
-    )
-    return rb_store
+    return valid_transitions
 
 
-def update_replay_buffer(key, env, agent, rb, p):
+def update_replay_buffer(key, env, agent, rb: ReplayBuffer, p):
     if os.path.exists(os.path.join(p["save_path"], "..", "replay_buffer.json")):
         print("Replay buffer already exists. Loading...")
-        rb._store = load_replay_buffer_store(
-            os.path.join(p["save_path"], "..", "replay_buffer.json")
+        rb_store = json.load(
+            open(os.path.join(p["save_path"], "..", "replay_buffer.json"), "r")
         )
-        rb.episode_end_indices = set(np.where(rb._store["dones"])[0].tolist())
-        rb.episode_trunc_next_states = rb._store["next_observations_trunc"].copy()
-        rb.add_count = len(rb._store["observations"])
+        rb._store = {
+            name: np.array(rb_store[name])
+            for name in ["observations", "actions", "rewards", "dones"]
+        }
+        rb.episode_trunc_indices = set(rb_store["episode_trunc_indices"])
+        rb.last_added_transition_index = rb_store["last_added_transition_index"]
+        rb.add_count = rb_store["add_count"]
+
     else:
         env.reset()
         for _ in range(p["replay_capacity"]):

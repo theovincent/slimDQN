@@ -10,7 +10,7 @@ import multiprocess
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.architectures.DQN import BasicDQN
 from experiments.CarOnHill.sample_utils import compute_state_and_reward_distribution
-from slimRL.sample_collection.utils import load_replay_buffer_store
+from slimRL.sample_collection.utils import load_valid_transitions
 from experiments.base.logger import pickle_load
 from experiments.CarOnHill.optimal import NX, NV
 
@@ -210,7 +210,7 @@ def run(argvs=sys.argv[1:]):
     )
 
     # ---------Load the replay buffer and save samples and rewards distribution---------
-    rb = load_replay_buffer_store(
+    rb = load_valid_transitions(
         os.path.join(experiment_folder_path, "replay_buffer.json")
     )
     samples_stats, rewards_stats = compute_state_and_reward_distribution(rb)

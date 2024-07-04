@@ -7,10 +7,6 @@ import jax.numpy as jnp
 
 ReplayElement = collections.namedtuple("shape_type", ["name", "shape", "type"])
 
-SampleBatch = collections.namedtuple(
-    "sample_batch", ["observations", "actions", "rewards", "next_observations", "dones"]
-)
-
 
 def modulo_range(start, length, modulo):
     for i in range(length):
@@ -37,23 +33,26 @@ class ReplayBuffer(object):
         action_dtype=np.int32,
         reward_dtype=np.float32,
     ):
+        self._observation_shape = observation_shape
+        self._observation_dtype = observation_dtype
         self._action_dtype = action_dtype
         self._reward_dtype = reward_dtype
-        self._observation_shape = observation_shape
+        self._terminal_dtype = terminal_dtype
+
         self._replay_capacity = replay_capacity
+        self._max_sample_attempts = max_sample_attempts
+
         self._update_horizon = update_horizon
         self._gamma = gamma
-        self._observation_dtype = observation_dtype
-        self._terminal_dtype = terminal_dtype
-        self._max_sample_attempts = max_sample_attempts
+
         self._create_storage()
         self.add_count = 0
         self._cumulative_discount_vector = np.array(
-            [math.pow(self._gamma, n) for n in range(update_horizon)], dtype=np.float32
+            [self._gamma**n for n in range(update_horizon)], dtype=np.float32
         )
-        self._next_experience_is_episode_start = True
-        self.episode_end_indices = set()
-        self.episode_trunc_next_states = dict()
+        # store the indices of all the transitions where the episode was truncated
+        self.episode_trunc_indices = set()
+        self.last_added_transition_index = None
 
     def _create_storage(self):
         self._store = {}
@@ -62,7 +61,7 @@ class ReplayBuffer(object):
             self._store[storage_element.name] = np.empty(
                 array_shape, dtype=storage_element.type
             )
-        self._store["next_observations_trunc"] = {}
+        # contains the index of all observations where done=False and episode was truncated
 
     def get_storage_signature(self):
         storage_elements = [
@@ -76,9 +75,7 @@ class ReplayBuffer(object):
 
         return storage_elements
 
-    def add(
-        self, observation, action, reward, terminal, episode_end=False, next_obs=None
-    ):
+    def add(self, observation, action, reward, terminal, episode_end=False):
         """
         If the replay memory is at capacity the oldest transition will be discarded.
 
@@ -91,35 +88,19 @@ class ReplayBuffer(object):
         episode boundaries without passing that information to the agent.
         """
 
-        if self._next_experience_is_episode_start:
-            self._next_experience_is_episode_start = False
-
-        self._store["last_transition_next_obs"] = (self.cursor(), next_obs)
-        if episode_end or terminal:
-            self.episode_end_indices.add(self.cursor())
-            self._next_experience_is_episode_start = True
-            if episode_end and not terminal:
-                self.episode_trunc_next_states[self.cursor()] = next_obs
-                self._store["next_observations_trunc"] = self.episode_trunc_next_states
+        if episode_end and not terminal:
+            self.episode_trunc_indices.add(self.cursor())
         else:
-            self.episode_end_indices.discard(self.cursor())  # If present
-            self.episode_trunc_next_states.pop(self.cursor(), None)
-            self._store["next_observations_trunc"] = self.episode_trunc_next_states
+            self.episode_trunc_indices.discard(self.cursor())  # If present
 
         self._add(observation, action, reward, terminal)
 
     def _add(self, *args):
-        transition = {
-            e.name: args[idx] for idx, e in enumerate(self.get_storage_signature())
-        }
         cursor = self.cursor()
-        for arg_name in transition:
-            self._store[arg_name][cursor] = transition[arg_name]
-
+        self.last_added_transition_index = cursor
+        for idx, e in enumerate(self.get_storage_signature()):
+            self._store[e.name][cursor] = args[idx]
         self.add_count += 1
-
-    def is_empty(self):
-        return self.add_count == 0
 
     def is_full(self):
         return self.add_count >= self._replay_capacity
@@ -160,10 +141,14 @@ class ReplayBuffer(object):
                         return True
                 return False
 
-        # If the episode ends before the update horizon, without a terminal signal,
-        # it is invalid.
+        # If the episode is truncated before the update horizon, it is invalid.
         for i in modulo_range(index, self._update_horizon, self._replay_capacity):
-            if i in self.episode_end_indices and not self._store["dones"][i]:
+            if self._store["dones"][i]:
+                break
+            if i in self.episode_trunc_indices or (
+                (i == self.last_added_transition_index)
+                and (not self._store["dones"][i])
+            ):
                 return False
 
         return True
@@ -172,11 +157,11 @@ class ReplayBuffer(object):
         if self.is_full():
             # add_count >= self._replay_capacity
             min_id = self.cursor() - self._replay_capacity
-            max_id = self.cursor() - 1
+            max_id = self.cursor()
         else:
             # add_count < self._replay_capacity
             min_id = 0
-            max_id = self.cursor() - 1
+            max_id = self.cursor()
 
         indices = []
         attempt_count = 0
@@ -197,16 +182,10 @@ class ReplayBuffer(object):
                     self._max_sample_attempts, len(indices), batch_size
                 )
             )
-
         return indices
 
-    def sample_transition_batch(
-        self, batch_size, batching_key: jax.random.PRNGKey, indices=None
-    ):
-        if indices is None:
-            indices = self.sample_index_batch(batch_size, batching_key)
-        assert len(indices) == batch_size
-
+    def sample_transition_batch(self, batch_size, batching_key: jax.random.PRNGKey):
+        indices = self.sample_index_batch(batch_size, batching_key)
         sampled_batch = {
             "observations": np.empty(
                 (batch_size,) + self._observation_shape, dtype=self._observation_dtype
@@ -229,7 +208,7 @@ class ReplayBuffer(object):
             if not is_terminal_transition:
                 trajectory_length = self._update_horizon
             else:
-                trajectory_length = np.argmax(trajectory_terminals.astype(bool), 0) + 1
+                trajectory_length = np.argmax(trajectory_terminals.astype(bool)) + 1
             next_state_index = state_index + trajectory_length
             trajectory_discount_vector = self._cumulative_discount_vector[
                 :trajectory_length
@@ -239,21 +218,20 @@ class ReplayBuffer(object):
             )
 
             for element_type, element in sampled_batch.items():
-                if element_type == "observations":
-                    element[batch_element] = self._store["observations"][state_index]
-                elif element_type == "actions":
-                    element[batch_element] = self._store["actions"][state_index]
-                elif element_type == "rewards":
-                    # compute the discounted sum of rewards in the trajectory.
-                    element[batch_element] = np.sum(
-                        trajectory_discount_vector * trajectory_rewards, axis=0
-                    )
-                elif element_type == "next_observations":
-                    element[batch_element] = self._store["observations"][
-                        next_state_index % self._replay_capacity
-                    ]
-                elif element_type == "dones":
-                    element[batch_element] = is_terminal_transition
+                sampled_batch["observations"][batch_element] = self._store[
+                    "observations"
+                ][state_index]
+                sampled_batch["actions"][batch_element] = self._store["actions"][
+                    state_index
+                ]
+                # compute the discounted sum of rewards in the trajectory.
+                sampled_batch["rewards"][batch_element] = np.sum(
+                    trajectory_discount_vector * trajectory_rewards, axis=0
+                )
+                sampled_batch["next_observations"][batch_element] = self._store[
+                    "observations"
+                ][next_state_index % self._replay_capacity]
+                sampled_batch["dones"][batch_element] = is_terminal_transition
 
         sampled_batch["observations"] = jnp.array(
             sampled_batch["observations"], dtype=jnp.float32
@@ -265,5 +243,6 @@ class ReplayBuffer(object):
             sampled_batch["rewards"], dtype=jnp.float32
         )
         sampled_batch["actions"] = jnp.array(sampled_batch["actions"], dtype=jnp.int32)
+        sampled_batch["dones"] = jnp.array(sampled_batch["dones"], dtype=jnp.uint8)
 
         return sampled_batch
