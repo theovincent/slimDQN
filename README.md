@@ -48,7 +48,8 @@ It should take a few seconds to complete.
 To train a DQN agent on LunarLander on your local system, run (provide the `-g` flag if you want to use GPU):\
 `
 launch_job/lunar_lander/launch_local.sh -e "test_local" -hl 100 100 -gamma 0.99 -frs 0 -lrs 0 -E 100 -spe 2000
-`\
+`
+
 It trains a DQN agent with 2 hidden layers of size 100, for a single random seed (add more seeds by changing `-lrs` parameter) for 100 epochs, with 2000 steps per epoch.
 
 To train on cluster:\
