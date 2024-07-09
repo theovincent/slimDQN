@@ -38,7 +38,8 @@ def run(argvs=sys.argv[1:]):
     )
     agent = BasicDQN(
         q_key,
-        env,
+        env.observation_shape,
+        env.n_actions,
         hidden_layers=p["hidden_layers"],
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],

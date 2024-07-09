@@ -40,7 +40,7 @@ def run(argvs=sys.argv[1:]):
 
     env = CarOnHill()
     model = pickle_load(args.model)
-    q_network = DQNNet(env, model["hidden_layers"])
+    q_network = DQNNet(env.n_actions, model["hidden_layers"])
 
     obs = env.reset()
 

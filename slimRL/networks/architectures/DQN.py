@@ -6,7 +6,7 @@ from slimRL.networks.DQN import DQN
 
 
 class DQNNet(nn.Module):
-    env: object
+    n_actions: int
     hidden_layers: list
 
     def setup(self):
@@ -19,7 +19,7 @@ class DQNNet(nn.Module):
             layers.append(nn.Dense(hidden_size, kernel_init=self.initializer))
             layers.append(nn.relu)
 
-        layers.append(nn.Dense(self.env.n_actions, kernel_init=self.initializer))
+        layers.append(nn.Dense(self.n_actions, kernel_init=self.initializer))
 
         self.network = nn.Sequential(layers)
 
@@ -32,7 +32,8 @@ class BasicDQN(DQN):
     def __init__(
         self,
         q_key: jax.random.PRNGKey,
-        env,
+        observation_shape,
+        n_actions,
         hidden_layers: list,
         gamma: float,
         update_horizon: int,
@@ -41,14 +42,12 @@ class BasicDQN(DQN):
         target_update_frequency: int,
         loss_type: str = "huber",
     ):
-        self.env = env
+
         self.lr = lr
         optimizer = optax.adam(self.lr)
-        q_network = DQNNet(env, hidden_layers)
+        q_network = DQNNet(n_actions, hidden_layers)
         q_inputs = {
-            "state": jnp.zeros(
-                jnp.array(self.env.observation_shape).prod(), dtype=jnp.float32
-            )
+            "state": jnp.zeros(jnp.array(observation_shape).prod(), dtype=jnp.float32)
         }
         super().__init__(
             q_key,
