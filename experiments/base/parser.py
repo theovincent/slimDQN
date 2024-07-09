@@ -69,14 +69,6 @@ def base_parser(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "-lr_eps",
-        "--lr_epsilon",
-        help="Epsilon for Adam optimizer.",
-        type=float,
-        default=1.5e-4,
-    )
-
-    parser.add_argument(
         "-H",
         "--horizon",
         help="Horizon for truncation.",

@@ -91,7 +91,6 @@ def run(argvs=sys.argv[1:]):
         gamma=parameters["gamma"],
         update_horizon=-1,
         lr=-1,
-        adam_eps=-1,
         train_frequency=-1,
         target_update_frequency=-1,
     )

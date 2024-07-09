@@ -61,12 +61,6 @@ function parse_arguments() {
                 shift
                 shift
                 ;;
-            -lr_eps | --lr_epsilon)
-                LR_EPSILON=$2
-                BASE_ARGS="$BASE_ARGS -lr_eps $LR_EPSILON"
-                shift
-                shift
-                ;;
             -H | --horizon)
                 HORIZON=$2
                 BASE_ARGS="$BASE_ARGS -H $HORIZON"

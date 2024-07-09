@@ -37,14 +37,13 @@ class BasicDQN(DQN):
         gamma: float,
         update_horizon: int,
         lr: float,
-        adam_eps: float,
         train_frequency: int,
         target_update_frequency: int,
         loss_type: str = "huber",
     ):
         self.env = env
         self.lr = lr
-        optimizer = optax.adam(self.lr, eps=adam_eps)
+        optimizer = optax.adam(self.lr)
         q_network = DQNNet(env, hidden_layers)
         q_inputs = {
             "state": jnp.zeros(

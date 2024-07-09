@@ -43,7 +43,6 @@ def run(argvs=sys.argv[1:]):
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],
         lr=p["lr"],
-        adam_eps=p["lr_epsilon"],
         train_frequency=p["update_to_data"],
         target_update_frequency=p["target_update_period"],
     )
