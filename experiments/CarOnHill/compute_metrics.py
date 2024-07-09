@@ -15,6 +15,129 @@ from experiments.base.logger import pickle_load
 from experiments.CarOnHill.optimal import NX, NV
 
 
+def run(argvs=sys.argv[1:]):
+    parser = argparse.ArgumentParser(
+        "CarOnHill FQI - Compute all relevant evaluation metrics."
+    )
+    parser.add_argument(
+        "-e",
+        "--experiment_folder",
+        type=str,
+        help="Give the path to experiment folder to generate metrics for from logs/",
+        required=True,
+    )
+    parser.add_argument(
+        "-s",
+        "--seeds",
+        nargs="+",
+        help="Give all the seed values to generate metrics for (runs for all seeds if not specified)",
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "-ae",
+        "--approximation_error_components",
+        action="store_true",
+        help="Give this flag to compute Approximation error components(Q_i and T Q_{i-1}) for every iteration on data and grid",
+    )
+    parser.add_argument(
+        "-perf",
+        "--performance",
+        action="store_true",
+        help="Give this flag to compute Q_pi_i for every iteration on grid",
+    )
+
+    args = parser.parse_args(argvs)
+    p = vars(args)
+
+    multiprocess.set_start_method("spawn", force=True)
+
+    experiment_folder_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "../CarOnHill/logs",
+        p["experiment_folder"],
+    )
+
+    # ---------Load the model parameters---------
+    parameters = json.load(
+        open(os.path.join(experiment_folder_path, "parameters.json"), "r")
+    )
+
+    # ---------Load the replay buffer and save samples and rewards distribution---------
+    rb = load_valid_transitions(
+        os.path.join(experiment_folder_path, "replay_buffer.json")
+    )
+    samples_stats, rewards_stats = compute_state_and_reward_distribution(rb)
+    np.save(os.path.join(experiment_folder_path, "samples_stats.npy"), samples_stats)
+    np.save(os.path.join(experiment_folder_path, "rewards_stats.npy"), rewards_stats)
+
+    # ---------Extract all the seeds for computing metrics---------
+    # ---------(Use all seeds, if not provided explicitly)---------
+    if p["seeds"] is None:
+        seed_runs = [
+            seed_run
+            for seed_run in os.listdir(experiment_folder_path)
+            if not os.path.isfile(os.path.join(experiment_folder_path, seed_run))
+        ]
+    else:
+        seed_runs = [f"seed={seed}" for seed in p["seeds"]]
+
+    # ---------Initialize environment and agent---------
+    env = CarOnHill()
+    q = BasicDQN(
+        q_key=jax.random.PRNGKey(0),
+        env=env,
+        hidden_layers=parameters["hidden_layers"],
+        gamma=parameters["gamma"],
+        update_horizon=-1,
+        lr=-1,
+        adam_eps=-1,
+        train_frequency=-1,
+        target_update_frequency=-1,
+    )
+
+    # ---------Load all the model weights for all seeds X iterations---------
+    params_list = []
+    for seed_run in seed_runs:
+        params_list.append(
+            [
+                pickle_load(
+                    os.path.join(
+                        experiment_folder_path,
+                        seed_run,
+                        f"model_iteration={idx_iteration}",
+                    )
+                )["params"]
+                for idx_iteration in range(parameters["n_bellman_iterations"] + 1)
+            ]
+        )
+
+    # ---------Initialize grid to compute metrics---------
+    states_grid = np.array(
+        [
+            [x, v]
+            for x in np.linspace(-env.max_pos, env.max_pos, NX)
+            for v in np.linspace(-env.max_velocity, env.max_velocity, NV)
+        ]
+    )
+    if p["approximation_error_components"]:
+        evaluate_and_save_q_and_tq(
+            q, params_list, rb, states_grid, experiment_folder_path, seed_runs
+        )
+
+    if p["performance"]:
+        evaluate_and_save_q_pis(
+            q,
+            params_list,
+            states_grid,
+            parameters["horizon"],
+            parameters["gamma"],
+            env,
+            experiment_folder_path,
+            seed_runs,
+        )
+
+
 def evaluate_and_save_q_and_tq(
     q: BasicDQN, params_list, rb, states_grid, experiment_folder_path, seed_runs
 ):
@@ -158,127 +281,4 @@ def evaluate_and_save_q_pis(
         np.save(
             os.path.join(experiment_folder_path, seed_run, "q_pi.npy"),
             np.array(q_pi[idx_seed]),
-        )
-
-
-def run(argvs=sys.argv[1:]):
-    parser = argparse.ArgumentParser(
-        "CarOnHill FQI - Compute all relevant evaluation metrics."
-    )
-    parser.add_argument(
-        "-e",
-        "--experiment_folder",
-        type=str,
-        help="Give the path to experiment folder to generate metrics for from logs/",
-        required=True,
-    )
-    parser.add_argument(
-        "-s",
-        "--seeds",
-        nargs="+",
-        help="Give all the seed values to generate metrics for (runs for all seeds if not specified)",
-        required=False,
-        default=None,
-    )
-    parser.add_argument(
-        "-ae",
-        "--approximation_error_components",
-        action="store_true",
-        help="Give this flag to compute Approximation error components(Q_i and T Q_{i-1}) for every iteration on data and grid",
-    )
-    parser.add_argument(
-        "-perf",
-        "--performance",
-        action="store_true",
-        help="Give this flag to compute Q_pi_i for every iteration on grid",
-    )
-
-    args = parser.parse_args(argvs)
-    p = vars(args)
-
-    multiprocess.set_start_method("spawn", force=True)
-
-    experiment_folder_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "../CarOnHill/logs",
-        p["experiment_folder"],
-    )
-
-    # ---------Load the model parameters---------
-    parameters = json.load(
-        open(os.path.join(experiment_folder_path, "parameters.json"), "r")
-    )
-
-    # ---------Load the replay buffer and save samples and rewards distribution---------
-    rb = load_valid_transitions(
-        os.path.join(experiment_folder_path, "replay_buffer.json")
-    )
-    samples_stats, rewards_stats = compute_state_and_reward_distribution(rb)
-    np.save(os.path.join(experiment_folder_path, "samples_stats.npy"), samples_stats)
-    np.save(os.path.join(experiment_folder_path, "rewards_stats.npy"), rewards_stats)
-
-    # ---------Extract all the seeds for computing metrics---------
-    # ---------(Use all seeds, if not provided explicitly)---------
-    if p["seeds"] is None:
-        seed_runs = [
-            seed_run
-            for seed_run in os.listdir(experiment_folder_path)
-            if not os.path.isfile(os.path.join(experiment_folder_path, seed_run))
-        ]
-    else:
-        seed_runs = [f"seed={seed}" for seed in p["seeds"]]
-
-    # ---------Initialize environment and agent---------
-    env = CarOnHill()
-    q = BasicDQN(
-        q_key=jax.random.PRNGKey(0),
-        env=env,
-        hidden_layers=parameters["hidden_layers"],
-        gamma=parameters["gamma"],
-        update_horizon=-1,
-        lr=-1,
-        adam_eps=-1,
-        train_frequency=-1,
-        target_update_frequency=-1,
-    )
-
-    # ---------Load all the model weights for all seeds X iterations---------
-    params_list = []
-    for seed_run in seed_runs:
-        params_list.append(
-            [
-                pickle_load(
-                    os.path.join(
-                        experiment_folder_path,
-                        seed_run,
-                        f"model_iteration={idx_iteration}",
-                    )
-                )["params"]
-                for idx_iteration in range(parameters["n_bellman_iterations"] + 1)
-            ]
-        )
-
-    # ---------Initialize grid to compute metrics---------
-    states_grid = np.array(
-        [
-            [x, v]
-            for x in np.linspace(-env.max_pos, env.max_pos, NX)
-            for v in np.linspace(-env.max_velocity, env.max_velocity, NV)
-        ]
-    )
-    if p["approximation_error_components"]:
-        evaluate_and_save_q_and_tq(
-            q, params_list, rb, states_grid, experiment_folder_path, seed_runs
-        )
-
-    if p["performance"]:
-        evaluate_and_save_q_pis(
-            q,
-            params_list,
-            states_grid,
-            parameters["horizon"],
-            parameters["gamma"],
-            env,
-            experiment_folder_path,
-            seed_runs,
         )

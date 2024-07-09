@@ -2,7 +2,6 @@
 
 import os
 import sys
-import time
 import argparse
 import numpy as np
 from slimRL.environments.solvers.car_on_hill import compute_optimal_values
@@ -29,15 +28,12 @@ def run(argvs=sys.argv[1:]):
     args = parser.parse_args(argvs)
     p = vars(args)
 
-    t1 = time.time()
     optimal_v, optimal_q = compute_optimal_values(
         NX,
         NV,
         p["horizon"],
         p["gamma"],
     )
-    t2 = time.time()
-    print("Time taken (mins) = ", (t2 - t1) / 60)
 
     save_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),

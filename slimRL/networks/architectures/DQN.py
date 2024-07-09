@@ -22,7 +22,6 @@ class DQNNet(nn.Module):
         layers.append(nn.Dense(self.env.n_actions, kernel_init=self.initializer))
 
         self.network = nn.Sequential(layers)
-        # print(self.network)
 
     @nn.compact
     def __call__(self, state):

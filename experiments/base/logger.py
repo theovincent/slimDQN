@@ -126,9 +126,9 @@ def pickle_dump(obj, path):
 
 def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: BasicDQN):
 
-    rewards_path = os.path.join(p["save_path"], "rewards_seed=" + str(p["seed"]))
-    lengths_path = os.path.join(p["save_path"], "lengths_seed=" + str(p["seed"]))
-    model_path = os.path.join(p["save_path"], "model_seed=" + str(p["seed"]))
+    rewards_path = os.path.join(p["save_path"], f"rewards_seed={p['seed']}.json")
+    lengths_path = os.path.join(p["save_path"], f"lengths_seed={p['seed']}.json")
+    model_path = os.path.join(p["save_path"], f"model_seed={p['seed']}")
 
     json.dump(log_rewards, open(rewards_path, "w"))
     json.dump(log_lengths, open(lengths_path, "w"))
