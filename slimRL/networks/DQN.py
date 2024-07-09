@@ -32,18 +32,16 @@ class DQN:
         self.train_frequency = train_frequency
         self.target_update_frequency = target_update_frequency
 
-    # @partial(jax.jit, static_argnames="self")
     def loss(
         self,
         params: FrozenDict,
         params_target: FrozenDict,
         sample,
-    ):
+    ):  # computes the loss for a single sample
         target = self.compute_target(params_target, sample)
         q_value = self.apply(params, sample["observations"])[sample["actions"]]
         return self.metric(q_value - target, ord=self.loss_type)
 
-    # @partial(jax.jit, static_argnames="self")
     def loss_on_batch(self, params: FrozenDict, params_target: FrozenDict, samples):
         return jax.vmap(self.loss, in_axes=(None, None, 0))(
             params, params_target, samples
@@ -75,13 +73,17 @@ class DQN:
         return params, optimizer_state, loss
 
     @partial(jax.jit, static_argnames="self")
-    def apply(self, params: FrozenDict, state: jnp.ndarray):
-        return self.q_network.apply(params, state)
+    def apply(
+        self, params: FrozenDict, states: jnp.ndarray
+    ):  # computes the q values for single or batch of states
+        return self.q_network.apply(params, states)
 
     @partial(jax.jit, static_argnames="self")
-    def compute_target(self, params: FrozenDict, sample):
-        return sample["rewards"] + (1 - sample["dones"]) * self.gamma * jnp.max(
-            self.apply(params, sample["next_observations"]), axis=-1
+    def compute_target(
+        self, params: FrozenDict, samples
+    ):  # computes the target value for single or a batch of samples
+        return samples["rewards"] + (1 - samples["dones"]) * self.gamma * jnp.max(
+            self.apply(params, samples["next_observations"]), axis=-1
         )
 
     def update_online_params(
@@ -108,5 +110,7 @@ class DQN:
             self.target_params = self.params.copy()
 
     @partial(jax.jit, static_argnames="self")
-    def best_action(self, params: FrozenDict, state: jnp.ndarray):
+    def best_action(
+        self, params: FrozenDict, state: jnp.ndarray
+    ):  # computes the best action for a single state
         return jnp.argmax(self.apply(params, state)).astype(jnp.int8)

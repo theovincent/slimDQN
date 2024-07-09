@@ -77,7 +77,28 @@ def base_parser(parser: argparse.ArgumentParser):
     )
 
 
-def online_parser(parser: argparse.ArgumentParser):
+def fqi_parser(parser: argparse.ArgumentParser):
+    base_parser(parser=parser)
+    parser.add_argument(
+        "-bi",
+        "--n_bellman_iterations",
+        help="No. of Bellman iterations to perform.",
+        type=int,
+        required=False,
+        default=30,
+    )
+
+    parser.add_argument(
+        "-fs",
+        "--n_fitting_steps",
+        help="No. of gradient update steps to perform per Bellman iteration.",
+        type=int,
+        default=5,
+    )
+
+
+def dqn_parser(parser: argparse.ArgumentParser):
+    base_parser(parser=parser)
     parser.add_argument(
         "-utd",
         "--update_to_data",
@@ -118,30 +139,6 @@ def online_parser(parser: argparse.ArgumentParser):
         default=25000,
     )
 
-
-def fqi_parser(parser: argparse.ArgumentParser):
-    base_parser(parser=parser)
-    parser.add_argument(
-        "-bi",
-        "--n_bellman_iterations",
-        help="No. of Bellman iterations to perform.",
-        type=int,
-        required=False,
-        default=30,
-    )
-
-    parser.add_argument(
-        "-fs",
-        "--n_fitting_steps",
-        help="No. of gradient update steps to perform per Bellman iteration.",
-        type=int,
-        default=5,
-    )
-
-
-def dqn_parser(parser: argparse.ArgumentParser):
-    base_parser(parser=parser)
-    online_parser(parser=parser)
     parser.add_argument(
         "-E",
         "--n_epochs",
