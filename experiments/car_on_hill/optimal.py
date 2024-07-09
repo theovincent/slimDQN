@@ -37,7 +37,7 @@ def run(argvs=sys.argv[1:]):
 
     save_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "../car_on_hill/logs",
+        "../car_on_hill",
     )
     np.save(f"{save_path}/V*.npy", optimal_v)
     np.save(f"{save_path}/Q*.npy", optimal_q)

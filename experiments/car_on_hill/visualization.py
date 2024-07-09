@@ -43,7 +43,6 @@ def run(argvs=sys.argv[1:]):
     q_network = DQNNet(env.n_actions, model["hidden_layers"])
 
     obs = env.reset()
-
     total_reward = 0
     for _ in range(args.steps):
         render(env)

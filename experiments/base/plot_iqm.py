@@ -83,8 +83,11 @@ def run(argvs=sys.argv[1:]):
             )
         ],
         ticksize=25,
-        title=f"{p['env']}",
+        title=f"{parameters[experiment]['env']}",
         fontsize=20,
         linewidth=3,
         sci_x=True,
-    ).savefig(os.path.join(base_path, p["experiment_folders"][0], f"iqm_sec.pdf"))
+    ).savefig(os.path.join(base_path, p["experiment_folders"][0], "performances.pdf"))
+    print(
+        f"Performance plot saved in {os.path.abspath(os.path.join(base_path, p['experiment_folders'][0], 'performances.pdf'))}"
+    )
