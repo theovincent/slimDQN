@@ -3,7 +3,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from slimRL.environments.car_on_hill import CarOnHill
 from experiments.base.iqm import get_iqm_and_conf_parallel
-from experiments.CarOnHill.optimal import NX, NV
+from experiments.car_on_hill.optimal import NX, NV
 
 
 def plot_on_grid(values, shared_cmap, zeros_to_nan=False, **kwargs):

@@ -9,15 +9,15 @@ import jax.numpy as jnp
 import multiprocess
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.architectures.DQN import BasicDQN
-from experiments.CarOnHill.sample_utils import compute_state_and_reward_distribution
+from experiments.car_on_hill.sample_utils import compute_state_and_reward_distribution
 from slimRL.sample_collection.utils import load_valid_transitions
 from experiments.base.logger import pickle_load
-from experiments.CarOnHill.optimal import NX, NV
+from experiments.car_on_hill.optimal import NX, NV
 
 
 def run(argvs=sys.argv[1:]):
     parser = argparse.ArgumentParser(
-        "CarOnHill FQI - Compute all relevant evaluation metrics."
+        "Car-On-Hill FQI - Compute all relevant evaluation metrics."
     )
     parser.add_argument(
         "-e",
@@ -54,7 +54,7 @@ def run(argvs=sys.argv[1:]):
 
     experiment_folder_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "../CarOnHill/logs",
+        "../car_on_hill/logs",
         p["experiment_folder"],
     )
 

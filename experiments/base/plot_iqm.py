@@ -3,7 +3,7 @@ import sys
 import json
 import argparse
 import numpy as np
-from experiments.CarOnHill.plot_utils import plot_value
+from experiments.car_on_hill.plot_utils import plot_value
 
 
 def run(argvs=sys.argv[1:]):

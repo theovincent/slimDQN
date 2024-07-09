@@ -1,7 +1,7 @@
 # Credits: https://github.com/theovincent/PBO.git
 import numpy as np
 from slimRL.environments.car_on_hill import CarOnHill
-from experiments.CarOnHill.optimal import NX, NV
+from experiments.car_on_hill.optimal import NX, NV
 
 
 def compute_state_and_reward_distribution(rb):

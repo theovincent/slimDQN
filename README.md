@@ -44,7 +44,7 @@ pytest
 `slimRL` provides support for [Car-On-Hill](https://www.jmlr.org/papers/volume6/ernst05a/ernst05a.pdf) with FQI and [Lunar Lander](https://gymnasium.farama.org/environments/box2d/lunar_lander/) with DQN algorithm. However, you can easily extend it to other [gym](https://github.com/Farama-Foundation/Gymnasium) environments like [Acrobot](https://gymnasium.farama.org/environments/classic_control/acrobot/), [Cart Pole](https://gymnasium.farama.org/environments/classic_control/cart_pole/), [Mountain Car](https://gymnasium.farama.org/environments/classic_control/mountain_car/), by replicating the setup for Lunar Lander.
 ### Training
 
-To train a DQN agent on LunarLander on your local system, run (provide the `-g` flag if you want to use GPU):\
+To train a DQN agent on Lunar Lander on your local system, run (provide the `-g` flag if you want to use GPU):\
 `
 launch_job/lunar_lander/launch_local.sh -e "test_local" -hl 100 100 -gamma 0.99 -frs 0 -lrs 0 -E 100 -spe 2000
 `
@@ -59,7 +59,7 @@ launch_job/lunar_lander/launch_cluster.sh -e "test_gpu" -g -hl 100 100 -gamma 0.
 ### Plotting results
 Once the training is done, you can generate the Performance Curve by running:
 ```Bash
-plot_iqm -e "test/DQN" -env "LunarLander"
+plot_iqm -e "test/DQN" -env "lunar_lander"
 ```
 It generates an [IQM](https://arxiv.org/abs/2108.13264)-based Performance Curve, similar to the one shown above.
 

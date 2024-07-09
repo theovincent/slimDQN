@@ -10,7 +10,7 @@ NX, NV = 17, 17
 
 
 def run(argvs=sys.argv[1:]):
-    parser = argparse.ArgumentParser("Find optimal values for CarOnHill.")
+    parser = argparse.ArgumentParser("Find optimal values for Car-On-Hill.")
     parser.add_argument(
         "-H",
         "--horizon",
@@ -37,7 +37,7 @@ def run(argvs=sys.argv[1:]):
 
     save_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "../CarOnHill/logs",
+        "../car_on_hill/logs",
     )
     np.save(f"{save_path}/V*.npy", optimal_v)
     np.save(f"{save_path}/Q*.npy", optimal_q)
