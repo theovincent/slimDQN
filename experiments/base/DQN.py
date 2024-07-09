@@ -1,4 +1,3 @@
-import time
 from tqdm import tqdm
 import jax
 import optax
