@@ -50,9 +50,6 @@ def compute_optimal_q_value(
         optimal_q[(idx_state_x, idx_state_v, action)] = (
             reward + gamma * optimal_v_next_state
         )
-    print(
-        f"Q( {eval_state}, {action} ) = {optimal_q[(idx_state_x, idx_state_v, action)] }"
-    )
 
 
 def compute_optimal_values(n_states_x, n_states_v, horizon, gamma):

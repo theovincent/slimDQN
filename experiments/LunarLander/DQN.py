@@ -1,8 +1,8 @@
 import os
 import sys
+import time
 import argparse
 import jax
-import optax
 from experiments.base.parser import dqn_parser
 from slimRL.environments.lunar_lander import LunarLander
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
@@ -12,6 +12,7 @@ from experiments.base.logger import prepare_logs
 
 
 def run(argvs=sys.argv[1:]):
+    print(f"---LunarLander__DQN__{time.strftime('%d-%m-%Y %H:%M:%S')}---")
     parser = argparse.ArgumentParser("Train DQN on LunarLander.")
     dqn_parser(parser)
     args = parser.parse_args(argvs)

@@ -14,5 +14,5 @@ fi
 echo "launch train dqn local"
 for (( seed=$FIRST_SEED; seed<=$LAST_SEED; seed++ ))
 do  
-    lunar_lander_dqn -e $EXPERIMENT_NAME  -s $seed $BASE_ARGS $DQN_ARGS  &> experiments/LunarLander/out/$EXPERIMENT_NAME/DQN/seed=$seed.out &
+    lunar_lander_dqn -e $EXPERIMENT_NAME  -s $seed $BASE_ARGS $DQN_ARGS  &>> experiments/LunarLander/out/$EXPERIMENT_NAME/DQN/seed=$seed.out &
 done

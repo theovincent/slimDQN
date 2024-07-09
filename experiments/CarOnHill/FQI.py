@@ -1,8 +1,8 @@
 import os
 import sys
+import time
 import argparse
 import jax
-import optax
 from experiments.base.parser import fqi_parser
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
@@ -13,6 +13,7 @@ from slimRL.sample_collection.utils import update_replay_buffer
 
 
 def run(argvs=sys.argv[1:]):
+    print(f"---CarOnHill__FQI__{time.strftime('%d-%m-%Y %H:%M:%S')}---")
     parser = argparse.ArgumentParser("Train FQI on CarOnHill.")
     fqi_parser(parser)
     args = parser.parse_args(argvs)
@@ -50,6 +51,6 @@ def run(argvs=sys.argv[1:]):
         target_update_frequency=-1,
     )
 
-    update_replay_buffer(jax.random.PRNGKey(552), env, agent, rb, p)
+    update_replay_buffer(jax.random.PRNGKey(0), env, agent, rb, p)
 
     train(p, agent, rb)

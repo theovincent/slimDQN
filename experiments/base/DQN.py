@@ -16,8 +16,6 @@ def train(
     rb: ReplayBuffer,
 ):
 
-    print(f"{p['env']}__{p['algo']}__{p['seed']}__{int(time.time())}")
-
     epsilon_schedule = optax.linear_schedule(
         1.0, p["end_epsilon"], p["duration_epsilon"]
     )

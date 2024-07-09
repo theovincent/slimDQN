@@ -101,8 +101,8 @@ def update_replay_buffer(key, env, agent, rb: ReplayBuffer, p):
                 optax.linear_schedule(1.0, 1.0, -1),
                 0,
             )
-        assert sum(rb._store["rewards"] == 1) > 0, "No positive reward sampled. Rerun!"
+        assert sum(rb._store["rewards"] > 0) > 0, "No positive reward sampled. Rerun!"
         print(
-            f"Replay buffer filled with {sum(rb._store['rewards'] == 1)} success samples."
+            f"Replay buffer filled with {sum(rb._store['rewards'] > 0)} success samples."
         )
         save_replay_buffer_store(rb, p["save_path"])

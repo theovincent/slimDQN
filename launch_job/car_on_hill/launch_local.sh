@@ -14,5 +14,5 @@ fi
 echo "launch train fqi local"
 for (( seed=$FIRST_SEED; seed<=$LAST_SEED; seed++ ))
 do  
-    car_on_hill_fqi -e $EXPERIMENT_NAME -s $seed $BASE_ARGS $FQI_ARGS &> experiments/CarOnHill/out/$EXPERIMENT_NAME/FQI/seed=$seed.out &
+    car_on_hill_fqi -e $EXPERIMENT_NAME -s $seed $BASE_ARGS $FQI_ARGS &>> experiments/CarOnHill/out/$EXPERIMENT_NAME/FQI/seed=$seed.out &
 done

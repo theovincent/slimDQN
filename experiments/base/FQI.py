@@ -1,5 +1,4 @@
 import os
-import time
 import jax
 from tqdm import tqdm
 from experiments.base.logger import pickle_dump
@@ -12,8 +11,6 @@ def train(
     agent: BasicDQN,
     rb: ReplayBuffer,
 ):
-
-    print(f"{p['env']}__{p['algo']}__{p['seed']}__{int(time.time())}")
 
     n_grad_steps = int((p["n_fitting_steps"] * p["replay_capacity"]) / p["batch_size"])
 
