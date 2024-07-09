@@ -14,5 +14,7 @@ fi
 echo "launch train fqi local"
 for (( seed=$FIRST_SEED; seed<=$LAST_SEED; seed++ ))
 do  
-    car_on_hill_fqi -e $EXPERIMENT_NAME -s $seed $BASE_ARGS $FQI_ARGS &>> experiments/car_on_hill/logs/$EXPERIMENT_NAME/FQI/seed_$seed.out &
+    tmux new-session -d -s car_on_hill_$EXPERIMENT_NAME_$seed
+    tmux send-keys -t car_on_hill_$EXPERIMENT_NAME_$seed \
+    "car_on_hill_fqi -e $EXPERIMENT_NAME -s $seed $BASE_ARGS $FQI_ARGS >> experiments/car_on_hill/logs/$EXPERIMENT_NAME/FQI/seed_$seed.out" ENTER
 done
