@@ -12,7 +12,7 @@ def run(argvs=sys.argv[1:]):
         "-e",
         "--experiment_folders",
         nargs="+",
-        help="Give the path to all experiment folders to plot from logs/",
+        help="Give the path to all experiment folders to plot from exp_output/",
         required=True,
     )
 
@@ -31,7 +31,7 @@ def run(argvs=sys.argv[1:]):
         os.path.dirname(os.path.abspath(__file__)),
         "..",
         p["env"],
-        "logs",
+        "exp_output",
     )
 
     assert os.path.exists(base_path), f"Required path {p['file_path']} not found"
@@ -46,7 +46,7 @@ def run(argvs=sys.argv[1:]):
     returns = {}
     parameters = {}
     for result in results_folder:
-        experiment = result.split("logs")[-1][1:]
+        experiment = result.split("exp_output")[-1][1:]
         returns[experiment] = np.array(
             [
                 [np.mean(i) for i in json.load(open(os.path.join(result, f), "r"))]

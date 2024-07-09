@@ -18,7 +18,7 @@ def train(
         "params": jax.device_get(agent.params),
         "hidden_layers": agent.q_network.hidden_layers,
     }
-    model_path = os.path.join(p["save_path"], f"model_iteration=0")
+    model_path = os.path.join(p["save_path"], f"model_iteration_0")
     pickle_dump(model, model_path)
     for idx_bellman_iteration in tqdm(range(p["n_bellman_iterations"])):
         for _ in range(n_grad_steps):
@@ -30,6 +30,6 @@ def train(
             "hidden_layers": agent.q_network.hidden_layers,
         }
         model_path = os.path.join(
-            p["save_path"], f"model_iteration={idx_bellman_iteration+1}"
+            p["save_path"], f"model_iteration_{idx_bellman_iteration+1}"
         )
         pickle_dump(model, model_path)

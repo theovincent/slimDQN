@@ -23,7 +23,7 @@ def run(argvs=sys.argv[1:]):
         "-e",
         "--experiment_folder",
         type=str,
-        help="Give the path to experiment folder to generate metrics for from logs/",
+        help="Give the path to experiment folder to generate metrics for from exp_output/",
         required=True,
     )
     parser.add_argument(
@@ -54,7 +54,7 @@ def run(argvs=sys.argv[1:]):
 
     experiment_folder_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "../car_on_hill/logs",
+        "../car_on_hill/exp_output",
         p["experiment_folder"],
     )
 
@@ -80,7 +80,7 @@ def run(argvs=sys.argv[1:]):
             if not os.path.isfile(os.path.join(experiment_folder_path, seed_run))
         ]
     else:
-        seed_runs = [f"seed={seed}" for seed in p["seeds"]]
+        seed_runs = [f"seed_{seed}" for seed in p["seeds"]]
 
     # ---------Initialize environment and agent---------
     env = CarOnHill()
@@ -105,7 +105,7 @@ def run(argvs=sys.argv[1:]):
                     os.path.join(
                         experiment_folder_path,
                         seed_run,
-                        f"model_iteration={idx_iteration}",
+                        f"model_iteration_{idx_iteration}",
                     )
                 )["params"]
                 for idx_iteration in range(parameters["n_bellman_iterations"] + 1)

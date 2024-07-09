@@ -33,10 +33,10 @@ AGENT_PARAMS = {
 def check_experiment(p: dict):
     # check if the experiment is valid
     returns_path = os.path.join(
-        p["save_path"], "returns_seed=" + str(p["seed"]) + ".npy"
+        p["save_path"], "returns_seed_" + str(p["seed"]) + ".npy"
     )
-    losses_path = os.path.join(p["save_path"], "losses_seed=" + str(p["seed"]) + ".npy")
-    model_path = os.path.join(p["save_path"], "model_seed=" + str(p["seed"]))
+    losses_path = os.path.join(p["save_path"], "losses_seed_" + str(p["seed"]) + ".npy")
+    model_path = os.path.join(p["save_path"], "model_seed_" + str(p["seed"]))
 
     assert not (
         os.path.exists(returns_path)
@@ -126,9 +126,9 @@ def pickle_dump(obj, path):
 
 def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: BasicDQN):
 
-    rewards_path = os.path.join(p["save_path"], f"rewards_seed={p['seed']}.json")
-    lengths_path = os.path.join(p["save_path"], f"lengths_seed={p['seed']}.json")
-    model_path = os.path.join(p["save_path"], f"model_seed={p['seed']}")
+    rewards_path = os.path.join(p["save_path"], f"rewards_seed_{p['seed']}.json")
+    lengths_path = os.path.join(p["save_path"], f"lengths_seed_{p['seed']}.json")
+    model_path = os.path.join(p["save_path"], f"model_seed_{p['seed']}")
 
     json.dump(log_rewards, open(rewards_path, "w"))
     json.dump(log_lengths, open(lengths_path, "w"))

@@ -22,7 +22,7 @@ def run(argvs=sys.argv[1:]):
     p["algo"] = "DQN"
     p["save_path"] = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        f"logs/{p['experiment_name']}/{p['algo']}",
+        f"exp_output/{p['experiment_name']}/{p['algo']}",
     )
     p["hidden_layers"] = [int(h) for h in p["hidden_layers"]]
 
