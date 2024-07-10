@@ -10,9 +10,7 @@ class DQNNet(nn.Module):
     hidden_layers: list
 
     def setup(self):
-        self.initializer = nn.initializers.variance_scaling(
-            scale=1.0, mode="fan_in", distribution="truncated_normal"
-        )
+        self.initializer = nn.initializers.variance_scaling(scale=1.0, mode="fan_in", distribution="truncated_normal")
         layers = []
 
         for hidden_size in self.hidden_layers:
@@ -42,13 +40,9 @@ class BasicDQN(DQN):
         target_update_frequency: int,
         loss_type: str = "huber",
     ):
-
-        self.lr = lr
-        optimizer = optax.adam(self.lr)
+        optimizer = optax.adam(lr)
         q_network = DQNNet(n_actions, hidden_layers)
-        q_inputs = {
-            "state": jnp.zeros(jnp.array(observation_shape).prod(), dtype=jnp.float32)
-        }
+        q_inputs = {"state": jnp.zeros(jnp.array(observation_shape).prod(), dtype=jnp.float32)}
         super().__init__(
             q_key,
             q_inputs,
