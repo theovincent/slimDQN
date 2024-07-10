@@ -53,7 +53,6 @@ def compute_optimal_q_value(
 
 
 def compute_optimal_values(n_states_x, n_states_v, horizon, gamma):
-
     env = CarOnHill()
     states_x = np.linspace(-env.max_pos, env.max_pos, n_states_x)
     states_v = np.linspace(-env.max_velocity, env.max_velocity, n_states_v)

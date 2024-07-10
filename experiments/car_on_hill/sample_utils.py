@@ -5,7 +5,6 @@ from experiments.car_on_hill.optimal import NX, NV
 
 
 def compute_state_and_reward_distribution(rb):
-
     xs = (rb["observations"][:, 0]).reshape(-1)
     vs = (rb["observations"][:, 1]).reshape(-1)
     rewards = rb["rewards"].reshape(-1)

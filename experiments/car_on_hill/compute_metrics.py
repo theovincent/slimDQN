@@ -16,7 +16,9 @@ from experiments.car_on_hill.optimal import NX, NV
 
 
 def run(argvs=sys.argv[1:]):
-    parser = argparse.ArgumentParser("Car-On-Hill FQI - Compute all relevant evaluation metrics.")
+    parser = argparse.ArgumentParser(
+        "Car-On-Hill FQI - Compute all relevant evaluation metrics."
+    )
     parser.add_argument(
         "-e",
         "--experiment_folder",
@@ -57,10 +59,14 @@ def run(argvs=sys.argv[1:]):
     )
 
     # ---------Load the model parameters---------
-    parameters = json.load(open(os.path.join(experiment_folder_path, "parameters.json"), "r"))
+    parameters = json.load(
+        open(os.path.join(experiment_folder_path, "parameters.json"), "r")
+    )
 
     # ---------Load the replay buffer and save samples and rewards distribution---------
-    rb = load_valid_transitions(os.path.join(experiment_folder_path, "replay_buffer.json"))
+    rb = load_valid_transitions(
+        os.path.join(experiment_folder_path, "replay_buffer.json")
+    )
     samples_stats, rewards_stats = compute_state_and_reward_distribution(rb)
     np.save(os.path.join(experiment_folder_path, "samples_stats.npy"), samples_stats)
     np.save(os.path.join(experiment_folder_path, "rewards_stats.npy"), rewards_stats)
@@ -115,7 +121,9 @@ def run(argvs=sys.argv[1:]):
         ]
     )
     if p["approximation_error_components"]:
-        evaluate_and_save_q_and_tq(q, params_list, rb, states_grid, experiment_folder_path, seed_runs)
+        evaluate_and_save_q_and_tq(
+            q, params_list, rb, states_grid, experiment_folder_path, seed_runs
+        )
 
     if p["performance"]:
         evaluate_and_save_q_pis(
@@ -130,7 +138,9 @@ def run(argvs=sys.argv[1:]):
         )
 
 
-def evaluate_and_save_q_and_tq(q: DQN, params_list, rb, states_grid, experiment_folder_path, seed_runs):
+def evaluate_and_save_q_and_tq(
+    q: DQN, params_list, rb, states_grid, experiment_folder_path, seed_runs
+):
     def evaluate_q_i(q_apply, params, evaluation_observations, q_i, idx_iteration):
         q_i[idx_iteration] = np.array(q_apply(params, evaluation_observations))
 
@@ -143,7 +153,9 @@ def evaluate_and_save_q_and_tq(q: DQN, params_list, rb, states_grid, experiment_
     tq_i = manager.dict()
     for idx_seed in range(n_seeds):
         q_i[idx_seed] = manager.list([np.nan for _ in range(n_bellman_iterations)])
-        tq_i[idx_seed] = manager.list(manager.list([np.nan for _ in range(n_bellman_iterations)]))
+        tq_i[idx_seed] = manager.list(
+            manager.list([np.nan for _ in range(n_bellman_iterations)])
+        )
         for idx_iteration in range(n_bellman_iterations):
             processes.append(
                 multiprocess.Process(
@@ -201,8 +213,12 @@ def evaluate_and_save_q_pis(
     experiment_folder_path,
     seed_runs,
 ):
-    def evaluate_q_pi_i(q_best_action, params, states_grid, env, horizon, gamma, q_pi, idx_iteration):
-        def evaluate_q_pi_i_s_a(q_best_action, params, state, action, env, horizon, gamma):
+    def evaluate_q_pi_i(
+        q_best_action, params, states_grid, env, horizon, gamma, q_pi, idx_iteration
+    ):
+        def evaluate_q_pi_i_s_a(
+            q_best_action, params, state, action, env, horizon, gamma
+        ):
             env.reset(state)
             _, reward, absorbing = env.step(action)
             performance = reward
@@ -236,7 +252,9 @@ def evaluate_and_save_q_pis(
     processes = []
 
     for idx_seed in range(n_seeds):
-        q_pi[idx_seed] = manager.list(manager.list([np.nan for _ in range(n_bellman_iterations)]))
+        q_pi[idx_seed] = manager.list(
+            manager.list([np.nan for _ in range(n_bellman_iterations)])
+        )
         for idx_iteration in range(n_bellman_iterations):
             processes.append(
                 multiprocess.Process(

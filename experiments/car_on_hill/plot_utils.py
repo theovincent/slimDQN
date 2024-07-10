@@ -7,7 +7,6 @@ from experiments.car_on_hill.optimal import NX, NV
 
 
 def plot_on_grid(values, shared_cmap, zeros_to_nan=False, **kwargs):
-
     plt.rc(
         "font", size=kwargs.get("fontsize", 15), family="serif", serif="Times New Roman"
     )

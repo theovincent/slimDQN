@@ -16,7 +16,6 @@ def collect_single_sample(
     epsilon_schedule,
     n_training_steps: int,
 ):
-
     sample_key, epsilon_key = jax.random.split(exploration_key)
 
     if jax.random.uniform(epsilon_key) < epsilon_schedule(n_training_steps):
@@ -37,7 +36,6 @@ def collect_single_sample(
 
 
 def save_replay_buffer_store(rb: ReplayBuffer, save_path):
-
     rb_store = {}
 
     for key in ["observations", "actions", "rewards", "dones"]:

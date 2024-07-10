@@ -14,7 +14,6 @@ class CarOnHill:
     """
 
     def __init__(self):
-
         # MDP parameters
         self.max_pos = 1.0
         self.max_velocity = 3.0

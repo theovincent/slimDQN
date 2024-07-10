@@ -6,7 +6,9 @@ class DQNNet(nn.Module):
     hidden_layers: list
 
     def setup(self):
-        self.initializer = nn.initializers.variance_scaling(scale=1.0, mode="fan_in", distribution="truncated_normal")
+        self.initializer = nn.initializers.variance_scaling(
+            scale=1.0, mode="fan_in", distribution="truncated_normal"
+        )
         layers = []
 
         for hidden_size in self.hidden_layers:

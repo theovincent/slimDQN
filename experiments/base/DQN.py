@@ -14,8 +14,9 @@ def train(
     env,
     rb: ReplayBuffer,
 ):
-
-    epsilon_schedule = optax.linear_schedule(1.0, p["end_epsilon"], p["duration_epsilon"])
+    epsilon_schedule = optax.linear_schedule(
+        1.0, p["end_epsilon"], p["duration_epsilon"]
+    )
 
     n_training_steps = 0
     env.reset()
@@ -31,7 +32,6 @@ def train(
         has_reset = False
 
         while idx_training_step < p["n_training_steps_per_epoch"] or not has_reset:
-
             key, exploration_key = jax.random.split(key)
             reward, has_reset = collect_single_sample(
                 exploration_key, env, agent, rb, p, epsilon_schedule, n_training_steps
