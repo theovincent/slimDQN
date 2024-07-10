@@ -30,7 +30,7 @@ class BasicDQN(DQN):
     def __init__(
         self,
         q_key: jax.random.PRNGKey,
-        observation_shape,
+        observation_dim,
         n_actions,
         hidden_layers: list,
         gamma: float,
@@ -42,7 +42,7 @@ class BasicDQN(DQN):
     ):
         optimizer = optax.adam(lr)
         q_network = DQNNet(n_actions, hidden_layers)
-        q_inputs = {"state": jnp.zeros(jnp.array(observation_shape).prod(), dtype=jnp.float32)}
+        q_inputs = {"state": jnp.zeros(observation_dim, dtype=jnp.float32)}
         super().__init__(
             q_key,
             q_inputs,
