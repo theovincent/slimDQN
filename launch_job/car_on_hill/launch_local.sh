@@ -6,15 +6,15 @@ parse_arguments $@
 
 if [[ $GPU = true ]]
 then
-    source env_gpu/bin/activate
+    tmux send-keys -t slimRL "source env_gpu/bin/activate" ENTER
 else
-    source env_cpu/bin/activate
+    tmux send-keys -t slimRL "source env_cpu/bin/activate" ENTER
 fi
 
 echo "launch train fqi local"
 for (( seed=$FIRST_SEED; seed<=$LAST_SEED; seed++ ))
 do
-    tmux new-session -d -s car_on_hill_${EXPERIMENT_NAME}_${seed}\
-    "car_on_hill_fqi -e $EXPERIMENT_NAME -s $seed $BASE_ARGS $FQI_ARGS >> experiments/car_on_hill/logs/$EXPERIMENT_NAME/FQI/seed_$seed.out 2>&1;\
-    tmux kill-session -t car_on_hill_${EXPERIMENT_NAME}_${seed}"
+    tmux send-keys -t slimRL\
+    "car_on_hill_fqi -e $EXPERIMENT_NAME -s $seed $BASE_ARGS $FQI_ARGS >> experiments/car_on_hill/logs/$EXPERIMENT_NAME/FQI/seed_$seed.out 2>&1 &" ENTER
 done
+tmux send-keys -t slimRL "wait" ENTER
