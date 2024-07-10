@@ -6,7 +6,7 @@ import jax
 from experiments.base.parser import fqi_parser
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
-from slimRL.networks.architectures.DQN import BasicDQN
+from slimRL.networks.DQN import DQN
 from experiments.base.FQI import train
 from experiments.base.logger import prepare_logs
 from slimRL.sample_collection.utils import update_replay_buffer
@@ -39,14 +39,14 @@ def run(argvs=sys.argv[1:]):
         gamma=p["gamma"],
     )
 
-    agent = BasicDQN(
+    agent = DQN(
         q_key,
         env.observation_shape[0],
         env.n_actions,
         hidden_layers=p["hidden_layers"],
+        lr=p["lr"],
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],
-        lr=p["lr"],
         train_frequency=-1,
         target_update_frequency=-1,
     )

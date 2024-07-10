@@ -2,7 +2,7 @@ import os
 import json
 import pickle
 import jax
-from slimRL.networks.architectures.DQN import BasicDQN
+from slimRL.networks.DQN import DQN
 
 SHARED_PARAMS = [
     "experiment_name",
@@ -32,22 +32,16 @@ AGENT_PARAMS = {
 
 def check_experiment(p: dict):
     # check if the experiment is valid
-    returns_path = os.path.join(
-        p["save_path"], "returns_seed_" + str(p["seed"]) + ".npy"
-    )
+    returns_path = os.path.join(p["save_path"], "returns_seed_" + str(p["seed"]) + ".npy")
     losses_path = os.path.join(p["save_path"], "losses_seed_" + str(p["seed"]) + ".npy")
     model_path = os.path.join(p["save_path"], "model_seed_" + str(p["seed"]))
 
     assert not (
-        os.path.exists(returns_path)
-        or os.path.exists(losses_path)
-        or os.path.exists(model_path)
+        os.path.exists(returns_path) or os.path.exists(losses_path) or os.path.exists(model_path)
     ), "Same algorithm with same seed results already exists. Delete them and restart, or change the experiment name."
 
     params_path = os.path.join(
-        os.path.split(p["save_path"])[
-            0
-        ],  # parameters.json is outside the algorithm folder (in the experiment folder)
+        os.path.split(p["save_path"])[0],  # parameters.json is outside the algorithm folder (in the experiment folder)
         "parameters.json",
     )
 
@@ -110,9 +104,7 @@ def store_params(p: dict):
 
 def prepare_logs(p: dict):
     check_experiment(p)
-    os.makedirs(
-        p["save_path"], exist_ok=True
-    )  # need to create a directory for this experiment, algorithm combination
+    os.makedirs(p["save_path"], exist_ok=True)  # need to create a directory for this experiment, algorithm combination
     store_params(p)
 
 
@@ -124,7 +116,7 @@ def pickle_dump(obj, path):
     return pickle.dump(obj, open(path, "wb"))
 
 
-def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: BasicDQN):
+def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: DQN):
 
     rewards_path = os.path.join(p["save_path"], f"rewards_seed_{p['seed']}.json")
     lengths_path = os.path.join(p["save_path"], f"lengths_seed_{p['seed']}.json")

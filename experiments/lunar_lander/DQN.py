@@ -6,7 +6,7 @@ import jax
 from experiments.base.parser import dqn_parser
 from slimRL.environments.lunar_lander import LunarLander
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
-from slimRL.networks.architectures.DQN import BasicDQN
+from slimRL.networks.DQN import DQN
 from experiments.base.DQN import train
 from experiments.base.logger import prepare_logs
 
@@ -37,14 +37,14 @@ def run(argvs=sys.argv[1:]):
         update_horizon=p["update_horizon"],
         gamma=p["gamma"],
     )
-    agent = BasicDQN(
+    agent = DQN(
         q_key,
         env.observation_shape[0],
         env.n_actions,
         hidden_layers=p["hidden_layers"],
+        lr=p["lr"],
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],
-        lr=p["lr"],
         train_frequency=p["update_to_data"],
         target_update_frequency=p["target_update_period"],
     )

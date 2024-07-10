@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import jax
 import optax
-from slimRL.networks.architectures.DQN import BasicDQN
+from slimRL.networks.DQN import DQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 from slimRL.sample_collection.utils import collect_single_sample
 from experiments.base.logger import save_logs
@@ -10,14 +10,12 @@ from experiments.base.logger import save_logs
 def train(
     key: jax.random.PRNGKey,
     p: dict,
-    agent: BasicDQN,
+    agent: DQN,
     env,
     rb: ReplayBuffer,
 ):
 
-    epsilon_schedule = optax.linear_schedule(
-        1.0, p["end_epsilon"], p["duration_epsilon"]
-    )
+    epsilon_schedule = optax.linear_schedule(1.0, p["end_epsilon"], p["duration_epsilon"])
 
     n_training_steps = 0
     env.reset()

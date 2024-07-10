@@ -2,13 +2,13 @@ import os
 import jax
 from tqdm import tqdm
 from experiments.base.logger import pickle_dump
-from slimRL.networks.architectures.DQN import BasicDQN
+from slimRL.networks.DQN import DQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 
 
 def train(
     p: dict,
-    agent: BasicDQN,
+    agent: DQN,
     rb: ReplayBuffer,
 ):
 
@@ -29,7 +29,5 @@ def train(
             "params": jax.device_get(agent.params),
             "hidden_layers": agent.q_network.hidden_layers,
         }
-        model_path = os.path.join(
-            p["save_path"], f"model_iteration_{idx_bellman_iteration+1}"
-        )
+        model_path = os.path.join(p["save_path"], f"model_iteration_{idx_bellman_iteration+1}")
         pickle_dump(model, model_path)
