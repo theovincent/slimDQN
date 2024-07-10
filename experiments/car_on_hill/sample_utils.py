@@ -12,14 +12,9 @@ def compute_state_and_reward_distribution(rb):
     env = CarOnHill()
 
     boxes_x_size = (2 * env.max_pos) / (NX - 1)
-    discrete_x_boxes = (
-        np.linspace(-env.max_pos, env.max_pos + boxes_x_size, NX + 1) - boxes_x_size / 2
-    )
+    discrete_x_boxes = np.linspace(-env.max_pos, env.max_pos + boxes_x_size, NX + 1) - boxes_x_size / 2
     boxes_v_size = (2 * env.max_velocity) / (NV - 1)
-    discrete_v_boxes = (
-        np.linspace(-env.max_velocity, env.max_velocity + boxes_v_size, NV + 1)
-        - boxes_v_size / 2
-    )
+    discrete_v_boxes = np.linspace(-env.max_velocity, env.max_velocity + boxes_v_size, NV + 1) - boxes_v_size / 2
 
     # for each element of dimension one, get the index where it is located in the discrete dimension.
     indexes_x_boxes = np.searchsorted(discrete_x_boxes, xs) - 1
@@ -35,9 +30,7 @@ def compute_state_and_reward_distribution(rb):
     samples_count = np.zeros((NX, NV))
     rewards_count = np.zeros((NX, NV))
 
-    indexes_to_bin = np.vstack(
-        (indexes_x_boxes[xv_inside_boxes], indexes_v_boxes[xv_inside_boxes])
-    ).T
+    indexes_to_bin = np.vstack((indexes_x_boxes[xv_inside_boxes], indexes_v_boxes[xv_inside_boxes])).T
 
     for idx_index, (x_bin_index, v_bin_index) in enumerate(indexes_to_bin):
         samples_count[x_bin_index, v_bin_index] += 1

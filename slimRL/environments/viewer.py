@@ -14,9 +14,7 @@ class Viewer:
 
     """
 
-    def __init__(
-        self, env_width, env_height, width=500, height=500, background=(0, 0, 0)
-    ):
+    def __init__(self, env_width, env_height, width=500, height=500, background=(0, 0, 0)):
         """
         Constructor.
 
@@ -164,9 +162,7 @@ class Viewer:
         pygame.display.quit()
 
     def _transform(self, p):
-        return np.array(
-            [p[0] * self._ratio[0], self._height - p[1] * self._ratio[1]]
-        ).astype(int)
+        return np.array([p[0] * self._ratio[0], self._height - p[1] * self._ratio[1]]).astype(int)
 
     @staticmethod
     def _rotate(p, theta):

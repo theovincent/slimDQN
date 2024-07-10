@@ -54,14 +54,9 @@ def run(argvs=sys.argv[1:]):
                 if "rewards" in f
             ]
         )
-        parameters[experiment] = json.load(
-            open(os.path.join(result, "..", "parameters.json"), "r")
-        )
+        parameters[experiment] = json.load(open(os.path.join(result, "..", "parameters.json"), "r"))
 
-    env_steps = (
-        parameters[experiment]["n_epochs"]
-        * parameters[experiment]["n_training_steps_per_epoch"]
-    )
+    env_steps = parameters[experiment]["n_epochs"] * parameters[experiment]["n_training_steps_per_epoch"]
     plot_value(
         xlabel="Env steps",
         ylabel="IQM Total reward",
@@ -78,9 +73,7 @@ def run(argvs=sys.argv[1:]):
         xticks=[0]
         + [
             idx * 10 ** (int(np.log10(env_steps)))
-            for idx in range(
-                1, int(np.ceil(env_steps / 10 ** (int(np.log10(env_steps))))) + 1
-            )
+            for idx in range(1, int(np.ceil(env_steps / 10 ** (int(np.log10(env_steps))))) + 1)
         ],
         ticksize=25,
         title=f"{parameters[experiment]['env']}",

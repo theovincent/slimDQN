@@ -48,9 +48,7 @@ class TestReplayBuffer(unittest.TestCase):
                 terminal=np.random.choice([True, False], p=[0.8, 0.2]),
             )
         batch_size = np.random.randint(1, 1000)
-        self.assertEqual(
-            len(self.rb.sample_index_batch(batch_size, self.key)), batch_size
-        )
+        self.assertEqual(len(self.rb.sample_index_batch(batch_size, self.key)), batch_size)
         self.assertEqual(len(self.rb.sample_transition_batch(batch_size, self.key)), 5)
         self.assertEqual(
             len(self.rb.sample_transition_batch(batch_size, self.key)["observations"]),
@@ -72,9 +70,7 @@ class TestReplayBuffer(unittest.TestCase):
         )
 
     def test_horizon_based_buffer(self):
-        self.small_rb = ReplayBuffer(
-            observation_shape=(2,), replay_capacity=6, update_horizon=3
-        )
+        self.small_rb = ReplayBuffer(observation_shape=(2,), replay_capacity=6, update_horizon=3)
         self.assertEqual(self.small_rb.add_count, 0)
         self.small_rb.add(observation=[1, 1], action=5, reward=-1.0, terminal=False)
         self.small_rb.add(observation=[1, 2], action=1, reward=-1.0, terminal=False)
@@ -90,18 +86,14 @@ class TestReplayBuffer(unittest.TestCase):
         self.assertEqual(self.small_rb.is_full(), False)
         self.assertEqual(self.small_rb.is_valid_transition(0), True)
         self.assertListEqual(
-            self.small_rb.sample_transition_batch(1, self.key)["observations"][
-                0
-            ].tolist(),
+            self.small_rb.sample_transition_batch(1, self.key)["observations"][0].tolist(),
             [1, 1],
         )
         self.small_rb.add(observation=[2, 1], action=1, reward=-1.0, terminal=True)
         self.small_rb.add(observation=[3, 1], action=0, reward=-1.0, terminal=False)
         self.small_rb.add(observation=[3, 2], action=0, reward=-1.0, terminal=True)
         self.assertEqual(self.small_rb.cursor(), 1)
-        self.assertEqual(
-            len(self.small_rb.sample_transition_batch(3, self.key)["observations"]), 3
-        )
+        self.assertEqual(len(self.small_rb.sample_transition_batch(3, self.key)["observations"]), 3)
         self.small_rb.add(observation=[4, 1], action=0, reward=-1.0, terminal=False)
         self.small_rb.add(observation=[4, 2], action=0, reward=-1.0, terminal=False)
         self.assertEqual(self.small_rb.is_valid_transition(0), True)

@@ -28,7 +28,5 @@ def train(
             "params": jax.device_get(agent.params),
             "hidden_layers": agent.q_network.hidden_layers,
         }
-        model_path = os.path.join(
-            p["save_path"], f"model_iteration_{idx_bellman_iteration+1}"
-        )
+        model_path = os.path.join(p["save_path"], f"model_iteration_{idx_bellman_iteration+1}")
         pickle_dump(model, model_path)

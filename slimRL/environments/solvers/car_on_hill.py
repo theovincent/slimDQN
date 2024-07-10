@@ -29,9 +29,7 @@ def optimal_steps_to_absorbing(env: CarOnHill, state: np.ndarray, max_steps: int
     return False, step
 
 
-def compute_optimal_q_value(
-    eval_state, idx_state_x, idx_state_v, action, horizon, gamma, optimal_q
-):
+def compute_optimal_q_value(eval_state, idx_state_x, idx_state_v, action, horizon, gamma, optimal_q):
     env = CarOnHill()
     env.reset(eval_state)
     next_state, reward, absorbing = env.step(action)
@@ -39,17 +37,11 @@ def compute_optimal_q_value(
     if absorbing:
         optimal_q[(idx_state_x, idx_state_v, action)] = reward
     else:
-        success, steps_to_absorbing = optimal_steps_to_absorbing(
-            env, next_state, horizon - 1
-        )
+        success, steps_to_absorbing = optimal_steps_to_absorbing(env, next_state, horizon - 1)
 
-        optimal_v_next_state = (
-            gamma ** (steps_to_absorbing) if success else -(gamma**steps_to_absorbing)
-        )
+        optimal_v_next_state = gamma ** (steps_to_absorbing) if success else -(gamma**steps_to_absorbing)
 
-        optimal_q[(idx_state_x, idx_state_v, action)] = (
-            reward + gamma * optimal_v_next_state
-        )
+        optimal_q[(idx_state_x, idx_state_v, action)] = reward + gamma * optimal_v_next_state
 
 
 def compute_optimal_values(n_states_x, n_states_v, horizon, gamma):
@@ -92,8 +84,6 @@ def compute_optimal_values(n_states_x, n_states_v, horizon, gamma):
     for idx_state_x, state_x in enumerate(states_x):
         for idx_state_v, state_v in enumerate(states_v):
             for action in range(2):
-                optimal_q[idx_state_x, idx_state_v, action] = optimal_q_shared[
-                    (idx_state_x, idx_state_v, action)
-                ]
+                optimal_q[idx_state_x, idx_state_v, action] = optimal_q_shared[(idx_state_x, idx_state_v, action)]
     optimal_v = np.max(optimal_q, axis=2)
     return optimal_v, optimal_q

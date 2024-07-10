@@ -14,9 +14,7 @@ def train(
     env,
     rb: ReplayBuffer,
 ):
-    epsilon_schedule = optax.linear_schedule(
-        1.0, p["end_epsilon"], p["duration_epsilon"]
-    )
+    epsilon_schedule = optax.linear_schedule(1.0, p["end_epsilon"], p["duration_epsilon"])
 
     n_training_steps = 0
     env.reset()

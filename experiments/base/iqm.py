@@ -9,9 +9,7 @@ def compute_epoch_iqm_conf(array, n_seeds, n_bootstraps):
     bootstrap_iqms = np.zeros(n_bootstraps)
     for i in range(n_bootstraps):
         vals = np.random.choice(array, size=n_seeds)
-        bootstrap_iqms[i] = scipy.stats.trim_mean(
-            np.sort(vals), proportiontocut=0.25, axis=None
-        )
+        bootstrap_iqms[i] = scipy.stats.trim_mean(np.sort(vals), proportiontocut=0.25, axis=None)
 
     confs = np.percentile(bootstrap_iqms, [2.5, 97.5])
 

@@ -52,36 +52,23 @@ def save_replay_buffer_store(rb: ReplayBuffer, save_path):
 
 def load_valid_transitions(rb_path):
     rb_store = json.load(open(os.path.join(rb_path), "r"))
-    valid_indices = set(np.arange(len(rb_store["observations"]))) - set(
-        rb_store["episode_trunc_indices"]
-    )
+    valid_indices = set(np.arange(len(rb_store["observations"]))) - set(rb_store["episode_trunc_indices"])
     if not rb_store["dones"][rb_store["last_added_transition_index"]]:
         valid_indices.discard(rb_store["last_added_transition_index"])
     valid_transitions = {}
     valid_transitions["next_observations"] = np.array(
-        [
-            val
-            for idx, val in enumerate(np.roll(rb_store["observations"], -1, axis=0))
-            if idx in valid_indices
-        ]
+        [val for idx, val in enumerate(np.roll(rb_store["observations"], -1, axis=0)) if idx in valid_indices]
     )
     for key in ["observations", "actions", "rewards", "dones"]:
-        valid_transitions[key] = np.array(
-            [val for idx, val in enumerate(rb_store[key]) if idx in valid_indices]
-        )
+        valid_transitions[key] = np.array([val for idx, val in enumerate(rb_store[key]) if idx in valid_indices])
     return valid_transitions
 
 
 def update_replay_buffer(key, env, agent, rb: ReplayBuffer, p):
     if os.path.exists(os.path.join(p["save_path"], "..", "replay_buffer.json")):
         print("Replay buffer already exists. Loading...")
-        rb_store = json.load(
-            open(os.path.join(p["save_path"], "..", "replay_buffer.json"), "r")
-        )
-        rb._store = {
-            name: np.array(rb_store[name])
-            for name in ["observations", "actions", "rewards", "dones"]
-        }
+        rb_store = json.load(open(os.path.join(p["save_path"], "..", "replay_buffer.json"), "r"))
+        rb._store = {name: np.array(rb_store[name]) for name in ["observations", "actions", "rewards", "dones"]}
         rb.episode_trunc_indices = set(rb_store["episode_trunc_indices"])
         rb.last_added_transition_index = rb_store["last_added_transition_index"]
         rb.add_count = rb_store["add_count"]
@@ -100,7 +87,5 @@ def update_replay_buffer(key, env, agent, rb: ReplayBuffer, p):
                 0,
             )
         assert sum(rb._store["rewards"] > 0) > 0, "No positive reward sampled. Rerun!"
-        print(
-            f"Replay buffer filled with {sum(rb._store['rewards'] > 0)} success samples."
-        )
+        print(f"Replay buffer filled with {sum(rb._store['rewards'] > 0)} success samples.")
         save_replay_buffer_store(rb, p["save_path"])

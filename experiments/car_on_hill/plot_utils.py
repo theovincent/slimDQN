@@ -7,9 +7,7 @@ from experiments.car_on_hill.optimal import NX, NV
 
 
 def plot_on_grid(values, shared_cmap, zeros_to_nan=False, **kwargs):
-    plt.rc(
-        "font", size=kwargs.get("fontsize", 15), family="serif", serif="Times New Roman"
-    )
+    plt.rc("font", size=kwargs.get("fontsize", 15), family="serif", serif="Times New Roman")
     plt.rc("lines", linewidth=kwargs.get("linewidth", 5))
     nrows = int(np.ceil(len(values) / 3.0))
     ncols = min(len(values), 3)
@@ -38,17 +36,13 @@ def plot_on_grid(values, shared_cmap, zeros_to_nan=False, **kwargs):
     colors = []
     for idx, (key, val) in enumerate(values.items()):
         colors.append(
-            ax[idx // 3][idx % 3].pcolormesh(
-                x, v, val, shading="nearest", cmap=kwargs.get("cmap", "viridis")
-            )
+            ax[idx // 3][idx % 3].pcolormesh(x, v, val, shading="nearest", cmap=kwargs.get("cmap", "viridis"))
         )
     tick_size = kwargs.get("tick_size", 2)
 
     for col in range(ncols):
         ax[-1][col].set_xticks(states_x[::tick_size])
-        ax[-1][col].set_xticklabels(
-            np.around(states_x[::tick_size], 1), rotation="vertical"
-        )
+        ax[-1][col].set_xticklabels(np.around(states_x[::tick_size], 1), rotation="vertical")
         ax[-1][col].set_xlim(states_x[0], states_x[-1])
         ax[-1][col].set_xlabel("$x$")
 
@@ -67,9 +61,7 @@ def plot_on_grid(values, shared_cmap, zeros_to_nan=False, **kwargs):
         max_val = max([np.nanmax(val) for val in values.values()])
 
         norm = matplotlib.colors.Normalize(vmin=min_val, vmax=max_val)
-        cmap = matplotlib.cm.ScalarMappable(
-            norm=norm, cmap=kwargs.get("cmap", "viridis")
-        )
+        cmap = matplotlib.cm.ScalarMappable(norm=norm, cmap=kwargs.get("cmap", "viridis"))
         cmap.set_array([])
         fig.colorbar(cmap, ax=ax)
     else:
@@ -83,9 +75,7 @@ def plot_on_grid(values, shared_cmap, zeros_to_nan=False, **kwargs):
 
 
 def plot_value(xlabel, ylabel, x_val, y_val, xlim, xticks, **kwargs):
-    plt.rc(
-        "font", size=kwargs.get("fontsize", 15), family="serif", serif="Times New Roman"
-    )
+    plt.rc("font", size=kwargs.get("fontsize", 15), family="serif", serif="Times New Roman")
     plt.rc("lines", linewidth=kwargs.get("linewidth", 4))
     fig = plt.figure(kwargs.get("title", ""))
     ax = fig.add_subplot(111)
