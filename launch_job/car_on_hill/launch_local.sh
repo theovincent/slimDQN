@@ -4,6 +4,12 @@ parse_arguments $@
 
 [ -d experiments/car_on_hill/logs/$EXPERIMENT_NAME/FQI ] || mkdir -p experiments/car_on_hill/logs/$EXPERIMENT_NAME/FQI
 
+tmux has-session -t "slimRL" 2>/dev/null
+
+if [ $? != 0 ]; then
+    tmux new-session -d -s slimRL
+fi
+
 if [[ $GPU = true ]]
 then
     tmux send-keys -t slimRL "source env_gpu/bin/activate" ENTER
