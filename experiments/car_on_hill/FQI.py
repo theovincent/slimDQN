@@ -25,7 +25,6 @@ def run(argvs=sys.argv[1:]):
         os.path.dirname(os.path.abspath(__file__)),
         f"exp_output/{p['experiment_name']}/{p['algo']}/seed_{p['seed']}",
     )
-    p["hidden_layers"] = [int(h) for h in p["hidden_layers"]]
 
     prepare_logs(p)
 

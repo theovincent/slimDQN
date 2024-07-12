@@ -23,6 +23,7 @@ def base_parser(parser: argparse.ArgumentParser):
         "--hidden_layers",
         nargs="*",
         help="Hidden layer sizes.",
+        type=int,
         default=[100],
     )
 
