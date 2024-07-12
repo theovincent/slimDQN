@@ -23,7 +23,6 @@ def base_parser(parser: argparse.ArgumentParser):
         "--hidden_layers",
         nargs="*",
         help="Hidden layer sizes.",
-        required=False,
         default=[100],
     )
 
@@ -56,7 +55,6 @@ def base_parser(parser: argparse.ArgumentParser):
         "--gamma",
         help="Discounting factor gamma.",
         type=float,
-        required=False,
         default=0.99,
     )
 
@@ -84,7 +82,6 @@ def fqi_parser(parser: argparse.ArgumentParser):
         "--n_bellman_iterations",
         help="No. of Bellman iterations to perform.",
         type=int,
-        required=False,
         default=30,
     )
 
