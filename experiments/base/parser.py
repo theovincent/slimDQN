@@ -78,7 +78,7 @@ def base_parser(parser: argparse.ArgumentParser):
 
 
 def fqi_parser(parser: argparse.ArgumentParser):
-    base_parser(parser=parser)
+    base_parser(parser)
     parser.add_argument(
         "-bi",
         "--n_bellman_iterations",
@@ -98,7 +98,7 @@ def fqi_parser(parser: argparse.ArgumentParser):
 
 
 def dqn_parser(parser: argparse.ArgumentParser):
-    base_parser(parser=parser)
+    base_parser(parser)
     parser.add_argument(
         "-utd",
         "--update_to_data",
