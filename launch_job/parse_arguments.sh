@@ -2,8 +2,8 @@
 
 function parse_arguments() {
     BASE_ARGS=""
-    DQN_ARGS=""
     FQI_ARGS=""
+    DQN_ARGS=""
     while [[ $# -gt 0 ]]; do
         case $1 in
             -e | --experiment_name)
