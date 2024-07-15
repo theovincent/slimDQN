@@ -45,6 +45,6 @@ def run(argvs=sys.argv[1:]):
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],
         train_frequency=p["update_to_data"],
-        target_update_frequency=p["target_update_period"],
+        target_update_frequency=p["target_update_frequency"],
     )
     train(train_key, p, agent, env, rb)

@@ -23,7 +23,7 @@ AGENT_PARAMS = {
         "update_to_data",
         "end_epsilon",
         "duration_epsilon",
-        "target_update_period",
+        "target_update_frequency",
         "n_initial_samples",
     ],
     "FQI": ["n_bellman_iterations", "n_fitting_steps"],

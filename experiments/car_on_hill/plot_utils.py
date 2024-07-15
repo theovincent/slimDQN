@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from slimRL.environments.car_on_hill import CarOnHill
-from experiments.base.iqm import get_iqm_and_conf_parallel
 from experiments.car_on_hill.optimal import NX, NV
 
 
@@ -70,45 +69,5 @@ def plot_on_grid(values, shared_cmap, zeros_to_nan=False, **kwargs):
     fig.suptitle(kwargs.get("title", ""), fontsize=25)
     if not shared_cmap:
         plt.subplots_adjust(wspace=0.05, hspace=0.2)
-
-    return plt
-
-
-def plot_value(xlabel, ylabel, x_val, y_val, xlim, xticks, **kwargs):
-    plt.rc("font", size=kwargs.get("fontsize", 15), family="serif", serif="Times New Roman")
-    plt.rc("lines", linewidth=kwargs.get("linewidth", 4))
-    fig = plt.figure(kwargs.get("title", ""))
-    ax = fig.add_subplot(111)
-    plt.xlabel(xlabel, fontsize=kwargs.get("fontsize", 15))
-    plt.ylabel(ylabel, fontsize=kwargs.get("fontsize", 15))
-    plt.title(kwargs.get("title", ""))
-    ax.set_xlim(xlim)
-    ax.set_xticks(xticks)
-    if kwargs.get("yticks", None) is not None:
-        ax.set_yticks(kwargs.get("yticks"))
-    if kwargs.get("ylim", None) is not None:
-        ax.set_ylim(kwargs.get("ylim"))
-
-    for exp in y_val:
-        y_iqm, y_cnf = get_iqm_and_conf_parallel(y_val[exp])
-        ax.plot(
-            x_val,
-            y_iqm,
-            label=exp,
-        )
-        ax.fill_between(
-            x_val,
-            y_cnf[0],
-            y_cnf[1],
-            alpha=0.3,
-        )
-
-    if kwargs.get("sci_x", False):
-        plt.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
-    if kwargs.get("sci_y", False):
-        plt.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
-    plt.legend(loc="lower right")
-    plt.grid()
-    plt.tight_layout()
 
     return plt

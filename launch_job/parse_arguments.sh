@@ -32,38 +32,32 @@ function parse_arguments() {
                 BASE_ARGS="$BASE_ARGS -hl $HIDDEN_LAYER"
                 ;;
             -rb | --replay_capacity)
-                RB_CAPACITY=$2
-                BASE_ARGS="$BASE_ARGS -rb $RB_CAPACITY"
+                BASE_ARGS="$BASE_ARGS -rb $2"
                 shift
                 shift
                 ;;
-            -B | --batch_size)
-                BATCH_SIZE=$2
-                BASE_ARGS="$BASE_ARGS -B $BATCH_SIZE"
+            -bs | --batch_size)
+                BASE_ARGS="$BASE_ARGS -bs $2"
                 shift
                 shift
                 ;;
             -n | --update_horizon)
-                UPDATE_HORIZON=$2
-                BASE_ARGS="$BASE_ARGS -n $UPDATE_HORIZON"
+                BASE_ARGS="$BASE_ARGS -n $2"
                 shift
                 shift
                 ;;
             -gamma | --gamma)
-                GAMMA=$2
-                BASE_ARGS="$BASE_ARGS -gamma $GAMMA"
+                BASE_ARGS="$BASE_ARGS -gamma $2"
                 shift
                 shift
                 ;;
             -lr | --lr)
-                LEARNING_RATE=$2
-                BASE_ARGS="$BASE_ARGS -lr $LEARNING_RATE"
+                BASE_ARGS="$BASE_ARGS -lr $2"
                 shift
                 shift
                 ;;
-            -H | --horizon)
-                HORIZON=$2
-                BASE_ARGS="$BASE_ARGS -H $HORIZON"
+            -hor | --horizon)
+                BASE_ARGS="$BASE_ARGS -hor $2"
                 shift
                 shift
                 ;;
@@ -71,57 +65,48 @@ function parse_arguments() {
                 GPU=true
                 shift
                 ;;
-            -utd | --update_to_data)
-                UPDATE_TO_DATA=$2
-                DQN_ARGS="$DQN_ARGS -utd $UPDATE_TO_DATA"
-                shift
-                shift
-                ;;
-            -T | --target_update_period)
-                TARGET_UPDATE_PERIOD=$2
-                DQN_ARGS="$DQN_ARGS -T $TARGET_UPDATE_PERIOD"
-                shift
-                shift
-                ;;
-            -n_init | --n_initial_samples)
-                N_INITIAL_SAMPLES=$2
-                DQN_ARGS="$DQN_ARGS -n_init $N_INITIAL_SAMPLES"
-                shift
-                shift
-                ;;
-            -eps_e | --end_epsilon)
-                END_EPSILON=$2
-                DQN_ARGS="$DQN_ARGS -eps_e $END_EPSILON"
-                shift
-                shift
-                ;;
-            -eps_dur | --duration_epsilon)
-                DURATION_EPSILON=$2
-                DQN_ARGS="$DQN_ARGS -eps_dur $DURATION_EPSILON"
-                shift
-                shift
-                ;;
-            -E | --n_epochs)
-                N_EPOCHS=$2
-                DQN_ARGS="$DQN_ARGS -E $N_EPOCHS"
-                shift
-                shift
-                ;;
-            -spe | --n_training_steps_per_epoch)
-                N_TRAINING_STEPS_PER_EPOCH=$2
-                DQN_ARGS="$DQN_ARGS -spe $N_TRAINING_STEPS_PER_EPOCH"
-                shift
-                shift
-                ;;
-            -bi | --n_bellman_iterations)
-                N_BELLMAN_ITERATIONS=$2
-                FQI_ARGS="$FQI_ARGS -bi $N_BELLMAN_ITERATIONS"
+            -nbi | --n_bellman_iterations)
+                FQI_ARGS="$FQI_ARGS -nbi $2"
                 shift
                 shift
                 ;;
             -fs | --n_fitting_steps)
-                N_FITTING_STEPS=$2
-                FQI_ARGS="$FQI_ARGS -fs $N_FITTING_STEPS"
+                FQI_ARGS="$FQI_ARGS -fs $2"
+                shift
+                shift
+                ;;
+            -utd | --update_to_data)
+                DQN_ARGS="$DQN_ARGS -utd $2"
+                shift
+                shift
+                ;;
+            -tuf | --target_update_frequency)
+                DQN_ARGS="$DQN_ARGS -tuf $2"
+                shift
+                shift
+                ;;
+            -n_init | --n_initial_samples)
+                DQN_ARGS="$DQN_ARGS -n_init $2"
+                shift
+                shift
+                ;;
+            -eps_e | --end_epsilon)
+                DQN_ARGS="$DQN_ARGS -eps_e $2"
+                shift
+                shift
+                ;;
+            -eps_dur | --duration_epsilon)
+                DQN_ARGS="$DQN_ARGS -eps_dur $2"
+                shift
+                shift
+                ;;
+            -ne | --n_epochs)
+                DQN_ARGS="$DQN_ARGS -ne $2"
+                shift
+                shift
+                ;;
+            -spe | --n_training_steps_per_epoch)
+                DQN_ARGS="$DQN_ARGS -spe $2"
                 shift
                 shift
                 ;;

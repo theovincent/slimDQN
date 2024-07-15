@@ -36,7 +36,7 @@ def base_parser(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "-B",
+        "-bs",
         "--batch_size",
         help="Batch size for training.",
         type=int,
@@ -68,7 +68,7 @@ def base_parser(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "-H",
+        "-hor",
         "--horizon",
         help="Horizon for truncation.",
         type=int,
@@ -79,7 +79,7 @@ def base_parser(parser: argparse.ArgumentParser):
 def fqi_parser(parser: argparse.ArgumentParser):
     base_parser(parser)
     parser.add_argument(
-        "-bi",
+        "-nbi",
         "--n_bellman_iterations",
         help="No. of Bellman iterations to perform.",
         type=int,
@@ -106,8 +106,8 @@ def dqn_parser(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "-T",
-        "--target_update_period",
+        "-tuf",
+        "--target_update_frequency",
         help="Update period for target Q-network.",
         type=int,
         default=40,
@@ -138,7 +138,7 @@ def dqn_parser(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "-E",
+        "-ne",
         "--n_epochs",
         help="No. of epochs to train the DQN for.",
         type=int,

@@ -41,17 +41,15 @@ def run(argvs=sys.argv[1:]):
     model = pickle_load(args.model)
     q_network = DQNNet(env.n_actions, model["hidden_layers"])
 
-    obs = env.reset()
+    env.reset()
     total_reward = 0
     for _ in range(args.steps):
         env.env.render()
         action = jnp.argmax(q_network.apply(model["params"], env.state)).item()
-        next_obs, reward, termination = env.step(action)
+        _, reward, termination = env.step(action)
         total_reward += reward
 
         if termination or env.n_steps > args.horizon:
             print("Total reward = ", total_reward)
             total_reward = 0
-            next_obs = env.reset()
-
-        obs = next_obs
+            env.reset()
