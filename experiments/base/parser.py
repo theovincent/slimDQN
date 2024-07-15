@@ -24,7 +24,7 @@ def base_parser(parser: argparse.ArgumentParser):
         nargs="*",
         help="Hidden layer sizes.",
         type=int,
-        default=[100],
+        default=[50, 50],
     )
 
     parser.add_argument(
@@ -32,7 +32,7 @@ def base_parser(parser: argparse.ArgumentParser):
         "--replay_capacity",
         help="For DQN: Replay Buffer capacity, For FQI: Dataset size to sample.",
         type=int,
-        default=50000,
+        default=10000,
     )
 
     parser.add_argument(
@@ -64,7 +64,7 @@ def base_parser(parser: argparse.ArgumentParser):
         "--lr",
         help="Starting learning rate for Adam optimizer.",
         type=float,
-        default=1e-3,
+        default=3e-4,
     )
 
     parser.add_argument(
@@ -72,7 +72,7 @@ def base_parser(parser: argparse.ArgumentParser):
         "--horizon",
         help="Horizon for truncation.",
         type=int,
-        default=200,
+        default=1000,
     )
 
 
@@ -102,7 +102,7 @@ def dqn_parser(parser: argparse.ArgumentParser):
         "--update_to_data",
         help="No. of data points to collect per online Q-network update.",
         type=int,
-        default=4,
+        default=1,
     )
 
     parser.add_argument(
@@ -110,7 +110,7 @@ def dqn_parser(parser: argparse.ArgumentParser):
         "--target_update_frequency",
         help="Update period for target Q-network.",
         type=int,
-        default=40,
+        default=200,
     )
 
     parser.add_argument(
@@ -118,7 +118,7 @@ def dqn_parser(parser: argparse.ArgumentParser):
         "--n_initial_samples",
         help="No. of initial samples before training begins.",
         type=int,
-        default=2000,
+        default=1000,
     )
 
     parser.add_argument(
@@ -134,7 +134,7 @@ def dqn_parser(parser: argparse.ArgumentParser):
         "--duration_epsilon",
         help="Duration(number of steps) over which epsilon decays.",
         type=float,
-        default=25000,
+        default=1000,
     )
 
     parser.add_argument(
@@ -142,7 +142,7 @@ def dqn_parser(parser: argparse.ArgumentParser):
         "--n_epochs",
         help="No. of epochs to train the DQN for.",
         type=int,
-        default=100,
+        default=80,
     )
 
     parser.add_argument(
@@ -150,5 +150,5 @@ def dqn_parser(parser: argparse.ArgumentParser):
         "--n_training_steps_per_epoch",
         help="Max. no. of training steps per epoch.",
         type=int,
-        default=2000,
+        default=6000,
     )

@@ -17,15 +17,12 @@ def train(
     epsilon_schedule = optax.linear_schedule(1.0, p["end_epsilon"], p["duration_epsilon"])
 
     n_training_steps = 0
+    key, reset_key = jax.random.split(key)
     env.reset()
-    log_rewards = []
-    log_lengths = []
+    episode_returns_per_epoch = [[0]]
+    episode_lengths_per_epoch = [[0]]
 
     for idx_epoch in tqdm(range(p["n_epochs"])):
-        epoch_rewards = []
-        epoch_episode_lengths = []
-        episode_reward = 0
-        episode_length = 0
         idx_training_step = 0
         has_reset = False
 
@@ -35,13 +32,11 @@ def train(
                 exploration_key, env, agent, rb, p, epsilon_schedule, n_training_steps
             )
 
-            episode_reward += reward
-            episode_length += 1
+            episode_returns_per_epoch[idx_epoch][-1] += reward
+            episode_lengths_per_epoch[idx_epoch][-1] += 1
             if has_reset:
-                epoch_rewards.append(episode_reward)
-                epoch_episode_lengths.append(episode_length)
-                episode_reward = 0
-                episode_length = 0
+                episode_returns_per_epoch[idx_epoch].append(0)
+                episode_lengths_per_epoch[idx_epoch].append(0)
 
             if n_training_steps > p["n_initial_samples"]:
                 agent.update_online_params(key, n_training_steps, p["batch_size"], rb)
@@ -50,11 +45,12 @@ def train(
             idx_training_step += 1
             n_training_steps += 1
 
-        log_rewards.append(epoch_rewards)
-        log_lengths.append(epoch_episode_lengths)
-
         print(
-            f"Epoch: {idx_epoch}, Avg. return = {sum(epoch_rewards)/len(epoch_rewards)}, Num episodes = {len(epoch_rewards)}"
+            f"Epoch: {idx_epoch}, Avg. return = {sum(episode_returns_per_epoch[idx_epoch])/len(episode_lengths_per_epoch[idx_epoch])},  Num episodes = {len(episode_lengths_per_epoch[idx_epoch])}",
+            flush=True,
         )
+        if idx_epoch < p["n_epochs"] - 1:
+            episode_returns_per_epoch.append([0])
+            episode_lengths_per_epoch.append([0])
 
-    save_logs(p, log_rewards, log_lengths, agent)
+    save_logs(p, episode_returns_per_epoch, episode_lengths_per_epoch, agent)
