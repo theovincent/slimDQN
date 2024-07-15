@@ -7,6 +7,7 @@ from slimRL.sample_collection.replay_buffer import ReplayBuffer
 
 
 def train(
+    key: jax.random.PRNGKey,
     p: dict,
     agent: DQN,
     rb: ReplayBuffer,
@@ -21,7 +22,7 @@ def train(
     pickle_dump(model, model_path)
     for idx_bellman_iteration in tqdm(range(p["n_bellman_iterations"])):
         for _ in range(n_grad_steps):
-            agent.update_online_params(0, p["batch_size"], rb)
+            agent.update_online_params(key, 0, p["batch_size"], rb)
         agent.update_target_params(0)
 
         model = {

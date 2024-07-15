@@ -2,8 +2,8 @@ from typing import Sequence
 import flax.linen as nn
 
 class DQNNet(nn.Module):
-    hidden_layers: Sequence[int]
     n_actions: int
+    hidden_layers: Sequence[int]
 
     @nn.compact
     def __call__(self, x):

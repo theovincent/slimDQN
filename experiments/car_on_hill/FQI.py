@@ -28,7 +28,8 @@ def run(argvs=sys.argv[1:]):
 
     prepare_logs(p)
 
-    q_key = jax.random.PRNGKey(p["seed"])
+    key = jax.random.PRNGKey(p["seed"])
+    q_key, train_key = jax.random.split(key)
 
     env = CarOnHill()
     rb = ReplayBuffer(
@@ -52,4 +53,4 @@ def run(argvs=sys.argv[1:]):
 
     update_replay_buffer(jax.random.PRNGKey(0), env, agent, rb, p)
 
-    train(p, agent, rb)
+    train(train_key, p, agent, rb)

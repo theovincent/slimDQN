@@ -44,7 +44,7 @@ def train(
                 episode_length = 0
 
             if n_training_steps > p["n_initial_samples"]:
-                agent.update_online_params(n_training_steps, p["batch_size"], rb)
+                agent.update_online_params(key, n_training_steps, p["batch_size"], rb)
                 agent.update_target_params(n_training_steps)
 
             idx_training_step += 1
