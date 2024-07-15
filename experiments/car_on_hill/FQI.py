@@ -47,7 +47,7 @@ def run(argvs=sys.argv[1:]):
         lr=p["lr"],
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],
-        train_frequency=-1,
+        update_to_data=-1,
         target_update_frequency=-1,
     )
 

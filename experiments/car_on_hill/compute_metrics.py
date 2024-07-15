@@ -3,6 +3,7 @@ import sys
 import json
 import copy
 import argparse
+import pickle
 import numpy as np
 import jax
 import jax.numpy as jnp
@@ -11,7 +12,6 @@ from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.networks.DQN import DQN
 from experiments.car_on_hill.sample_utils import compute_state_and_reward_distribution
 from slimRL.sample_collection.utils import load_valid_transitions
-from experiments.base.logger import pickle_load
 from experiments.car_on_hill.optimal import NX, NV
 
 
@@ -86,7 +86,7 @@ def run(argvs=sys.argv[1:]):
         lr=-1,
         gamma=parameters["gamma"],
         update_horizon=-1,
-        train_frequency=-1,
+        update_to_data=-1,
         target_update_frequency=-1,
     )
 
@@ -95,11 +95,14 @@ def run(argvs=sys.argv[1:]):
     for seed_run in seed_runs:
         params_list.append(
             [
-                pickle_load(
-                    os.path.join(
-                        experiment_folder_path,
-                        seed_run,
-                        f"model_iteration_{idx_iteration}",
+                pickle.load(
+                    open(
+                        os.path.join(
+                            experiment_folder_path,
+                            seed_run,
+                            f"model_iteration_{idx_iteration}",
+                        ),
+                        "rb",
                     )
                 )["params"]
                 for idx_iteration in range(parameters["n_bellman_iterations"] + 1)

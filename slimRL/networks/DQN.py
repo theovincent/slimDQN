@@ -17,7 +17,7 @@ class DQN:
         lr: float,
         gamma: float,
         update_horizon: int,
-        train_frequency: int,
+        update_to_data: int,
         target_update_frequency: int,
         loss_type: str = "huber",
     ):
@@ -31,7 +31,7 @@ class DQN:
 
         self.gamma = gamma
         self.update_horizon = update_horizon
-        self.train_frequency = train_frequency
+        self.update_to_data = update_to_data
         self.target_update_frequency = target_update_frequency
         self.loss_type = loss_type
 
@@ -82,7 +82,7 @@ class DQN:
         )
 
     def update_online_params(self, train_key, step: int, batch_size: int, replay_buffer: ReplayBuffer):
-        if step % self.train_frequency == 0:
+        if step % self.update_to_data == 0:
             train_key, batching_key = jax.random.split(train_key)
             batch_samples = replay_buffer.sample_transition_batch(batch_size, batching_key)
 

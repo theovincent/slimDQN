@@ -1,7 +1,7 @@
 import os
 import jax
+import pickle
 from tqdm import tqdm
-from experiments.base.logger import pickle_dump
 from slimRL.networks.DQN import DQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 
@@ -19,7 +19,7 @@ def train(
         "hidden_layers": agent.q_network.hidden_layers,
     }
     model_path = os.path.join(p["save_path"], f"model_iteration_0")
-    pickle_dump(model, model_path)
+    pickle.dump(model, open(model_path, "wb"))
     for idx_bellman_iteration in tqdm(range(p["n_bellman_iterations"])):
         for _ in range(n_grad_steps):
             agent.update_online_params(key, 0, p["batch_size"], rb)
@@ -30,4 +30,4 @@ def train(
             "hidden_layers": agent.q_network.hidden_layers,
         }
         model_path = os.path.join(p["save_path"], f"model_iteration_{idx_bellman_iteration+1}")
-        pickle_dump(model, model_path)
+        pickle.dump(model, open(model_path, "wb"))

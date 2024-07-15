@@ -1,7 +1,7 @@
 import sys
 import argparse
 import jax.numpy as jnp
-from experiments.base.logger import pickle_load
+import pickle
 from slimRL.environments.lunar_lander import LunarLander
 from slimRL.networks.architectures.DQN import DQNNet
 
@@ -38,7 +38,7 @@ def run(argvs=sys.argv[1:]):
     args = parser.parse_args(argvs)
 
     env = LunarLander(render_mode="human")
-    model = pickle_load(args.model)
+    model = pickle.load(open(args.model, "rb"))
     q_network = DQNNet(env.n_actions, model["hidden_layers"])
 
     env.reset()
