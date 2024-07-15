@@ -77,7 +77,7 @@ class DQN:
 
     @partial(jax.jit, static_argnames="self")
     def compute_target(self, params: FrozenDict, samples):  # computes the target value for single or a batch of samples
-        return samples["rewards"] + (1 - samples["dones"]) * self.gamma * jnp.max(
+        return samples["rewards"] + (1 - samples["dones"]) * (self.gamma**self.update_horizon) * jnp.max(
             self.apply(params, samples["next_observations"]), axis=-1
         )
 
