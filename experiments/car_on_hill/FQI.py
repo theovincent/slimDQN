@@ -1,7 +1,5 @@
 import os
 import sys
-import time
-import argparse
 import jax
 from experiments.base.parser import fqi_parser
 from slimRL.environments.car_on_hill import CarOnHill
@@ -13,18 +11,9 @@ from slimRL.sample_collection.utils import update_replay_buffer
 
 
 def run(argvs=sys.argv[1:]):
-    print(f"---Car-On-Hill__FQI__{time.strftime('%d-%m-%Y %H:%M:%S')}---")
-    parser = argparse.ArgumentParser("Train FQI on Car-On-Hill.")
-    fqi_parser(parser)
-    args = parser.parse_args(argvs)
 
-    p = vars(args)
-    p["env"] = "Car-On-Hill"
-    p["algo"] = "FQI"
-    p["save_path"] = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        f"exp_output/{p['experiment_name']}/{p['algo']}/seed_{p['seed']}",
-    )
+    env_name = os.path.abspath(__file__).split(os.sep)[-2]
+    p = fqi_parser(env_name, argvs)
 
     prepare_logs(p)
 

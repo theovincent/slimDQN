@@ -1,4 +1,7 @@
+import os
+import time
 import argparse
+from slimRL.environments import DISPLAY_NAME
 
 
 def base_parser(parser: argparse.ArgumentParser):
@@ -76,7 +79,11 @@ def base_parser(parser: argparse.ArgumentParser):
     )
 
 
-def fqi_parser(parser: argparse.ArgumentParser):
+def fqi_parser(env_name, argvs):
+    algo = "FQI"
+    print(f"---{DISPLAY_NAME[env_name]}__{algo}__{time.strftime('%d-%m-%Y %H:%M:%S')}---")
+    parser = argparse.ArgumentParser(f"Train {algo} on {DISPLAY_NAME[env_name]}.")
+
     base_parser(parser)
     parser.add_argument(
         "-nbi",
@@ -93,9 +100,24 @@ def fqi_parser(parser: argparse.ArgumentParser):
         type=int,
         default=5,
     )
+    args = parser.parse_args(argvs)
+
+    p = vars(args)
+    p["env"] = DISPLAY_NAME[env_name]
+    p["algo"] = algo
+    p["save_path"] = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        f"../{env_name}/exp_output/{p['experiment_name']}/{p['algo']}/seed_{p['seed']}",
+    )
+
+    return p
 
 
-def dqn_parser(parser: argparse.ArgumentParser):
+def dqn_parser(env_name, argvs):
+    algo = "DQN"
+    print(f"---{DISPLAY_NAME[env_name]}__{algo}__{time.strftime('%d-%m-%Y %H:%M:%S')}---")
+    parser = argparse.ArgumentParser(f"Train {algo} on {DISPLAY_NAME[env_name]}.")
+
     base_parser(parser)
     parser.add_argument(
         "-ne",
@@ -152,3 +174,15 @@ def dqn_parser(parser: argparse.ArgumentParser):
         type=float,
         default=1000,
     )
+
+    args = parser.parse_args(argvs)
+
+    p = vars(args)
+    p["env"] = DISPLAY_NAME[env_name]
+    p["algo"] = algo
+    p["save_path"] = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        f"../{env_name}/exp_output/{p['experiment_name']}/{p['algo']}/seed_{p['seed']}",
+    )
+
+    return p

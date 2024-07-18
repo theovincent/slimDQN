@@ -1,7 +1,5 @@
 import os
 import sys
-import time
-import argparse
 import jax
 from experiments.base.parser import dqn_parser
 from slimRL.environments.lunar_lander import LunarLander
@@ -12,18 +10,8 @@ from experiments.base.logger import prepare_logs
 
 
 def run(argvs=sys.argv[1:]):
-    print(f"---Lunar Lander__DQN__{time.strftime('%d-%m-%Y %H:%M:%S')}---")
-    parser = argparse.ArgumentParser("Train DQN on Lunar Lander.")
-    dqn_parser(parser)
-    args = parser.parse_args(argvs)
-
-    p = vars(args)
-    p["env"] = "Lunar Lander"
-    p["algo"] = "DQN"
-    p["save_path"] = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        f"exp_output/{p['experiment_name']}/{p['algo']}",
-    )
+    env_name = os.path.abspath(__file__).split(os.sep)[-2]
+    p = dqn_parser(env_name, argvs)
 
     prepare_logs(p)
 
