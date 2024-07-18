@@ -66,7 +66,7 @@ def check_experiment(p: dict):
             and (time.time() - os.path.getmtime(os.path.join(p["save_path"], ".."))) > 4
         ):
             assert (
-                True
+                False
             ), "There is a folder with this experiment name and no parameters.json. Delete the folder and restart, or change the experiment name."
 
 
@@ -90,7 +90,6 @@ def store_params(p: dict):
         params = {}
 
         # store shared params
-        params["---- Shared parameters ---"] = "----------------"
         for shared_param in SHARED_PARAMS:
             params[shared_param] = p[shared_param]
 
