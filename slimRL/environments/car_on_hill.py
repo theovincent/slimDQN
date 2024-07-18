@@ -31,10 +31,10 @@ class CarOnHill:
         self.n_actions = 2
 
     def reset(self, state=None, **kwargs):
-        if state is not None:
-            self.state = np.array(state)
-        else:
+        if state is None:
             self.state = np.array([-0.5, 0])
+        else:
+            self.state = state
 
         self.n_steps = 0
 

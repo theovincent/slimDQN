@@ -81,9 +81,10 @@ class DQN:
             self.apply(params, samples["next_observations"]), axis=-1
         )
 
-    def update_online_params(self, train_key, step: int, batch_size: int, replay_buffer: ReplayBuffer):
+    def update_online_params(
+        self, batching_key: jax.random.PRNGKey, step: int, batch_size: int, replay_buffer: ReplayBuffer
+    ):
         if step % self.update_to_data == 0:
-            train_key, batching_key = jax.random.split(train_key)
             batch_samples = replay_buffer.sample_transition_batch(batch_size, batching_key)
 
             self.params, self.optimizer_state, loss = self.learn_on_batch(
