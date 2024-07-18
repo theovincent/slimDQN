@@ -1,5 +1,6 @@
 # Reference: https://github.com/MushroomRL/mushroom-rl.git
 
+import jax
 import numpy as np
 from scipy.integrate import odeint
 
@@ -29,11 +30,22 @@ class CarOnHill:
         self.observation_shape = (2,)
         self.n_actions = 2
 
-    def reset(self, state=None):
-        if state is None:
-            self.state = np.array([-0.5, 0])
+    def reset(self, state=None, **kwargs):
+        if state is not None:
+            self.state = np.array(state)
         else:
-            self.state = state
+            key = kwargs.get("key", None)
+            if key is not None:
+                x_key, v_key = jax.random.split(key)
+                self.state = np.array(
+                    [
+                        jax.random.uniform(x_key, minval=-self.max_pos, maxval=self.max_pos).item(),
+                        jax.random.uniform(v_key, minval=-self.max_velocity, maxval=self.max_velocity).item(),
+                    ]
+                )
+            else:
+                jax.random.PRNGKey
+                self.state = np.array([-0.5, 0])
 
         self.n_steps = 0
 

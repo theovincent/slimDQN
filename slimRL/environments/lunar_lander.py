@@ -8,12 +8,12 @@ class LunarLander:
         self.observation_shape = self.env.observation_space.shape
         self.n_actions = self.env.action_space.n
 
-    def reset(self, state=None):
-        if state is None:
-            self.state, _ = self.env.reset()
+    def reset(self, key=None):
+        if key is None:
+            state, _ = self.env.reset()
         else:
-            self.state = state
-        self.state = np.array(self.state)
+            state, _ = self.env.reset(seed=int(key[0]))
+        self.state = np.array(state)
 
         self.n_steps = 0
 
