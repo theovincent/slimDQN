@@ -4,10 +4,9 @@ parse_arguments $@
 
 [ -d experiments/car_on_hill/logs/$EXPERIMENT_NAME/FQI ] || mkdir -p experiments/car_on_hill/logs/$EXPERIMENT_NAME/FQI
 
-tmux has-session -t "slimRL" 2>/dev/null
-
-if [ $? != 0 ]; then
+if ! tmux has-session -t slimRL; then
     tmux new-session -d -s slimRL
+    echo "Created new tmux session - slimRL"
 fi
 
 if [[ $GPU = true ]]
