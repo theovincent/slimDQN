@@ -130,7 +130,7 @@ def dqn_parser(env_name, argvs):
     parser.add_argument(
         "-spe",
         "--n_training_steps_per_epoch",
-        help="Max. no. of training steps per epoch.",
+        help="No. of training steps per epoch.",
         type=int,
         default=6000,
     )
@@ -146,7 +146,7 @@ def dqn_parser(env_name, argvs):
     parser.add_argument(
         "-tuf",
         "--target_update_frequency",
-        help="Update period for target Q-network.",
+        help="No. of env. steps after which target Q-network is updated.",
         type=int,
         default=200,
     )
@@ -170,7 +170,7 @@ def dqn_parser(env_name, argvs):
     parser.add_argument(
         "-eps_dur",
         "--duration_epsilon",
-        help="Duration(number of steps) over which epsilon decays.",
+        help="Duration(number of env steps) over which epsilon decays.",
         type=float,
         default=1000,
     )
