@@ -62,7 +62,7 @@ def base_parser(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-lr",
         "--lr",
-        help="Starting learning rate for Adam optimizer.",
+        help="Learning rate for Adam optimizer.",
         type=float,
         default=3e-4,
     )
@@ -97,6 +97,22 @@ def fqi_parser(parser: argparse.ArgumentParser):
 
 def dqn_parser(parser: argparse.ArgumentParser):
     base_parser(parser)
+    parser.add_argument(
+        "-ne",
+        "--n_epochs",
+        help="No. of epochs to train the DQN for.",
+        type=int,
+        default=80,
+    )
+
+    parser.add_argument(
+        "-spe",
+        "--n_training_steps_per_epoch",
+        help="Max. no. of training steps per epoch.",
+        type=int,
+        default=6000,
+    )
+
     parser.add_argument(
         "-utd",
         "--update_to_data",
@@ -135,20 +151,4 @@ def dqn_parser(parser: argparse.ArgumentParser):
         help="Duration(number of steps) over which epsilon decays.",
         type=float,
         default=1000,
-    )
-
-    parser.add_argument(
-        "-ne",
-        "--n_epochs",
-        help="No. of epochs to train the DQN for.",
-        type=int,
-        default=80,
-    )
-
-    parser.add_argument(
-        "-spe",
-        "--n_training_steps_per_epoch",
-        help="Max. no. of training steps per epoch.",
-        type=int,
-        default=6000,
     )

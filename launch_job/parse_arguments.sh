@@ -75,6 +75,16 @@ function parse_arguments() {
                 shift
                 shift
                 ;;
+            -ne | --n_epochs)
+                DQN_ARGS="$DQN_ARGS -ne $2"
+                shift
+                shift
+                ;;
+            -spe | --n_training_steps_per_epoch)
+                DQN_ARGS="$DQN_ARGS -spe $2"
+                shift
+                shift
+                ;;
             -utd | --update_to_data)
                 DQN_ARGS="$DQN_ARGS -utd $2"
                 shift
@@ -97,16 +107,6 @@ function parse_arguments() {
                 ;;
             -eps_dur | --duration_epsilon)
                 DQN_ARGS="$DQN_ARGS -eps_dur $2"
-                shift
-                shift
-                ;;
-            -ne | --n_epochs)
-                DQN_ARGS="$DQN_ARGS -ne $2"
-                shift
-                shift
-                ;;
-            -spe | --n_training_steps_per_epoch)
-                DQN_ARGS="$DQN_ARGS -spe $2"
                 shift
                 shift
                 ;;

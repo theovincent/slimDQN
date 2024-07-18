@@ -1,4 +1,5 @@
 import os
+import time
 import json
 import pickle
 import jax
@@ -7,13 +8,13 @@ from slimRL.networks.DQN import DQN
 SHARED_PARAMS = [
     "experiment_name",
     "env",
+    "hidden_layers",
     "replay_capacity",
     "batch_size",
     "update_horizon",
     "gamma",
     "lr",
     "horizon",
-    "hidden_layers",
 ]
 
 AGENT_PARAMS = {
@@ -21,10 +22,10 @@ AGENT_PARAMS = {
         "n_epochs",
         "n_training_steps_per_epoch",
         "update_to_data",
-        "end_epsilon",
-        "duration_epsilon",
         "target_update_frequency",
         "n_initial_samples",
+        "end_epsilon",
+        "duration_epsilon",
     ],
     "FQI": ["n_bellman_iterations", "n_fitting_steps"],
 }
@@ -46,20 +47,27 @@ def check_experiment(p: dict):
     )
 
     if os.path.exists(params_path):
-        params = json.load(open(params_path, "r"))
-        for param in SHARED_PARAMS:
-            assert (
-                params[param] == p[param]
-            ), "Same experiment has been run with different shared parameters. Change the experiment name."
-        if f"---- {p['algo']} ---" in params.keys():
-            for param in AGENT_PARAMS[p["algo"]]:
+        try:
+            params = json.load(open(params_path, "r"))
+            for param in SHARED_PARAMS:
                 assert (
                     params[param] == p[param]
-                ), f"Same experiment has been run with different {p['algo']} parameters. Change the experiment name."
+                ), "Same experiment has been run with different shared parameters. Change the experiment name."
+            if f"---- {p['algo']} ---" in params.keys():
+                for param in AGENT_PARAMS[p["algo"]]:
+                    assert (
+                        params[param] == p[param]
+                    ), f"Same experiment has been run with different {p['algo']} parameters. Change the experiment name."
+        except json.JSONDecodeError:
+            pass
     else:
-        assert not os.path.exists(
-            os.path.join(p["save_path"], "..")
-        ), "There is a folder with this experiment name and no parameters.json. Delete the folder and restart, or change the experiment name."
+        if (
+            os.path.exists(os.path.join(p["save_path"], ".."))
+            and (time.time() - os.path.getmtime(os.path.join(p["save_path"], ".."))) > 4
+        ):
+            assert (
+                True
+            ), "There is a folder with this experiment name and no parameters.json. Delete the folder and restart, or change the experiment name."
 
 
 def store_params(p: dict):
@@ -70,7 +78,13 @@ def store_params(p: dict):
     )
 
     if os.path.exists(params_path):
-        params = json.load(open(params_path, "r"))
+        loaded = False
+        while not loaded:
+            try:
+                params = json.load(open(params_path, "r"))
+                loaded = True
+            except json.JSONDecodeError:
+                pass
 
     else:
         params = {}
@@ -88,7 +102,7 @@ def store_params(p: dict):
 
     # set parameter order for sorting all keys in a pre-defined order
     algo_params = []
-    for agent in sorted(AGENT_PARAMS):
+    for agent in AGENT_PARAMS:
         if f"---- {agent} ---" in params:
             algo_params = algo_params + [f"---- {agent} ---"] + AGENT_PARAMS[agent]
 
@@ -97,9 +111,7 @@ def store_params(p: dict):
     # sort keys in uniform order and store
     params = {key: params[key] for key in params_order}
 
-    with open(params_path.replace(".json", ".tmp"), "w") as f:
-        json.dump(params, f, indent=4)
-    os.rename(params_path.replace(".json", ".tmp"), params_path)
+    json.dump(params, open(params_path, "w"), indent=4)
 
 
 def prepare_logs(p: dict):
@@ -113,8 +125,8 @@ def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: DQN):
     lengths_path = os.path.join(p["save_path"], f"lengths_seed_{p['seed']}.json")
     model_path = os.path.join(p["save_path"], f"model_seed_{p['seed']}")
 
-    json.dump(log_rewards, open(rewards_path, "w"))
-    json.dump(log_lengths, open(lengths_path, "w"))
+    json.dump(log_rewards, open(rewards_path, "w"), indent=4)
+    json.dump(log_lengths, open(lengths_path, "w"), indent=4)
     model = {
         "params": jax.device_get(agent.params),
         "hidden_layers": agent.q_network.hidden_layers,

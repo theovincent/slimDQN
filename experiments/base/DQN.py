@@ -34,7 +34,7 @@ def train(
 
             episode_returns_per_epoch[idx_epoch][-1] += reward
             episode_lengths_per_epoch[idx_epoch][-1] += 1
-            if has_reset:
+            if has_reset and idx_training_step < p["n_training_steps_per_epoch"]:
                 episode_returns_per_epoch[idx_epoch].append(0)
                 episode_lengths_per_epoch[idx_epoch].append(0)
 
