@@ -30,7 +30,8 @@ def collect_single_sample(
 
     has_reset = termination or truncation
     if has_reset:
-        env.reset()
+        sample_key, reset_key = jax.random.split(sample_key)
+        env.reset(key=reset_key)
 
     return reward, has_reset
 

@@ -206,7 +206,7 @@ def evaluate_and_save_q_pis(
 ):
     def evaluate_q_pi_i(q_best_action, params, states_grid, env, horizon, gamma, q_pi, idx_iteration):
         def evaluate_q_pi_i_s_a(q_best_action, params, state, action, env, horizon, gamma):
-            env.reset(state)
+            env.reset(state=state)
             _, reward, absorbing = env.step(action)
             performance = reward
             discount = gamma

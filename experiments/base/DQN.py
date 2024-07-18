@@ -18,7 +18,7 @@ def train(
 
     n_training_steps = 0
     key, reset_key = jax.random.split(key)
-    env.reset()
+    env.reset(key=reset_key)
     episode_returns_per_epoch = [[0]]
     episode_lengths_per_epoch = [[0]]
 

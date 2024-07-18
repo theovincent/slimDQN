@@ -34,18 +34,7 @@ class CarOnHill:
         if state is not None:
             self.state = np.array(state)
         else:
-            key = kwargs.get("key", None)
-            if key is not None:
-                x_key, v_key = jax.random.split(key)
-                self.state = np.array(
-                    [
-                        jax.random.uniform(x_key, minval=-self.max_pos, maxval=self.max_pos).item(),
-                        jax.random.uniform(v_key, minval=-self.max_velocity, maxval=self.max_velocity).item(),
-                    ]
-                )
-            else:
-                jax.random.PRNGKey
-                self.state = np.array([-0.5, 0])
+            self.state = np.array([-0.5, 0])
 
         self.n_steps = 0
 

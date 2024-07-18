@@ -14,7 +14,7 @@ def optimal_steps_to_absorbing(env: CarOnHill, state: np.ndarray, max_steps: int
         next_states = []
         for state_ in current_states:
             for action in range(2):
-                env.reset(state_)
+                env.reset(state=state_)
                 next_state, reward, _ = env.step(action)
                 if reward == 1:
                     return True, step + 1
@@ -31,7 +31,7 @@ def optimal_steps_to_absorbing(env: CarOnHill, state: np.ndarray, max_steps: int
 
 def compute_optimal_q_value(eval_state, idx_state_x, idx_state_v, action, horizon, gamma, optimal_q):
     env = CarOnHill()
-    env.reset(eval_state)
+    env.reset(state=eval_state)
     next_state, reward, absorbing = env.step(action)
 
     if absorbing:
