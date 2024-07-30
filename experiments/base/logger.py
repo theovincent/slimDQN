@@ -18,7 +18,7 @@ SHARED_PARAMS = [
 ]
 
 AGENT_PARAMS = {
-    "DQN": [
+    "dqn": [
         "n_epochs",
         "n_training_steps_per_epoch",
         "update_to_data",
@@ -27,7 +27,7 @@ AGENT_PARAMS = {
         "end_epsilon",
         "duration_epsilon",
     ],
-    "FQI": ["n_bellman_iterations", "n_fitting_steps"],
+    "fqi": ["n_bellman_iterations", "n_fitting_steps"],
 }
 
 
@@ -52,12 +52,12 @@ def check_experiment(p: dict):
             for param in SHARED_PARAMS:
                 assert (
                     params[param] == p[param]
-                ), "Same experiment has been run with different shared parameters. Change the experiment name."
+                ), f"The same experiment has been run with {param} = {params[param]} instead of {p[param]}. Change the experiment name."
             if f"---- {p['algo']} ---" in params.keys():
                 for param in AGENT_PARAMS[p["algo"]]:
                     assert (
                         params[param] == p[param]
-                    ), f"Same experiment has been run with different {p['algo']} parameters. Change the experiment name."
+                    ), f"The same experiment has been run with {param} = {params[param]} instead of {p[param]}. Change the experiment name."
         except json.JSONDecodeError:
             pass
     else:
@@ -67,7 +67,7 @@ def check_experiment(p: dict):
         ):
             assert (
                 False
-            ), "There is a folder with this experiment name and no parameters.json. Delete the folder and restart, or change the experiment name."
+            ), f"There is a folder with this experiment name and no parameters.json {p['save_path']}. Delete the folder and restart, or change the experiment name."
 
 
 def store_params(p: dict):

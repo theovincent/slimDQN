@@ -1,7 +1,7 @@
 import os
 import time
 import argparse
-from slimRL.environments import DISPLAY_NAME
+from experiments.base import DISPLAY_NAME
 
 
 def base_parser(parser: argparse.ArgumentParser):
@@ -80,9 +80,9 @@ def base_parser(parser: argparse.ArgumentParser):
 
 
 def fqi_parser(env_name, argvs):
-    algo = "FQI"
-    print(f"---{DISPLAY_NAME[env_name]}__{algo}__{time.strftime('%d-%m-%Y %H:%M:%S')}---")
-    parser = argparse.ArgumentParser(f"Train {algo} on {DISPLAY_NAME[env_name]}.")
+    algo_name = "fqi"
+    print(f"--- Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]} {time.strftime('%d-%m-%Y %H:%M:%S')}---")
+    parser = argparse.ArgumentParser(f"Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]}.")
 
     base_parser(parser)
     parser.add_argument(
@@ -103,8 +103,8 @@ def fqi_parser(env_name, argvs):
     args = parser.parse_args(argvs)
 
     p = vars(args)
-    p["env"] = DISPLAY_NAME[env_name]
-    p["algo"] = algo
+    p["env"] = env_name
+    p["algo"] = algo_name
     p["save_path"] = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         f"../{env_name}/exp_output/{p['experiment_name']}/{p['algo']}/seed_{p['seed']}",
@@ -114,9 +114,9 @@ def fqi_parser(env_name, argvs):
 
 
 def dqn_parser(env_name, argvs):
-    algo = "DQN"
-    print(f"---{DISPLAY_NAME[env_name]}__{algo}__{time.strftime('%d-%m-%Y %H:%M:%S')}---")
-    parser = argparse.ArgumentParser(f"Train {algo} on {DISPLAY_NAME[env_name]}.")
+    algo_name = "dqn"
+    print(f"--- Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]} {time.strftime('%d-%m-%Y %H:%M:%S')}---")
+    parser = argparse.ArgumentParser(f"Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]}.")
 
     base_parser(parser)
     parser.add_argument(
@@ -178,11 +178,11 @@ def dqn_parser(env_name, argvs):
     args = parser.parse_args(argvs)
 
     p = vars(args)
-    p["env"] = DISPLAY_NAME[env_name]
-    p["algo"] = algo
+    p["env"] = env_name
+    p["algo"] = algo_name
     p["save_path"] = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        f"../{env_name}/exp_output/{p['experiment_name']}/{p['algo']}/seed_{p['seed']}",
+        f"../{env_name}/exp_output/{p['experiment_name']}/{p['algo']}",
     )
 
     return p

@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 from experiments.base.iqm import get_iqm_and_conf_parallel
+from experiments.base import DISPLAY_NAME
 
 
 def run(argvs=sys.argv[1:]):
@@ -75,7 +76,7 @@ def run(argvs=sys.argv[1:]):
             for idx in range(1, int(np.ceil(env_steps / 10 ** (int(np.log10(env_steps))))) + 1)
         ],
         ticksize=25,
-        title=f"{parameters[experiment]['env']}",
+        title=f"{DISPLAY_NAME[p['env']]}",
         fontsize=20,
         linewidth=3,
         sci_x=True,
