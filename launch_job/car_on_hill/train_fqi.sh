@@ -1,6 +1,6 @@
 #!/bin/bash
 source launch_job/parse_arguments.sh
-parse_arguments $@
+parse_arguments $@ -frs dummy -lrs dummy
 
 if [[ $GPU = true ]]
 then
@@ -9,4 +9,4 @@ else
     source env_cpu/bin/activate
 fi
 
-car_on_hill_fqi -e $EXPERIMENT_NAME -s $SLURM_ARRAY_TASK_ID $BASE_ARGS $FQI_ARGS
+$ENV_NAME\_$ALGO_NAME -e $EXPERIMENT_NAME -s $SLURM_ARRAY_TASK_ID $ARGS

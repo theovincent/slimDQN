@@ -1,9 +1,10 @@
 #!/bin/bash
 
 function parse_arguments() {
-    BASE_ARGS=""
-    FQI_ARGS=""
-    DQN_ARGS=""
+    IFS='_' read -ra splitted_file_name <<< $(basename $0)
+    ALGO_NAME=${splitted_file_name[-1]::-3}
+    ENV_NAME=$(basename $(dirname ${0}))
+    ARGS=""
     while [[ $# -gt 0 ]]; do
         case $1 in
             -e | --experiment_name)
@@ -29,35 +30,35 @@ function parse_arguments() {
                     HIDDEN_LAYER="$HIDDEN_LAYER $1"
                     shift
                 done
-                BASE_ARGS="$BASE_ARGS -hl $HIDDEN_LAYER"
+                ARGS="$ARGS -hl $HIDDEN_LAYER"
                 ;;
             -rb | --replay_capacity)
-                BASE_ARGS="$BASE_ARGS -rb $2"
+                ARGS="$ARGS -rb $2"
                 shift
                 shift
                 ;;
             -bs | --batch_size)
-                BASE_ARGS="$BASE_ARGS -bs $2"
+                ARGS="$ARGS -bs $2"
                 shift
                 shift
                 ;;
             -n | --update_horizon)
-                BASE_ARGS="$BASE_ARGS -n $2"
+                ARGS="$ARGS -n $2"
                 shift
                 shift
                 ;;
             -gamma | --gamma)
-                BASE_ARGS="$BASE_ARGS -gamma $2"
+                ARGS="$ARGS -gamma $2"
                 shift
                 shift
                 ;;
             -lr | --lr)
-                BASE_ARGS="$BASE_ARGS -lr $2"
+                ARGS="$ARGS -lr $2"
                 shift
                 shift
                 ;;
             -hor | --horizon)
-                BASE_ARGS="$BASE_ARGS -hor $2"
+                ARGS="$ARGS -hor $2"
                 shift
                 shift
                 ;;
@@ -66,47 +67,47 @@ function parse_arguments() {
                 shift
                 ;;
             -nbi | --n_bellman_iterations)
-                FQI_ARGS="$FQI_ARGS -nbi $2"
+                ARGS="$ARGS -nbi $2"
                 shift
                 shift
                 ;;
             -fs | --n_fitting_steps)
-                FQI_ARGS="$FQI_ARGS -fs $2"
+                ARGS="$ARGS -fs $2"
                 shift
                 shift
                 ;;
             -ne | --n_epochs)
-                DQN_ARGS="$DQN_ARGS -ne $2"
+                ARGS="$ARGS -ne $2"
                 shift
                 shift
                 ;;
             -spe | --n_training_steps_per_epoch)
-                DQN_ARGS="$DQN_ARGS -spe $2"
+                ARGS="$ARGS -spe $2"
                 shift
                 shift
                 ;;
             -utd | --update_to_data)
-                DQN_ARGS="$DQN_ARGS -utd $2"
+                ARGS="$ARGS -utd $2"
                 shift
                 shift
                 ;;
             -tuf | --target_update_frequency)
-                DQN_ARGS="$DQN_ARGS -tuf $2"
+                ARGS="$ARGS -tuf $2"
                 shift
                 shift
                 ;;
             -n_init | --n_initial_samples)
-                DQN_ARGS="$DQN_ARGS -n_init $2"
+                ARGS="$ARGS -n_init $2"
                 shift
                 shift
                 ;;
             -eps_e | --end_epsilon)
-                DQN_ARGS="$DQN_ARGS -eps_e $2"
+                ARGS="$ARGS -eps_e $2"
                 shift
                 shift
                 ;;
             -eps_dur | --duration_epsilon)
-                DQN_ARGS="$DQN_ARGS -eps_dur $2"
+                ARGS="$ARGS -eps_dur $2"
                 shift
                 shift
                 ;;
@@ -135,4 +136,7 @@ function parse_arguments() {
     then
         GPU=false
     fi
+
+    [ -d experiments/$ENV_NAME/logs/$EXPERIMENT_NAME/$ALGO_NAME ] || mkdir -p experiments/$ENV_NAME/logs/$EXPERIMENT_NAME/$ALGO_NAME
+
 }
