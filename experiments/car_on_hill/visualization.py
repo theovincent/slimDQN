@@ -3,7 +3,7 @@ import argparse
 import pickle
 import jax.numpy as jnp
 from slimRL.environments.car_on_hill import CarOnHill
-from slimRL.networks.architectures.DQN import DQNNet
+from slimRL.networks.architectures.dqn import DQNNet
 from slimRL.environments.visualization.car_on_hill import render
 
 

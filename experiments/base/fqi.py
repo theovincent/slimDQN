@@ -2,7 +2,7 @@ import os
 import jax
 import pickle
 from tqdm import tqdm
-from slimRL.networks.DQN import DQN
+from slimRL.networks.dqn import DQN
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
 
 

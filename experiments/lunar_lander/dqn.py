@@ -4,9 +4,9 @@ import jax
 from experiments.base.parser import dqn_parser
 from slimRL.environments.lunar_lander import LunarLander
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
-from slimRL.networks.DQN import DQN
-from experiments.base.DQN import train
-from experiments.base.logger import prepare_logs
+from slimRL.networks.dqn import DQN
+from experiments.base.dqn import train
+from experiments.base.utils import prepare_logs
 
 
 def run(argvs=sys.argv[1:]):

@@ -4,9 +4,9 @@ import jax
 from experiments.base.parser import fqi_parser
 from slimRL.environments.car_on_hill import CarOnHill
 from slimRL.sample_collection.replay_buffer import ReplayBuffer
-from slimRL.networks.DQN import DQN
-from experiments.base.FQI import train
-from experiments.base.logger import prepare_logs
+from slimRL.networks.dqn import DQN
+from experiments.base.fqi import train
+from experiments.base.utils import prepare_logs
 from slimRL.sample_collection.utils import update_replay_buffer
 
 

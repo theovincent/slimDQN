@@ -3,7 +3,7 @@ import argparse
 import jax.numpy as jnp
 import pickle
 from slimRL.environments.lunar_lander import LunarLander
-from slimRL.networks.architectures.DQN import DQNNet
+from slimRL.networks.architectures.dqn import DQNNet
 
 
 def run(argvs=sys.argv[1:]):
