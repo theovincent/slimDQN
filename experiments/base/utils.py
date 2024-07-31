@@ -3,7 +3,7 @@ import time
 import json
 import pickle
 import jax
-from slimRL.networks.DQN import DQN
+from slimRL.networks.dqn import DQN
 
 SHARED_PARAMS = [
     "experiment_name",
@@ -119,13 +119,16 @@ def prepare_logs(p: dict):
     store_params(p)
 
 
-def save_logs(p: dict, log_rewards: list, log_lengths: list, agent: DQN):
-    rewards_path = os.path.join(p["save_path"], f"rewards_seed_{p['seed']}.json")
-    lengths_path = os.path.join(p["save_path"], f"lengths_seed_{p['seed']}.json")
+def save_data(p: dict, episode_returns: list, episode_lengths: list, agent):
+    os.makedirs(os.path.join(p["save_path"], "episode_returns_and_lengths"), exist_ok=True)
+    episode_returns_and_lengths_path = os.path.join(p["save_path"], f"episode_returns_and_lengths/{p['seed']}.json")
     model_path = os.path.join(p["save_path"], f"model_seed_{p['seed']}")
 
-    json.dump(log_rewards, open(rewards_path, "w"), indent=4)
-    json.dump(log_lengths, open(lengths_path, "w"), indent=4)
+    json.dump(
+        {"episode_lengths": episode_lengths, "episode_returns": episode_returns},
+        open(episode_returns_and_lengths_path, "w"),
+        indent=4,
+    )
     model = {
         "params": jax.device_get(agent.params),
         "hidden_layers": agent.q_network.hidden_layers,

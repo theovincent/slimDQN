@@ -9,7 +9,7 @@ import jax
 import jax.numpy as jnp
 import multiprocess
 from slimRL.environments.car_on_hill import CarOnHill
-from slimRL.networks.DQN import DQN
+from slimRL.networks.dqn import DQN
 from experiments.car_on_hill.sample_utils import compute_state_and_reward_distribution
 from slimRL.sample_collection.utils import load_valid_transitions
 from experiments.car_on_hill.optimal import NX, NV

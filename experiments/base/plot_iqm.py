@@ -49,9 +49,13 @@ def run(argvs=sys.argv[1:]):
         experiment = result.split("exp_output")[-1][1:]
         returns[experiment] = np.array(
             [
-                [np.mean(i) for i in json.load(open(os.path.join(result, f), "r"))]
-                for f in os.listdir(result)
-                if "rewards" in f
+                [
+                    np.mean(i)
+                    for i in json.load(open(os.path.join(result, "episode_returns_and_lengths", f), "r"))[
+                        "episode_returns"
+                    ]
+                ]
+                for f in os.listdir(os.path.join(result, "episode_returns_and_lengths"))
             ]
         )
         parameters[experiment] = json.load(open(os.path.join(result, "..", "parameters.json"), "r"))
@@ -62,9 +66,9 @@ def run(argvs=sys.argv[1:]):
         ylabel="IQM Return",
         x_val=np.arange(
             0,
-            env_steps,
+            env_steps + 1,
             parameters[experiment]["n_training_steps_per_epoch"],
-        ).tolist(),
+        ).tolist()[1:],
         y_val=returns,
         xlim=(
             0,
