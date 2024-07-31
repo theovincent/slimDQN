@@ -94,8 +94,8 @@ def plot_value(xlabel, ylabel, x_val, y_val, xlim, xticks, **kwargs):
     plt.xlabel(xlabel, fontsize=kwargs.get("fontsize", 15))
     plt.ylabel(ylabel, fontsize=kwargs.get("fontsize", 15))
     plt.title(kwargs.get("title", ""))
-    ax.set_xlim(xlim)
     ax.set_xticks(xticks)
+    ax.set_xlim(xlim)
     if kwargs.get("yticks", None) is not None:
         ax.set_yticks(kwargs.get("yticks"))
     if kwargs.get("ylim", None) is not None:
