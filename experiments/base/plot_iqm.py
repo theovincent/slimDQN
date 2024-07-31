@@ -18,23 +18,12 @@ def run(argvs=sys.argv[1:]):
         required=True,
     )
 
-    parser.add_argument(
-        "-env",
-        "--env",
-        help="Environment folder name.",
-        type=str,
-        required=True,
-    )
+    parser.add_argument("-env", "--env", help="Environment folder name.", type=str, required=True)
     args = parser.parse_args(argvs)
 
     p = vars(args)
 
-    base_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "..",
-        p["env"],
-        "exp_output",
-    )
+    base_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", p["env"], "exp_output")
 
     results_folder = []
 
@@ -64,16 +53,9 @@ def run(argvs=sys.argv[1:]):
     plot_value(
         xlabel="Env steps",
         ylabel="IQM Return",
-        x_val=np.arange(
-            0,
-            env_steps + 1,
-            parameters[experiment]["n_training_steps_per_epoch"],
-        ).tolist()[1:],
+        x_val=np.arange(0, env_steps + 1, parameters[experiment]["n_training_steps_per_epoch"]).tolist()[1:],
         y_val=returns,
-        xlim=(
-            0,
-            env_steps,
-        ),
+        xlim=(0, env_steps),
         xticks=[0]
         + [
             idx * 10 ** (int(np.log10(env_steps)))
@@ -107,17 +89,8 @@ def plot_value(xlabel, ylabel, x_val, y_val, xlim, xticks, **kwargs):
 
     for exp in y_val:
         y_iqm, y_cnf = get_iqm_and_conf_parallel(y_val[exp])
-        ax.plot(
-            x_val,
-            y_iqm,
-            label=exp,
-        )
-        ax.fill_between(
-            x_val,
-            y_cnf[0],
-            y_cnf[1],
-            alpha=0.3,
-        )
+        ax.plot(x_val, y_iqm, label=exp)
+        ax.fill_between(x_val, y_cnf[0], y_cnf[1], alpha=0.3)
 
     if kwargs.get("sci_x", False):
         plt.ticklabel_format(style="sci", axis="x", scilimits=(0, 0))
