@@ -15,7 +15,8 @@ It enables to quickly code and run proof-of-concept type of experiments in off-p
 ✅ Fast to run - jax accleration, support for GPU and multiprocessing ⚡
 
 <p align="center">
-  <img width=70% src="images/lunarlander.gif">
+  <img width=48% src="images/lunar_lander.gif">
+  <img width=48% src="images/car_on_hill.gif">
 </p>
 
 
@@ -24,13 +25,13 @@ Let's dive in!
 ## User installation
 In the folder where the code is, run the following commands to complete installation:
 ```bash
-python3 -m venv env
+python3 -m venv env_cpu
 source env/bin/activate
 pip install --upgrade pip setuptools wheel
 pip install -e .
 ```
 
-If you are using GPU, run:\
+If you are using GPU, create a new environment `env_gpu` with the above lines and run:\
 `
 pip install -U "jax[cuda12]"
 `
@@ -44,27 +45,40 @@ pytest
 `slimRL` provides support for [Car-On-Hill](https://www.jmlr.org/papers/volume6/ernst05a/ernst05a.pdf) with FQI and [Lunar Lander](https://gymnasium.farama.org/environments/box2d/lunar_lander/) with DQN algorithm. However, you can easily extend it to other [gym](https://github.com/Farama-Foundation/Gymnasium) environments like [Acrobot](https://gymnasium.farama.org/environments/classic_control/acrobot/), [Cart Pole](https://gymnasium.farama.org/environments/classic_control/cart_pole/), [Mountain Car](https://gymnasium.farama.org/environments/classic_control/mountain_car/), by replicating the setup for Lunar Lander.
 ### Training
 
-To train a DQN agent on Lunar Lander on your local system, run (provide the `-g` flag if you want to use GPU):\
+To train a DQN agent on Lunar Lander on your local system, run (provide the `--gpu` flag if you want to use GPU):\
 `
-launch_job/lunar_lander/launch_local.sh -e "test_local" -hl 100 100 -gamma 0.99 -frs 0 -lrs 0 -E 100 -spe 2000
+launch_job/lunar_lander/launch_local_dqn.sh  --experiment_name 
+{experiment_name}  --first_seed 0 --last_seed 0 --hidden_layers 100 100 --lr 3e-4 --n_epochs 100
 `
 
-It trains a DQN agent with 2 hidden layers of size 100, for a single random seed (add more seeds by changing `-lrs` parameter) for 100 epochs, with 2000 steps per epoch.
+It trains a DQN agent with 2 hidden layers of size 100, for a single random seed for 100 epochs. 
+
+- You can tune the other parameters based on your requirements. Run `lunar_lander_dqn --help` on the terminal to check out all the parameters
+- To see the stage of training, you can check the logs in `experiments/lunar_lander/logs/{experiment_name}/dqn` folder
+- The models and results are stored in `experiments/lunar_lander/exp_output/{experiment_name}/dqn` folder
 
 To train on cluster:\
 `
-launch_job/lunar_lander/launch_cluster.sh -e "test_gpu" -g -hl 100 100 -gamma 0.99 -frs 0 -lrs 0 -E 100 -spe 2000
+launch_job/lunar_lander/launch_cluster_dqn.sh  --experiment_name {experiment_name}  --first_seed 0 --last_seed 0 --hidden_layers 100 100 --lr 3e-4 --n_epochs 100
 `
 
 ### Plotting results
-Once the training is done, you can generate the Performance Curve by running:
-```Bash
-plot_iqm -e "test/DQN" -env "lunar_lander"
-```
+Once the training is done, you can generate the Performance Curve (for multiple experiments) by running:\
+`
+plot_iqm --experiment_folders "{experiment_name_1}/dqn" "{experiment_name_2}/dqn" --env "lunar_lander"
+`
+
 It generates an [IQM](https://arxiv.org/abs/2108.13264)-based Performance Curve, similar to the one shown above.
 
-## Collaboration
-To report bugs or suggest improvements, use the [issues page](https://github.com/theovincent/slimRL/issues) of this repository.
+## Plotting the metrics for Car-On-Hill
+
+Generate the necessary metrics required for plotting Performance loss, Approximation Error, etc. by running:\
+`car_on_hill_fqi_eval --experiment_folder "{experiment_name}/fqi"  --performance --approximation_error_components`
+
+Once complete, open `experiments/car_on_hill/plots.ipynb` jupyter notebook, set the appropriate experiment name and parameters and run all cells to generate the plots.
+
+<!-- ## Collaboration
+To report bugs or suggest improvements, use the [issues page](https://github.com/theovincent/slimRL/issues) of this repository. -->
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](https://github.com/theovincent/slimRL/blob/main/LICENSE) file for details.
