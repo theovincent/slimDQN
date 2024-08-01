@@ -56,11 +56,7 @@ def run(argvs=sys.argv[1:]):
         x_val=np.arange(0, env_steps + 1, parameters[experiment]["n_training_steps_per_epoch"]).tolist()[1:],
         y_val=returns,
         xlim=(0, env_steps),
-        xticks=[0]
-        + [
-            idx * 10 ** (int(np.log10(env_steps)))
-            for idx in range(1, int(np.ceil(env_steps / 10 ** (int(np.log10(env_steps))))) + 1)
-        ],
+        xticks=np.arange(0, env_steps + 1, 1e5),
         ticksize=25,
         title=f"{DISPLAY_NAME[p['env']]}",
         fontsize=20,
