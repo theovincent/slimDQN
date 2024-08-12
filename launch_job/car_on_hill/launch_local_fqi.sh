@@ -2,9 +2,6 @@
 source launch_job/parse_arguments.sh
 parse_arguments $@
 
-
-tmux has-session -t "slimRL" 2>/dev/null
-
 if ! tmux has-session -t slimRL; then
     tmux new-session -d -s slimRL
     echo "Created new tmux session - slimRL"
