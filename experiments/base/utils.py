@@ -7,26 +7,26 @@ import jax
 SHARED_PARAMS = [
     "experiment_name",
     "env",
-    "hidden_layers",
-    "replay_capacity",
+    "features",
+    "replay_buffer_capacity",
     "batch_size",
     "update_horizon",
     "gamma",
-    "lr",
+    "learning_rate",
     "horizon",
 ]
 
 AGENT_PARAMS = {
+    "fqi": ["n_bellman_iterations", "n_fitting_steps"],
     "dqn": [
         "n_epochs",
         "n_training_steps_per_epoch",
         "update_to_data",
         "target_update_frequency",
         "n_initial_samples",
-        "end_epsilon",
-        "duration_epsilon",
+        "epsilon_end",
+        "epsilon_duration",
     ],
-    "fqi": ["n_bellman_iterations", "n_fitting_steps"],
 }
 
 

@@ -16,23 +16,23 @@ def base_parser(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-s",
         "--seed",
-        help="Seed for the experiment.",
+        help="Seed of the experiment.",
         type=int,
         required=True,
     )
 
     parser.add_argument(
-        "-hl",
-        "--hidden_layers",
+        "-fs",
+        "--features",
         nargs="*",
-        help="Hidden layer sizes.",
+        help="List of features for the Q-networks.",
         type=int,
         default=[50, 50],
     )
 
     parser.add_argument(
-        "-rb",
-        "--replay_capacity",
+        "-rbc",
+        "--replay_buffer_capacity",
         help="For DQN: Replay Buffer capacity, For FQI: Dataset size to sample.",
         type=int,
         default=10000,
@@ -57,21 +57,21 @@ def base_parser(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-gamma",
         "--gamma",
-        help="Discounting factor gamma.",
+        help="Discounting factor.",
         type=float,
         default=0.99,
     )
 
     parser.add_argument(
         "-lr",
-        "--lr",
-        help="Learning rate for Adam optimizer.",
+        "--learning_rate",
+        help="Learning rate.",
         type=float,
         default=3e-4,
     )
 
     parser.add_argument(
-        "-hor",
+        "-h",
         "--horizon",
         help="Horizon for truncation.",
         type=int,
@@ -88,15 +88,15 @@ def fqi_parser(env_name, argvs):
     parser.add_argument(
         "-nbi",
         "--n_bellman_iterations",
-        help="No. of Bellman iterations to perform.",
+        help="Number of Bellman iterations to perform.",
         type=int,
         default=30,
     )
 
     parser.add_argument(
-        "-fs",
+        "-nfs",
         "--n_fitting_steps",
-        help="No. of gradient update steps to perform per Bellman iteration.",
+        help="Number of gradient update steps per Bellman iteration.",
         type=int,
         default=5,
     )
@@ -122,15 +122,15 @@ def dqn_parser(env_name, argvs):
     parser.add_argument(
         "-ne",
         "--n_epochs",
-        help="No. of epochs to train the DQN for.",
+        help="Number of epochs to perform.",
         type=int,
         default=80,
     )
 
     parser.add_argument(
-        "-spe",
+        "-ntspe",
         "--n_training_steps_per_epoch",
-        help="No. of training steps per epoch.",
+        help="Number of training steps per epoch.",
         type=int,
         default=6000,
     )
@@ -138,39 +138,39 @@ def dqn_parser(env_name, argvs):
     parser.add_argument(
         "-utd",
         "--update_to_data",
-        help="No. of data points to collect per online Q-network update.",
-        type=int,
+        help="Number of data points to collect per online Q-network update.",
+        type=float,
         default=1,
     )
 
     parser.add_argument(
         "-tuf",
         "--target_update_frequency",
-        help="No. of env. steps after which target Q-network is updated.",
+        help="Number of training steps before updating the target Q-network.",
         type=int,
         default=200,
     )
 
     parser.add_argument(
-        "-n_init",
-        "--n_initial_samples",
-        help="No. of initial samples before training begins.",
+        "--nis",
+        "---n_initial_samples",
+        help="Number of initial samples before the training starts.",
         type=int,
         default=1000,
     )
 
     parser.add_argument(
-        "-eps_e",
-        "--end_epsilon",
-        help="Ending value of epsilon for linear schedule.",
+        "-ee",
+        "--epsilon_end",
+        help="Ending value for the linear decaying epsilon used for exploration.",
         type=float,
         default=0.01,
     )
 
     parser.add_argument(
-        "-eps_dur",
-        "--duration_epsilon",
-        help="Duration(number of env steps) over which epsilon decays.",
+        "--ed",
+        "--epsilon_duration",
+        help="Duration of epsilon's linear decay used for exploration.",
         type=float,
         default=1000,
     )

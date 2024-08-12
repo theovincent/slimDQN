@@ -32,28 +32,28 @@ function parse_arguments() {
                 shift
                 shift
                 ;;
-            -hl | --hidden_layers)
+            -fs | --features)
                 shift
-                HIDDEN_LAYER=""
+                FEATURES=""
                 # parse all the layers till next flag encountered
                 while [[ $1 != -* && $# -gt 0 ]]; do
-                    HIDDEN_LAYER="$HIDDEN_LAYER $1"
+                    FEATURES="$FEATURES $1"
                     shift
                 done
-                ARGS="$ARGS -hl $HIDDEN_LAYER"
+                ARGS="$ARGS --features $FEATURES"
                 ;;
-            -rb | --replay_capacity)
-                ARGS="$ARGS -rb $2"
+            -rbc | --replay_buffer_capacity)
+                ARGS="$ARGS -replay_buffer_capacity $2"
                 shift
                 shift
                 ;;
             -bs | --batch_size)
-                ARGS="$ARGS -bs $2"
+                ARGS="$ARGS -batch_size $2"
                 shift
                 shift
                 ;;
             -n | --update_horizon)
-                ARGS="$ARGS -n $2"
+                ARGS="$ARGS -update_horizon $2"
                 shift
                 shift
                 ;;
@@ -62,62 +62,64 @@ function parse_arguments() {
                 shift
                 shift
                 ;;
-            -lr | --lr)
-                ARGS="$ARGS -lr $2"
+            -lr | --learning_rate)
+                ARGS="$ARGS -learning_rate $2"
                 shift
                 shift
                 ;;
-            -hor | --horizon)
-                ARGS="$ARGS -hor $2"
+            -h | --horizon)
+                ARGS="$ARGS -horizon $2"
                 shift
                 shift
                 ;;
+            # ---- fqi parameters ----
             -g | --gpu)
                 GPU=true
                 shift
                 ;;
             -nbi | --n_bellman_iterations)
-                ARGS="$ARGS -nbi $2"
+                ARGS="$ARGS -n_bellman_iterations $2"
                 shift
                 shift
                 ;;
-            -fs | --n_fitting_steps)
-                ARGS="$ARGS -fs $2"
+            -nfs | --n_fitting_steps)
+                ARGS="$ARGS -n_fitting_steps $2"
                 shift
                 shift
                 ;;
+            # ---- dqn parameters ----
             -ne | --n_epochs)
-                ARGS="$ARGS -ne $2"
+                ARGS="$ARGS -n_epochs $2"
                 shift
                 shift
                 ;;
-            -spe | --n_training_steps_per_epoch)
-                ARGS="$ARGS -spe $2"
+            -ntspe | --n_training_steps_per_epoch)
+                ARGS="$ARGS -n_training_steps_per_epoch $2"
                 shift
                 shift
                 ;;
             -utd | --update_to_data)
-                ARGS="$ARGS -utd $2"
+                ARGS="$ARGS -update_to_data $2"
                 shift
                 shift
                 ;;
             -tuf | --target_update_frequency)
-                ARGS="$ARGS -tuf $2"
+                ARGS="$ARGS -target_update_frequency $2"
                 shift
                 shift
                 ;;
-            -n_init | --n_initial_samples)
-                ARGS="$ARGS -n_init $2"
+            --nis | ---n_initial_samples)
+                ARGS="$ARGS --n_initial_samples $2"
                 shift
                 shift
                 ;;
-            -eps_e | --end_epsilon)
-                ARGS="$ARGS -eps_e $2"
+            --ee | --epsilon_end)
+                ARGS="$ARGS --epsilon_end $2"
                 shift
                 shift
                 ;;
-            -eps_dur | --duration_epsilon)
-                ARGS="$ARGS -eps_dur $2"
+            --ed | --epsilon_duration)
+                ARGS="$ARGS --epsilon_duration $2"
                 shift
                 shift
                 ;;
