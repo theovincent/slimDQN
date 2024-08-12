@@ -3,7 +3,6 @@ import time
 import json
 import pickle
 import jax
-from slimRL.networks.dqn import DQN
 
 SHARED_PARAMS = [
     "experiment_name",
@@ -47,6 +46,7 @@ def check_experiment(p: dict):
     )
 
     if os.path.exists(params_path):
+        # when many seed are launched at the same time, the params exist but they are still being dumped
         try:
             params = json.load(open(params_path, "r"))
             for param in SHARED_PARAMS:
@@ -61,13 +61,14 @@ def check_experiment(p: dict):
         except json.JSONDecodeError:
             pass
     else:
+        # if the folder exists for a long time then raise an error
         if (
             os.path.exists(os.path.join(p["save_path"], ".."))
             and (time.time() - os.path.getmtime(os.path.join(p["save_path"], ".."))) > 4
         ):
             assert (
                 False
-            ), f"There is a folder with this experiment name and no parameters.json {p['save_path']}. Delete the folder and restart, or change the experiment name."
+            ), f"{p['save_path']} exists but has no parameters.json. Delete the folder and restart, or change the experiment name."
 
 
 def store_params(p: dict):
@@ -78,6 +79,7 @@ def store_params(p: dict):
     )
 
     if os.path.exists(params_path):
+        # when many seed are launched at the same time, the params exist but they are still being dumped
         loaded = False
         while not loaded:
             try:
@@ -85,30 +87,28 @@ def store_params(p: dict):
                 loaded = True
             except json.JSONDecodeError:
                 pass
-
     else:
         params = {}
 
         # store shared params
+        params["---- Shared parameters ----"] = "----------------"
         for shared_param in SHARED_PARAMS:
             params[shared_param] = p[shared_param]
 
-    if f"---- {p['algo']} ---" not in params.keys():
+    if f"---- {p['algo']} ----" not in params.keys():
         # store algo params
-        params[f"---- {p['algo']} ---"] = "-----------------------------"
+        params[f"---- {p['algo']} ----"] = "-----------------------------"
         for agent_param in AGENT_PARAMS[p["algo"]]:
-            params[agent_param] = p[agent_param]
+            params[agent_param + "_" + p["algo"]] = p[agent_param]
 
     # set parameter order for sorting all keys in a pre-defined order
     algo_params = []
     for agent in AGENT_PARAMS:
-        if f"---- {agent} ---" in params:
-            algo_params = algo_params + [f"---- {agent} ---"] + AGENT_PARAMS[agent]
-
-    params_order = SHARED_PARAMS + algo_params
+        if f"---- {agent} ----" in params:
+            algo_params = algo_params + [f"---- {agent} ----"] + [key + "_" + agent for key in AGENT_PARAMS[agent]]
 
     # sort keys in uniform order and store
-    params = {key: params[key] for key in params_order}
+    params = {key: params[key] for key in SHARED_PARAMS + algo_params}
 
     json.dump(params, open(params_path, "w"), indent=4)
 
