@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 from experiments.base.iqm import get_iqm_and_conf_parallel
-from experiments.base import DISPLAY_NAME
+from experiments import DISPLAY_NAME
 
 
 def run(argvs=sys.argv[1:]):

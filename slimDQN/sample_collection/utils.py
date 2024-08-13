@@ -4,7 +4,7 @@ import optax
 import jax
 import jax.numpy as jnp
 import numpy as np
-from slimRL.sample_collection.replay_buffer import ReplayBuffer
+from slimDQN.sample_collection.replay_buffer import ReplayBuffer
 
 
 def collect_single_sample(

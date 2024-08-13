@@ -1,10 +1,31 @@
-import os
-import time
+from typing import List, Callable
+from functools import wraps
 import argparse
-from experiments.base import DISPLAY_NAME
 
 
-def base_parser(parser: argparse.ArgumentParser):
+def output_added_arguments(add_algo_arguments: Callable) -> Callable:
+    @wraps(add_algo_arguments)
+    def decorated(parser: argparse.ArgumentParser) -> List[str]:
+        unfiltered_old_arguments = list(parser._option_string_actions.keys())
+
+        add_algo_arguments(parser)
+
+        unfiltered_arguments = list(parser._option_string_actions.keys())
+        unfiltered_added_arguments = [
+            argument for argument in unfiltered_arguments if argument not in unfiltered_old_arguments
+        ]
+
+        return [
+            argument.strip("-")
+            for argument in unfiltered_added_arguments
+            if argument.startswith("--") and argument not in ["--help"]
+        ]
+
+    return decorated
+
+
+@output_added_arguments
+def add_base_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-e",
         "--experiment_name",
@@ -71,7 +92,7 @@ def base_parser(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "-h",
+        "-horizon",
         "--horizon",
         help="Horizon for truncation.",
         type=int,
@@ -79,46 +100,8 @@ def base_parser(parser: argparse.ArgumentParser):
     )
 
 
-def fqi_parser(env_name, argvs):
-    algo_name = "fqi"
-    print(f"--- Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]} {time.strftime('%d-%m-%Y %H:%M:%S')}---")
-    parser = argparse.ArgumentParser(f"Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]}.")
-
-    base_parser(parser)
-    parser.add_argument(
-        "-nbi",
-        "--n_bellman_iterations",
-        help="Number of Bellman iterations to perform.",
-        type=int,
-        default=30,
-    )
-
-    parser.add_argument(
-        "-nfs",
-        "--n_fitting_steps",
-        help="Number of gradient update steps per Bellman iteration.",
-        type=int,
-        default=5,
-    )
-    args = parser.parse_args(argvs)
-
-    p = vars(args)
-    p["env"] = env_name
-    p["algo"] = algo_name
-    p["save_path"] = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        f"../{env_name}/exp_output/{p['experiment_name']}/{p['algo']}/seed_{p['seed']}",
-    )
-
-    return p
-
-
-def dqn_parser(env_name, argvs):
-    algo_name = "dqn"
-    print(f"--- Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]} {time.strftime('%d-%m-%Y %H:%M:%S')}---")
-    parser = argparse.ArgumentParser(f"Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]}.")
-
-    base_parser(parser)
+@output_added_arguments
+def add_dqn_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-ne",
         "--n_epochs",
@@ -152,8 +135,8 @@ def dqn_parser(env_name, argvs):
     )
 
     parser.add_argument(
-        "--nis",
-        "---n_initial_samples",
+        "-nis",
+        "--n_initial_samples",
         help="Number of initial samples before the training starts.",
         type=int,
         default=1000,
@@ -168,21 +151,9 @@ def dqn_parser(env_name, argvs):
     )
 
     parser.add_argument(
-        "--ed",
+        "-ed",
         "--epsilon_duration",
         help="Duration of epsilon's linear decay used for exploration.",
         type=float,
         default=1000,
     )
-
-    args = parser.parse_args(argvs)
-
-    p = vars(args)
-    p["env"] = env_name
-    p["algo"] = algo_name
-    p["save_path"] = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        f"../{env_name}/exp_output/{p['experiment_name']}/{p['algo']}",
-    )
-
-    return p

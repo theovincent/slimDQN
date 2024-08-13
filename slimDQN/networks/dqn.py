@@ -3,8 +3,8 @@ import jax
 from flax.core import FrozenDict
 from functools import partial
 import jax.numpy as jnp
-from slimRL.networks.architectures.dqn import DQNNet
-from slimRL.sample_collection.replay_buffer import ReplayBuffer
+from slimDQN.networks.architectures.dqn import DQNNet
+from slimDQN.sample_collection.replay_buffer import ReplayBuffer
 
 
 class DQN:

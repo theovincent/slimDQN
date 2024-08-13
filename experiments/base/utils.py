@@ -1,37 +1,40 @@
 import os
 import time
+from typing import List
+import argparse
 import json
 import pickle
 import jax
 
-SHARED_PARAMS = [
-    "experiment_name",
-    "env",
-    "features",
-    "replay_buffer_capacity",
-    "batch_size",
-    "update_horizon",
-    "gamma",
-    "learning_rate",
-    "horizon",
-]
+from experiments import DISPLAY_NAME
+from experiments.base import parser_argument
 
-AGENT_PARAMS = {
-    "fqi": ["n_bellman_iterations", "n_fitting_steps"],
-    "dqn": [
-        "n_epochs",
-        "n_training_steps_per_epoch",
-        "update_to_data",
-        "target_update_frequency",
-        "n_initial_samples",
-        "epsilon_end",
-        "epsilon_duration",
-    ],
-}
+
+def prepare_logs(env_name: str, algo_name: str, argvs: List[str]):
+    print(
+        f"--- Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]} {time.strftime('%d-%m-%Y %H:%M:%S')}---",
+        flush=True,
+    )
+
+    parser = argparse.ArgumentParser(f"Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]}.")
+    shared_params = parser_argument.__dict__["add_base_arguments"](parser)
+    agent_params = parser_argument.__dict__[f"add_{algo_name}_arguments"](parser)
+    p = vars(parser.parse_args(argvs))
+    p["env_name"] = env_name
+    p["algo_name"] = algo_name
+    p["save_path"] = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        f"../{env_name}/exp_output/{p['experiment_name']}/{p['algo_name']}",
+    )
+
+    check_experiment(p)
+    store_params(p, shared_params, agent_params)
+
+    return p
 
 
 def check_experiment(p: dict):
-    # check if the experiment is valid
+    # check if the experiment has been run already
     returns_path = os.path.join(p["save_path"], "returns_seed_" + str(p["seed"]) + ".npy")
     losses_path = os.path.join(p["save_path"], "losses_seed_" + str(p["seed"]) + ".npy")
     model_path = os.path.join(p["save_path"], "model_seed_" + str(p["seed"]))
@@ -40,24 +43,18 @@ def check_experiment(p: dict):
         os.path.exists(returns_path) or os.path.exists(losses_path) or os.path.exists(model_path)
     ), "Same algorithm with same seed results already exists. Delete them and restart, or change the experiment name."
 
-    params_path = os.path.join(
-        os.path.split(p["save_path"])[0],  # parameters.json is outside the algorithm folder (in the experiment folder)
-        "parameters.json",
-    )
+    # parameters.json is outside the algorithm folder (in the experiment folder)
+    params_path = os.path.join(os.path.split(p["save_path"])[0], "parameters.json")
 
     if os.path.exists(params_path):
-        # when many seed are launched at the same time, the params exist but they are still being dumped
+        # when many seeds are launched at the same time, the params exist but they are still being dumped
         try:
-            params = json.load(open(params_path, "r"))
-            for param in SHARED_PARAMS:
-                assert (
-                    params[param] == p[param]
-                ), f"The same experiment has been run with {param} = {params[param]} instead of {p[param]}. Change the experiment name."
-            if f"---- {p['algo']} ---" in params.keys():
-                for param in AGENT_PARAMS[p["algo"]]:
+            old_params = json.load(open(params_path, "r"))
+            for param in p:
+                if param in list(old_params.keys()):
                     assert (
-                        params[param] == p[param]
-                    ), f"The same experiment has been run with {param} = {params[param]} instead of {p[param]}. Change the experiment name."
+                        old_params[param] == p[param]
+                    ), f"The same experiment has been run with {param} = {old_params[param]} instead of {p[param]}. Change the experiment name."
         except json.JSONDecodeError:
             pass
     else:
@@ -71,52 +68,38 @@ def check_experiment(p: dict):
             ), f"{p['save_path']} exists but has no parameters.json. Delete the folder and restart, or change the experiment name."
 
 
-def store_params(p: dict):
-    params_path = os.path.join(
-        p["save_path"],
-        "..",
-        "parameters.json",
-    )
+def store_params(p: dict, shared_params: List[str], agent_params: List[str]):
+    os.makedirs(p["save_path"], exist_ok=True)
+    params_path = os.path.join(p["save_path"], "..", "parameters.json")
 
     if os.path.exists(params_path):
-        # when many seed are launched at the same time, the params exist but they are still being dumped
+        # when many seeds are launched at the same time, the params exist but they are still being dumped
         loaded = False
         while not loaded:
             try:
-                params = json.load(open(params_path, "r"))
+                params_dict = json.load(open(params_path, "r"))
                 loaded = True
             except json.JSONDecodeError:
                 pass
     else:
-        params = {}
+        params_dict = {}
 
-        # store shared params
-        params["---- Shared parameters ----"] = "----------------"
-        for shared_param in SHARED_PARAMS:
-            params[shared_param] = p[shared_param]
+        params_dict["Shared parameters"] = {}
+        for shared_param in shared_params:
+            params_dict["Shared parameters"][shared_param] = p[shared_param]
 
-    if f"---- {p['algo']} ----" not in params.keys():
-        # store algo params
-        params[f"---- {p['algo']} ----"] = "-----------------------------"
-        for agent_param in AGENT_PARAMS[p["algo"]]:
-            params[agent_param + "_" + p["algo"]] = p[agent_param]
+    if DISPLAY_NAME[p["algo_name"]] not in params_dict.keys():
+        # store algorithms parameters
+        params_dict[DISPLAY_NAME[p["algo_name"]]] = {}
+        for agent_param in agent_params:
+            params_dict[DISPLAY_NAME[p["algo_name"]]][agent_param] = p[agent_param]
 
-    # set parameter order for sorting all keys in a pre-defined order
-    algo_params = []
-    for agent in AGENT_PARAMS:
-        if f"---- {agent} ----" in params:
-            algo_params = algo_params + [f"---- {agent} ----"] + [key + "_" + agent for key in AGENT_PARAMS[agent]]
+    # sort keys in a uniform order
+    ordered_params_dict = {
+        algo_name: params_dict[algo_name] for algo_name in ["Shared parameters"] + sorted(list(params_dict.keys())[1:])
+    }
 
-    # sort keys in uniform order and store
-    params = {key: params[key] for key in SHARED_PARAMS + algo_params}
-
-    json.dump(params, open(params_path, "w"), indent=4)
-
-
-def prepare_logs(p: dict):
-    check_experiment(p)
-    os.makedirs(p["save_path"], exist_ok=True)  # need to create a directory for this experiment, algorithm combination
-    store_params(p)
+    json.dump(ordered_params_dict, open(params_path, "w"), indent=4)
 
 
 def save_data(p: dict, episode_returns: list, episode_lengths: list, agent):
