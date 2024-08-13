@@ -23,23 +23,22 @@ It enables to quickly code and run proof-of-concept type of experiments in off-p
 Let's dive in!
 
 ## User installation
-In the folder where the code is, run the following commands to complete installation:
+CPU installation:
 ```bash
 python3 -m venv env_cpu
-source env/bin/activate
+source env_cpu/bin/activate
 pip install --upgrade pip setuptools wheel
 pip install -e .
 ```
-
-If you are using GPU, create a new environment `env_gpu` with the above lines and run:\
-`
-pip install -U "jax[cuda12]"
-`
-
-To verify that everything is working correctly, run the tests as:\
-`
-pytest
-`
+GPU installation:
+```bash
+python3 -m venv env_gpu
+source env_gpu/bin/activate
+pip install --upgrade pip setuptools wheel
+pip install -e .
+pip install -U jax[cuda12]
+```
+To verify the installation, run the tests as:```pytest```
 
 ## Running experiments
 `slimRL` provides support for [Car-On-Hill](https://www.jmlr.org/papers/volume6/ernst05a/ernst05a.pdf) with FQI and [Lunar Lander](https://gymnasium.farama.org/environments/box2d/lunar_lander/) with DQN algorithm. However, you can easily extend it to other [gym](https://github.com/Farama-Foundation/Gymnasium) environments like [Acrobot](https://gymnasium.farama.org/environments/classic_control/acrobot/), [Cart Pole](https://gymnasium.farama.org/environments/classic_control/cart_pole/), [Mountain Car](https://gymnasium.farama.org/environments/classic_control/mountain_car/), by replicating the setup for Lunar Lander.
@@ -48,7 +47,7 @@ pytest
 To train a DQN agent on Lunar Lander on your local system, run (provide the `--gpu` flag if you want to use GPU):\
 `
 launch_job/lunar_lander/launch_local_dqn.sh  --experiment_name 
-{experiment_name}  --first_seed 0 --last_seed 0 --hidden_layers 100 100 --lr 3e-4 --n_epochs 100
+{experiment_name}  --first_seed 0 --last_seed 0 --features 100 100 --learning_rate 3e-4 --n_epochs 100
 `
 
 It trains a DQN agent with 2 hidden layers of size 100, for a single random seed for 100 epochs. 
@@ -59,7 +58,7 @@ It trains a DQN agent with 2 hidden layers of size 100, for a single random seed
 
 To train on cluster:\
 `
-launch_job/lunar_lander/launch_cluster_dqn.sh  --experiment_name {experiment_name}  --first_seed 0 --last_seed 0 --hidden_layers 100 100 --lr 3e-4 --n_epochs 100
+launch_job/lunar_lander/launch_cluster_dqn.sh  --experiment_name {experiment_name}  --first_seed 0 --last_seed 0 --features 100 100 --learning_rate 3e-4 --n_epochs 100
 `
 
 ### Plotting results
