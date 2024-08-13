@@ -84,19 +84,19 @@ def store_params(p: dict, shared_params: List[str], agent_params: List[str]):
     else:
         params_dict = {}
 
-        params_dict["Shared parameters"] = {}
+        params_dict["shared_parameters"] = {}
         for shared_param in shared_params:
-            params_dict["Shared parameters"][shared_param] = p[shared_param]
+            params_dict["shared_parameters"][shared_param] = p[shared_param]
 
-    if DISPLAY_NAME[p["algo_name"]] not in params_dict.keys():
+    if p["algo_name"] not in params_dict.keys():
         # store algorithms parameters
-        params_dict[DISPLAY_NAME[p["algo_name"]]] = {}
+        params_dict[p["algo_name"]] = {}
         for agent_param in agent_params:
-            params_dict[DISPLAY_NAME[p["algo_name"]]][agent_param] = p[agent_param]
+            params_dict[p["algo_name"]][agent_param] = p[agent_param]
 
     # sort keys in a uniform order
     ordered_params_dict = {
-        algo_name: params_dict[algo_name] for algo_name in ["Shared parameters"] + sorted(list(params_dict.keys())[1:])
+        algo_name: params_dict[algo_name] for algo_name in ["shared_parameters"] + sorted(list(params_dict.keys())[1:])
     }
 
     json.dump(ordered_params_dict, open(params_path, "w"), indent=4)
