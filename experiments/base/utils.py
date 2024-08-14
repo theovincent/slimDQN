@@ -35,7 +35,7 @@ def prepare_logs(env_name: str, algo_name: str, argvs: List[str]):
 
 def check_experiment(p: dict):
     # check if the experiment has been run already
-    returns_path = os.path.join(p["save_path"], "episode_returns_and_lenghts", str(p["seed"]) + ".npy")
+    returns_path = os.path.join(p["save_path"], "episode_returns_and_lengths", str(p["seed"]) + ".npy")
     model_path = os.path.join(p["save_path"], "models", str(p["seed"]))
 
     assert not (
@@ -101,7 +101,7 @@ def store_params(p: dict, shared_params: List[str], agent_params: List[str]):
     json.dump(ordered_params_dict, open(params_path, "w"), indent=4)
 
 
-def save_data(p: dict, episode_returns: list, episode_lengths: list, agent):
+def save_data(p: dict, episode_returns: list, episode_lengths: list, model):
     os.makedirs(os.path.join(p["save_path"], "episode_returns_and_lengths"), exist_ok=True)
     episode_returns_and_lengths_path = os.path.join(p["save_path"], f"episode_returns_and_lengths/{p['seed']}.json")
     model_path = os.path.join(p["save_path"], f"model_seed_{p['seed']}")
@@ -111,8 +111,4 @@ def save_data(p: dict, episode_returns: list, episode_lengths: list, agent):
         open(episode_returns_and_lengths_path, "w"),
         indent=4,
     )
-    model = {
-        "params": jax.device_get(agent.params),
-        "hidden_layers": agent.q_network.hidden_layers,
-    }
     pickle.dump(model, open(model_path, "wb"))

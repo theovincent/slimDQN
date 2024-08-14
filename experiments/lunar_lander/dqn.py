@@ -17,7 +17,8 @@ def run(argvs=sys.argv[1:]):
     env = LunarLander()
     rb = ReplayBuffer(
         observation_shape=env.observation_shape,
-        replay_capacity=p["replay_capacity"],
+        replay_capacity=p["replay_buffer_capacity"],
+        batch_size=p["batch_size"],
         update_horizon=p["update_horizon"],
         gamma=p["gamma"],
     )
@@ -25,8 +26,8 @@ def run(argvs=sys.argv[1:]):
         q_key,
         env.observation_shape[0],
         env.n_actions,
-        hidden_layers=p["hidden_layers"],
-        lr=p["lr"],
+        features=p["features"],
+        learning_rate=p["learning_rate"],
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],
         update_to_data=p["update_to_data"],

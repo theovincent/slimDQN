@@ -1,3 +1,4 @@
+from typing import Dict
 import optax
 import jax
 from flax.core import FrozenDict
@@ -5,6 +6,7 @@ from functools import partial
 import jax.numpy as jnp
 from slimDQN.networks.architectures.dqn import DQNNet
 from slimDQN.sample_collection.replay_buffer import ReplayBuffer
+from slimDQN.sample_collection import IDX_RB
 
 
 class DQN:
@@ -13,8 +15,8 @@ class DQN:
         q_key: jax.random.PRNGKey,
         observation_dim,
         n_actions,
-        hidden_layers: list,
-        lr: float,
+        features: list,
+        learning_rate: float,
         gamma: float,
         update_horizon: int,
         update_to_data: int,
@@ -22,11 +24,11 @@ class DQN:
         loss_type: str = "huber",
     ):
         self.q_key = q_key
-        self.q_network = DQNNet(n_actions, hidden_layers)
+        self.q_network = DQNNet(n_actions, features)
         self.params = self.q_network.init(self.q_key, jnp.zeros(observation_dim, dtype=jnp.float32))
         self.target_params = self.params.copy()
 
-        self.optimizer = optax.adam(lr)
+        self.optimizer = optax.adam(learning_rate)
         self.optimizer_state = self.optimizer.init(self.params)
 
         self.gamma = gamma
@@ -35,63 +37,12 @@ class DQN:
         self.target_update_frequency = target_update_frequency
         self.loss_type = loss_type
 
-    def loss(
-        self,
-        params: FrozenDict,
-        params_target: FrozenDict,
-        sample,
-    ):  # computes the loss for a single sample
-        target = self.compute_target(params_target, sample)
-        q_value = self.apply(params, sample["observations"])[sample["actions"]]
-        return self.metric(q_value - target, ord=self.loss_type)
-
-    def loss_on_batch(self, params: FrozenDict, params_target: FrozenDict, samples):
-        return jax.vmap(self.loss, in_axes=(None, None, 0))(params, params_target, samples).mean()
-
-    @staticmethod
-    def metric(error: jnp.ndarray, ord: str):
-        if ord == "huber":
-            return optax.huber_loss(error, 0)
-        elif ord == "1":
-            return jnp.abs(error)
-        elif ord == "2":
-            return jnp.square(error)
-
-    @partial(jax.jit, static_argnames="self")
-    def learn_on_batch(
-        self,
-        params: FrozenDict,
-        params_target: FrozenDict,
-        optimizer_state,
-        batch_samples,
-    ):
-        loss, grad_loss = jax.value_and_grad(self.loss_on_batch)(params, params_target, batch_samples)
-        updates, optimizer_state = self.optimizer.update(grad_loss, optimizer_state)
-        params = optax.apply_updates(params, updates)
-
-        return params, optimizer_state, loss
-
-    @partial(jax.jit, static_argnames="self")
-    def apply(self, params: FrozenDict, states: jnp.ndarray):  # computes the q values for single or batch of states
-        return self.q_network.apply(params, states)
-
-    @partial(jax.jit, static_argnames="self")
-    def compute_target(self, params: FrozenDict, samples):  # computes the target value for single or a batch of samples
-        return samples["rewards"] + (1 - samples["dones"]) * (self.gamma**self.update_horizon) * jnp.max(
-            self.apply(params, samples["next_observations"]), axis=-1
-        )
-
-    def update_online_params(
-        self, batching_key: jax.random.PRNGKey, step: int, batch_size: int, replay_buffer: ReplayBuffer
-    ):
+    def update_online_params(self, step: int, replay_buffer: ReplayBuffer):
         if step % self.update_to_data == 0:
-            batch_samples = replay_buffer.sample_transition_batch(batch_size, batching_key)
+            batch_samples = replay_buffer.sample_transition_batch()
 
             self.params, self.optimizer_state, loss = self.learn_on_batch(
-                self.params,
-                self.target_params,
-                self.optimizer_state,
-                batch_samples,
+                self.params, self.target_params, self.optimizer_state, batch_samples
             )
 
             return loss
@@ -102,5 +53,32 @@ class DQN:
             self.target_params = self.params.copy()
 
     @partial(jax.jit, static_argnames="self")
-    def best_action(self, params: FrozenDict, state: jnp.ndarray):  # computes the best action for a single state
-        return jnp.argmax(self.apply(params, state)).astype(jnp.int8)
+    def learn_on_batch(self, params: FrozenDict, params_target: FrozenDict, optimizer_state, batch_samples):
+        loss, grad_loss = jax.value_and_grad(self.loss_on_batch)(params, params_target, batch_samples)
+        updates, optimizer_state = self.optimizer.update(grad_loss, optimizer_state)
+        params = optax.apply_updates(params, updates)
+
+        return params, optimizer_state, loss
+
+    def loss_on_batch(self, params: FrozenDict, params_target: FrozenDict, samples):
+        return jax.vmap(self.loss, in_axes=(None, None, 0))(params, params_target, samples).mean()
+
+    def loss(self, params: FrozenDict, params_target: FrozenDict, sample):
+        # computes the loss for a single sample
+        target = self.compute_target(params_target, sample)
+        q_value = self.q_network.apply(params, sample[IDX_RB["state"]])[sample[IDX_RB["action"]]]
+        return jnp.square(q_value - target)
+
+    def compute_target(self, params: FrozenDict, samples):
+        # computes the target value for single sample
+        return samples[IDX_RB["reward"]] + (1 - samples[IDX_RB["terminal"]]) * (
+            self.gamma**self.update_horizon
+        ) * jnp.max(self.q_network.apply(params, samples[IDX_RB["next_state"]]))
+
+    @partial(jax.jit, static_argnames="self")
+    def best_action(self, params: FrozenDict, state: jnp.ndarray):
+        # computes the best action for a single state
+        return jnp.argmax(self.q_network.apply(params, state)).astype(jnp.int8)
+
+    def get_model(self) -> Dict:
+        return {"params": self.params}

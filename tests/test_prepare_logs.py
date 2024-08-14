@@ -21,8 +21,8 @@ class TestPrepareLogs(unittest.TestCase):
             assert 0, f"The exception {type(e).__name__} is raised when running 'prepare_logs'."
 
         # Fake that the returns for seed 1 are stored.
-        os.mkdir(os.path.join(save_path, "dqn/episode_returns_and_lenghts"))
-        json.dump({}, open(os.path.join(save_path, "dqn/episode_returns_and_lenghts/1.json"), "w"))
+        os.mkdir(os.path.join(save_path, "dqn/episode_returns_and_lengths"))
+        json.dump({}, open(os.path.join(save_path, "dqn/episode_returns_and_lengths/1.json"), "w"))
 
         # Create folders and parameters.json with seed = 2 -> should not throw an error
         try:

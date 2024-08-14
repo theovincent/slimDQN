@@ -14,11 +14,10 @@ def train(
     env,
     rb: ReplayBuffer,
 ):
-    epsilon_schedule = optax.linear_schedule(1.0, p["end_epsilon"], p["duration_epsilon"])
+    epsilon_schedule = optax.linear_schedule(1.0, p["epsilon_end"], p["epsilon_duration"])
 
     n_training_steps = 0
-    key, reset_key = jax.random.split(key)
-    env.reset(key=reset_key)
+    env.reset()
     episode_returns_per_epoch = [[0]]
     episode_lengths_per_epoch = [[0]]
 
@@ -42,15 +41,18 @@ def train(
                 episode_lengths_per_epoch[idx_epoch].append(0)
 
             if n_training_steps > p["n_initial_samples"]:
-                agent.update_online_params(key, n_training_steps, p["batch_size"], rb)
+                agent.update_online_params(n_training_steps, rb)
                 agent.update_target_params(n_training_steps)
 
         print(
-            f"Epoch: {idx_epoch}, Avg. return = {sum(episode_returns_per_epoch[idx_epoch])/len(episode_lengths_per_epoch[idx_epoch])},  Num episodes = {len(episode_lengths_per_epoch[idx_epoch])}",
+            f"\nEpoch: {idx_epoch}"
+            + f" Avg. return = {sum(episode_returns_per_epoch[idx_epoch])/len(episode_lengths_per_epoch[idx_epoch])}"
+            + f" Num episodes = {len(episode_lengths_per_epoch[idx_epoch])} \n",
             flush=True,
         )
+
         if idx_epoch < p["n_epochs"] - 1:
             episode_returns_per_epoch.append([0])
             episode_lengths_per_epoch.append([0])
 
-    save_data(p, episode_returns_per_epoch, episode_lengths_per_epoch, agent)
+        save_data(p, episode_returns_per_epoch, episode_lengths_per_epoch, agent.get_model())

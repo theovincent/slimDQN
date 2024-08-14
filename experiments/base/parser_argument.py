@@ -43,12 +43,12 @@ def add_base_arguments(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "-lf",
-        "--list_features",
+        "-f",
+        "--features",
         nargs="*",
         help="List of features for the Q-networks.",
         type=int,
-        default=[50, 50],
+        default=[200, 200],
     )
 
     parser.add_argument(
@@ -56,7 +56,7 @@ def add_base_arguments(parser: argparse.ArgumentParser):
         "--replay_buffer_capacity",
         help="For DQN: Replay Buffer capacity, For FQI: Dataset size to sample.",
         type=int,
-        default=10000,
+        default=10_000,
     )
 
     parser.add_argument(
@@ -107,7 +107,7 @@ def add_dqn_arguments(parser: argparse.ArgumentParser):
         "--n_epochs",
         help="Number of epochs to perform.",
         type=int,
-        default=80,
+        default=50,
     )
 
     parser.add_argument(
@@ -115,7 +115,7 @@ def add_dqn_arguments(parser: argparse.ArgumentParser):
         "--n_training_steps_per_epoch",
         help="Number of training steps per epoch.",
         type=int,
-        default=6000,
+        default=10_000,
     )
 
     parser.add_argument(
@@ -139,7 +139,7 @@ def add_dqn_arguments(parser: argparse.ArgumentParser):
         "--n_initial_samples",
         help="Number of initial samples before the training starts.",
         type=int,
-        default=1000,
+        default=1_000,
     )
 
     parser.add_argument(
@@ -155,5 +155,5 @@ def add_dqn_arguments(parser: argparse.ArgumentParser):
         "--epsilon_duration",
         help="Duration of epsilon's linear decay used for exploration.",
         type=float,
-        default=1000,
+        default=1_000,
     )
