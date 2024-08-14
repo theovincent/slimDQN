@@ -1,7 +1,8 @@
-import sys
 import argparse
-import jax.numpy as jnp
 import pickle
+import sys
+
+import jax.numpy as jnp
 from slimRL.environments.lunar_lander import LunarLander
 from slimRL.networks.architectures.dqn import DQNNet
 

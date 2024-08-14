@@ -1,11 +1,13 @@
+import argparse
+import json
 import os
 import sys
-import json
-import argparse
-import numpy as np
+
 import matplotlib.pyplot as plt
-from experiments.base.iqm import get_iqm_and_conf_parallel
+import numpy as np
+
 from experiments import DISPLAY_NAME
+from experiments.base.iqm import get_iqm_and_conf_parallel
 
 
 def run(argvs=sys.argv[1:]):

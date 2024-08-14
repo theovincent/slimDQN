@@ -1,6 +1,6 @@
-from typing import List, Callable
-from functools import wraps
 import argparse
+from functools import wraps
+from typing import Callable, List
 
 
 def output_added_arguments(add_algo_arguments: Callable) -> Callable:

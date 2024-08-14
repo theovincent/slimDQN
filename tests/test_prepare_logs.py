@@ -1,7 +1,7 @@
-import unittest
-import os
 import json
+import os
 import shutil
+import unittest
 
 from experiments.base.utils import prepare_logs
 

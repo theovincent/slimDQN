@@ -22,8 +22,8 @@ off-policy corrections.
 """
 import collections
 import math
-import numpy as np
 
+import numpy as np
 
 # Defines a type describing part of the tuple returned by the replay
 # memory. Each element of the tuple is a tensor of shape [batch, ...] where

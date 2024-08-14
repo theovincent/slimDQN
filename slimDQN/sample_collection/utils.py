@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+
 from slimDQN.sample_collection.replay_buffer import ReplayBuffer
 
 

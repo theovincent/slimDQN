@@ -1,10 +1,11 @@
-from tqdm import tqdm
 import jax
 import optax
+from tqdm import tqdm
+
+from experiments.base.utils import save_data
 from slimDQN.networks.dqn import DQN
 from slimDQN.sample_collection.replay_buffer import ReplayBuffer
 from slimDQN.sample_collection.utils import collect_single_sample
-from experiments.base.utils import save_data
 
 
 def train(

@@ -1,11 +1,13 @@
 import os
 import sys
+
 import jax
-from slimDQN.environments.lunar_lander import LunarLander
-from slimDQN.sample_collection.replay_buffer import ReplayBuffer
-from slimDQN.networks.dqn import DQN
+
 from experiments.base.dqn import train
 from experiments.base.utils import prepare_logs
+from slimDQN.environments.lunar_lander import LunarLander
+from slimDQN.networks.dqn import DQN
+from slimDQN.sample_collection.replay_buffer import ReplayBuffer
 
 
 def run(argvs=sys.argv[1:]):

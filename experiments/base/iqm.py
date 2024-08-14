@@ -1,6 +1,7 @@
+from multiprocessing import Pool
+
 import numpy as np
 import scipy.stats
-from multiprocessing import Pool
 
 
 def compute_epoch_iqm_conf(array, n_seeds, n_bootstraps):

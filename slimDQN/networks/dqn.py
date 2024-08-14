@@ -1,12 +1,14 @@
-from typing import Dict
-import optax
-import jax
-from flax.core import FrozenDict
 from functools import partial
+from typing import Dict
+
+import jax
 import jax.numpy as jnp
+import optax
+from flax.core import FrozenDict
+
 from slimDQN.networks.architectures.dqn import DQNNet
-from slimDQN.sample_collection.replay_buffer import ReplayBuffer
 from slimDQN.sample_collection import IDX_RB
+from slimDQN.sample_collection.replay_buffer import ReplayBuffer
 
 
 class DQN:

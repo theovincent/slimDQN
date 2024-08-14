@@ -1,5 +1,5 @@
-import unittest
 import subprocess
+import unittest
 
 
 class TestLaunchJob(unittest.TestCase):
