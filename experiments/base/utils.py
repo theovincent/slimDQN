@@ -35,12 +35,11 @@ def prepare_logs(env_name: str, algo_name: str, argvs: List[str]):
 
 def check_experiment(p: dict):
     # check if the experiment has been run already
-    returns_path = os.path.join(p["save_path"], "returns_seed_" + str(p["seed"]) + ".npy")
-    losses_path = os.path.join(p["save_path"], "losses_seed_" + str(p["seed"]) + ".npy")
-    model_path = os.path.join(p["save_path"], "model_seed_" + str(p["seed"]))
+    returns_path = os.path.join(p["save_path"], "episode_returns_and_lenghts", str(p["seed"]) + ".npy")
+    model_path = os.path.join(p["save_path"], "models", str(p["seed"]))
 
     assert not (
-        os.path.exists(returns_path) or os.path.exists(losses_path) or os.path.exists(model_path)
+        os.path.exists(returns_path) or os.path.exists(model_path)
     ), "Same algorithm with same seed results already exists. Delete them and restart, or change the experiment name."
 
     # parameters.json is outside the algorithm folder (in the experiment folder)
