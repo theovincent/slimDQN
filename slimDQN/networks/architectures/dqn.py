@@ -5,8 +5,8 @@ import jax.numpy as jnp
 
 
 class DQNNet(nn.Module):
-    n_actions: int
     features: Sequence[int]
+    n_actions: int
 
     @nn.compact
     def __call__(self, x):

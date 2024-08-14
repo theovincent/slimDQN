@@ -22,10 +22,10 @@ def collect_single_sample(
         action = agent.best_action(agent.params, env.state).item()
 
     obs = env.observation
-    reward, termination = env.step(action)
+    reward, absorbing = env.step(action)
 
-    episode_end = termination or env.n_steps >= p["horizon"]
-    rb.add(obs, action, reward, termination, episode_end=episode_end)
+    episode_end = absorbing or env.n_steps >= p["horizon"]
+    rb.add(obs, action, reward, absorbing, episode_end=episode_end)
 
     if episode_end:
         env.reset()

@@ -18,7 +18,7 @@ class LunarLander:
         self.n_steps = 0
 
     def step(self, action):
-        self.state, reward, terminal, _, _ = self.env.step(action)
+        self.state, reward, absorbing, _, _ = self.env.step(action)
         self.n_steps += 1
 
-        return reward, terminal
+        return reward, absorbing

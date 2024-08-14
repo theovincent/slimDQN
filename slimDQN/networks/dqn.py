@@ -26,7 +26,7 @@ class DQN:
         loss_type: str = "huber",
     ):
         self.q_key = q_key
-        self.q_network = DQNNet(n_actions, features)
+        self.q_network = DQNNet(features, n_actions)
         self.params = self.q_network.init(self.q_key, jnp.zeros(observation_dim, dtype=jnp.float32))
         self.target_params = self.params.copy()
 
