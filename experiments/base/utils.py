@@ -12,7 +12,7 @@ from experiments.base import parser_argument
 
 def prepare_logs(env_name: str, algo_name: str, argvs: List[str]):
     print(
-        f"--- Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]} {time.strftime('%d-%m-%Y %H:%M:%S')}---",
+        f"---- Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]} {time.strftime('%d-%m-%Y %H:%M:%S')} ----",
         flush=True,
     )
 

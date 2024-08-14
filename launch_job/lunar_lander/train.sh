@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source launch_job/parse_arguments.sh
+parse_arguments $@ --first_seed $((N_PARALLEL_SEEDS * (SLURM_ARRAY_TASK_ID - 1) + 1)) --last_seed $((N_PARALLEL_SEEDS * SLURM_ARRAY_TASK_ID))
+
+if [[ $GPU = true ]]
+then
+    source env_gpu/bin/activate
+else
+    source env_cpu/bin/activate
+fi
+
+for (( seed=$FIRST_SEED; seed<=$LAST_SEED; seed++ ))
+do
+    python3 experiments/$ENV_NAME/$ALGO_NAME.py --experiment_name $EXPERIMENT_NAME --seed $seed $ARGS &> experiments/$ENV_NAME/logs/$EXPERIMENT_NAME/$ALGO_NAME/train_$seed.out & 
+done
+wait

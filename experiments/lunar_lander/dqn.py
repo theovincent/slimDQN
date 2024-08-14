@@ -33,3 +33,7 @@ def run(argvs=sys.argv[1:]):
         target_update_frequency=p["target_update_frequency"],
     )
     train(train_key, p, agent, env, rb)
+
+
+if __name__ == "__main__":
+    run()

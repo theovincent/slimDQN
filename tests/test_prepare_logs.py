@@ -2,18 +2,11 @@ import unittest
 import os
 import json
 import shutil
-import numpy as np
-import jax
 
 from experiments.base.utils import prepare_logs
 
 
 class TestPrepareLogs(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.random_seed = np.random.randint(1000)
-        self.key = jax.random.PRNGKey(self.random_seed)
-
     def test_prepare_logs(self):
         save_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "../experiments/lunar_lander/exp_output/_test_prepare_logs"
@@ -23,7 +16,7 @@ class TestPrepareLogs(unittest.TestCase):
 
         # Create folders and parameters.json with seed = 1 -> should not throw an error
         try:
-            prepare_logs("lunar_lander", "dqn", ["-e", "_test_prepare_logs", "-s", "1"])
+            prepare_logs("lunar_lander", "dqn", ["--experiment_name", "_test_prepare_logs", "--seed", "1"])
         except Exception as e:
             assert 0, f"The exception {type(e).__name__} is raised when running 'prepare_logs'."
 
@@ -33,13 +26,13 @@ class TestPrepareLogs(unittest.TestCase):
 
         # Create folders and parameters.json with seed = 2 -> should not throw an error
         try:
-            prepare_logs("lunar_lander", "dqn", ["-e", "_test_prepare_logs", "-s", "2"])
+            prepare_logs("lunar_lander", "dqn", ["--experiment_name", "_test_prepare_logs", "--seed", "2"])
         except Exception as e:
             assert 0, f"The exception {type(e).__name__} is raised when running 'prepare_logs'."
 
         # Create again folders and parameters.json with seed = 1 -> should throw an error
         try:
-            prepare_logs("lunar_lander", "dqn", ["-e", "_test_prepare_logs", "-s", "1"])
+            prepare_logs("lunar_lander", "dqn", ["--experiment_name", "_test_prepare_logs", "--seed", "1"])
             assert 0, "An error saying that this experiment has been run with the same seed should have been thrown."
         except Exception as e:
             if type(e) != AssertionError:
@@ -53,7 +46,14 @@ class TestPrepareLogs(unittest.TestCase):
             prepare_logs(
                 "lunar_lander",
                 "dqn",
-                ["-e", "_test_prepare_logs", "-s", "3", f"--{first_dqn_param}", f"{first_dqn_param_value}"],
+                [
+                    "--experiment_name",
+                    "_test_prepare_logs",
+                    "--seed",
+                    "3",
+                    f"--{first_dqn_param}",
+                    f"{first_dqn_param_value}",
+                ],
             )
             assert (
                 0

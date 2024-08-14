@@ -27,7 +27,7 @@ def output_added_arguments(add_algo_arguments: Callable) -> Callable:
 @output_added_arguments
 def add_base_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "-e",
+        "-en",
         "--experiment_name",
         help="Experiment name.",
         type=str,
@@ -43,8 +43,8 @@ def add_base_arguments(parser: argparse.ArgumentParser):
     )
 
     parser.add_argument(
-        "-fs",
-        "--features",
+        "-lf",
+        "--list_features",
         nargs="*",
         help="List of features for the Q-networks.",
         type=int,
