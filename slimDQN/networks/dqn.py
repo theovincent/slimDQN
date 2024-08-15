@@ -48,11 +48,13 @@ class DQN:
             )
 
             return loss
-        return jnp.nan
+        return 0
 
     def update_target_params(self, step: int):
         if step % self.target_update_frequency == 0:
             self.target_params = self.params.copy()
+            return True
+        return False
 
     @partial(jax.jit, static_argnames="self")
     def learn_on_batch(self, params: FrozenDict, params_target: FrozenDict, optimizer_state, batch_samples):

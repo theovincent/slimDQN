@@ -1,4 +1,5 @@
 import jax
+import numpy as np
 import optax
 from tqdm import tqdm
 
@@ -21,6 +22,7 @@ def train(
     env.reset()
     episode_returns_per_epoch = [[0]]
     episode_lengths_per_epoch = [[0]]
+    cumulated_loss = 0
 
     for idx_epoch in tqdm(range(p["n_epochs"])):
         idx_training_step = 0
@@ -42,14 +44,19 @@ def train(
                 episode_lengths_per_epoch[idx_epoch].append(0)
 
             if n_training_steps > p["n_initial_samples"]:
-                agent.update_online_params(n_training_steps, rb)
-                agent.update_target_params(n_training_steps)
+                cumulated_loss += agent.update_online_params(n_training_steps, rb)
+                target_updated = agent.update_target_params(n_training_steps)
 
-        print(
-            f"\nEpoch: {idx_epoch}"
-            + f" Avg. return = {sum(episode_returns_per_epoch[idx_epoch])/len(episode_lengths_per_epoch[idx_epoch])}"
-            + f" Num episodes = {len(episode_lengths_per_epoch[idx_epoch])} \n",
-            flush=True,
+                if target_updated:
+                    p["wandb"].log({"n_training_steps": n_training_steps, "loss": cumulated_loss})
+                    cumulated_loss = 0
+
+        avg_return = np.mean(episode_returns_per_epoch[idx_epoch])
+        avg_length_episode = np.mean(episode_lengths_per_epoch[idx_epoch])
+        n_episodes = len(episode_lengths_per_epoch[idx_epoch])
+        print(f"\nEpoch {idx_epoch}: Return {avg_return} averaged on {n_episodes} episodes.\n", flush=True)
+        p["wandb"].log(
+            {"n_training_steps": n_training_steps, "avg_return": avg_return, "avg_length_episode": avg_length_episode}
         )
 
         if idx_epoch < p["n_epochs"] - 1:

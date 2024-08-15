@@ -164,6 +164,7 @@ env_cpu/
 env_gpu/
 env_test/
 rough/
+wandb/
 
 **.json
 **.npy

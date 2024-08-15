@@ -4,6 +4,7 @@ import os
 import pickle
 import time
 from typing import List
+import wandb
 
 from experiments import DISPLAY_NAME
 from experiments.base import parser_argument
@@ -28,6 +29,14 @@ def prepare_logs(env_name: str, algo_name: str, argvs: List[str]):
 
     check_experiment(p)
     store_params(p, shared_params, agent_params)
+
+    p["wandb"] = wandb.init(
+        project="slimDQN",
+        config=p,
+        name=str(p["seed"]),
+        group=f"{p['algo_name']}_{p['experiment_name']}",
+        mode="online" if not p["disable_wandb"] else "disabled",
+    )
 
     return p
 
@@ -84,7 +93,8 @@ def store_params(p: dict, shared_params: List[str], agent_params: List[str]):
 
         params_dict["shared_parameters"] = {}
         for shared_param in shared_params:
-            params_dict["shared_parameters"][shared_param] = p[shared_param]
+            if shared_param not in ["seed", "disable_wandb"]:
+                params_dict["shared_parameters"][shared_param] = p[shared_param]
 
     if p["algo_name"] not in params_dict.keys():
         # store algorithms parameters

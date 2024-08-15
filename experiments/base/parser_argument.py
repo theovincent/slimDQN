@@ -33,7 +33,6 @@ def add_base_arguments(parser: argparse.ArgumentParser):
         type=str,
         required=True,
     )
-
     parser.add_argument(
         "-s",
         "--seed",
@@ -41,7 +40,13 @@ def add_base_arguments(parser: argparse.ArgumentParser):
         type=int,
         required=True,
     )
-
+    parser.add_argument(
+        "-dw",
+        "--disable_wandb",
+        help="Disable wandb.",
+        default=False,
+        action="store_true",
+    )
     parser.add_argument(
         "-f",
         "--features",
@@ -50,7 +55,6 @@ def add_base_arguments(parser: argparse.ArgumentParser):
         type=int,
         default=[200, 200],
     )
-
     parser.add_argument(
         "-rbc",
         "--replay_buffer_capacity",
@@ -58,7 +62,6 @@ def add_base_arguments(parser: argparse.ArgumentParser):
         type=int,
         default=10_000,
     )
-
     parser.add_argument(
         "-bs",
         "--batch_size",
@@ -66,7 +69,6 @@ def add_base_arguments(parser: argparse.ArgumentParser):
         type=int,
         default=32,
     )
-
     parser.add_argument(
         "-n",
         "--update_horizon",
@@ -74,7 +76,6 @@ def add_base_arguments(parser: argparse.ArgumentParser):
         type=int,
         default=1,
     )
-
     parser.add_argument(
         "-gamma",
         "--gamma",
@@ -82,7 +83,6 @@ def add_base_arguments(parser: argparse.ArgumentParser):
         type=float,
         default=0.99,
     )
-
     parser.add_argument(
         "-lr",
         "--learning_rate",
@@ -90,7 +90,6 @@ def add_base_arguments(parser: argparse.ArgumentParser):
         type=float,
         default=3e-4,
     )
-
     parser.add_argument(
         "-horizon",
         "--horizon",
@@ -109,7 +108,6 @@ def add_dqn_arguments(parser: argparse.ArgumentParser):
         type=int,
         default=50,
     )
-
     parser.add_argument(
         "-ntspe",
         "--n_training_steps_per_epoch",
@@ -117,7 +115,6 @@ def add_dqn_arguments(parser: argparse.ArgumentParser):
         type=int,
         default=10_000,
     )
-
     parser.add_argument(
         "-utd",
         "--update_to_data",
@@ -125,7 +122,6 @@ def add_dqn_arguments(parser: argparse.ArgumentParser):
         type=float,
         default=1,
     )
-
     parser.add_argument(
         "-tuf",
         "--target_update_frequency",
@@ -133,7 +129,6 @@ def add_dqn_arguments(parser: argparse.ArgumentParser):
         type=int,
         default=200,
     )
-
     parser.add_argument(
         "-nis",
         "--n_initial_samples",
@@ -141,7 +136,6 @@ def add_dqn_arguments(parser: argparse.ArgumentParser):
         type=int,
         default=1_000,
     )
-
     parser.add_argument(
         "-ee",
         "--epsilon_end",
@@ -149,7 +143,6 @@ def add_dqn_arguments(parser: argparse.ArgumentParser):
         type=float,
         default=0.01,
     )
-
     parser.add_argument(
         "-ed",
         "--epsilon_duration",
