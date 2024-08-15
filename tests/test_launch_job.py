@@ -4,19 +4,19 @@ import unittest
 
 class TestLaunchJob(unittest.TestCase):
     def test_launch_local(self):
-        returncode = subprocess.run(["launch_job/lunar_lander/launch_local_dqn.sh"]).returncode
+        returncode = subprocess.run(["launch_job/lunar_lander/local_dqn.sh"]).returncode
         assert (
             returncode > 0
         ), "The command should have raised an error telling that the experiment name is not specified."
 
         returncode = subprocess.run(
-            ["launch_job/lunar_lander/launch_local_dqn.sh", "--experiment_name", "_test_launch_local"]
+            ["launch_job/lunar_lander/local_dqn.sh", "--experiment_name", "_test_launch_local"]
         ).returncode
         assert returncode > 0, "The command should have raised an error telling that the first seed is not specified."
 
         returncode = subprocess.run(
             [
-                "launch_job/lunar_lander/launch_local_dqn.sh",
+                "launch_job/lunar_lander/local_dqn.sh",
                 "--experiment_name",
                 "_test_launch_local",
                 "--first_seed",
@@ -27,7 +27,7 @@ class TestLaunchJob(unittest.TestCase):
 
         returncode = subprocess.run(
             [
-                "launch_job/lunar_lander/launch_local_dqn.sh",
+                "launch_job/lunar_lander/local_dqn.sh",
                 "--experiment_name",
                 "_test_launch_local",
                 "--first_seed",
