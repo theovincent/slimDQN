@@ -1,7 +1,9 @@
 #!/bin/bash
 
 source launch_job/parse_arguments.sh
-parse_arguments $@ --first_seed $((N_PARALLEL_SEEDS * (SLURM_ARRAY_TASK_ID - 1) + 1)) --last_seed $((N_PARALLEL_SEEDS * SLURM_ARRAY_TASK_ID))
+parse_arguments $@ --first_seed dummy --last_seed dummy
+FIRST_SEED=$((N_PARALLEL_SEEDS * (SLURM_ARRAY_TASK_ID - 1) + 1)) 
+LAST_SEED=$((N_PARALLEL_SEEDS * SLURM_ARRAY_TASK_ID))
 
 if [[ $GPU = true ]]
 then
