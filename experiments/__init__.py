@@ -1,4 +1,4 @@
-DISPLAY_NAME = {"lunar_lander": "Lunar Lander", "dqn": "DQN"}
+DISPLAY_NAME = {"lunar_lander": "Lunar Lander", "atari": "Atari", "dqn": "DQN"}
 
 AVAILABLE_COLORS = {
     "black": "#000000",

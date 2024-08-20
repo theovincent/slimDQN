@@ -6,7 +6,7 @@ import sys
 
 import gymnasium as gym
 import jax.numpy as jnp
-from slimDQN.environments.lunar_lander import LunarLander
+from slimDQN.environments.atari import AtariEnv
 from slimDQN.networks.architectures.dqn import DQNNet
 
 
@@ -39,14 +39,14 @@ def run(argvs=sys.argv[1:]):
     p_path = f"experiments/{env_name}/exp_output/{args.experiment_name}/parameters.json"
     p = json.load(open(p_path, "rb"))
 
-    env = LunarLander(render_mode="rgb_array")
+    env = AtariEnv(p["shared_parameters"]["experiment_name"].split("_")[-1])
     env.env = gym.wrappers.RecordVideo(
         env=env.env,
         video_folder=f"experiments/{env_name}/exp_output/{args.experiment_name}/{args.algo_name}",
         name_prefix="",
     )
 
-    q_network = DQNNet(p["shared_parameters"]["features"], False, env.n_actions)
+    q_network = DQNNet(p["shared_parameters"]["features"], True, env.n_actions)
 
     model_path = f"experiments/{env_name}/exp_output/{args.experiment_name}/{args.algo_name}/models/{args.seed}"
     model = pickle.load(open(model_path, "rb"))

@@ -18,19 +18,21 @@ class DQN:
         observation_dim,
         n_actions,
         features: list,
+        cnn: bool,
         learning_rate: float,
         gamma: float,
         update_horizon: int,
         update_to_data: int,
         target_update_frequency: int,
         loss_type: str = "huber",
+        adam_eps: float = 1e-8,
     ):
         self.q_key = q_key
-        self.q_network = DQNNet(features, n_actions)
+        self.q_network = DQNNet(features, cnn, n_actions)
         self.params = self.q_network.init(self.q_key, jnp.zeros(observation_dim, dtype=jnp.float32))
         self.target_params = self.params.copy()
 
-        self.optimizer = optax.adam(learning_rate)
+        self.optimizer = optax.adam(learning_rate, eps=adam_eps)
         self.optimizer_state = self.optimizer.init(self.params)
 
         self.gamma = gamma
