@@ -25,21 +25,21 @@ def train(
     cumulated_loss = 0
 
     for idx_epoch in tqdm(range(p["n_epochs"])):
-        idx_training_step = 0
+        n_training_steps_epoch = 0
         has_reset = False
 
-        while idx_training_step < p["n_training_steps_per_epoch"] or not has_reset:
+        while n_training_steps_epoch < p["n_training_steps_per_epoch"] or not has_reset:
             key, exploration_key = jax.random.split(key)
             reward, has_reset = collect_single_sample(
                 exploration_key, env, agent, rb, p, epsilon_schedule, n_training_steps
             )
 
-            idx_training_step += 1
+            n_training_steps_epoch += 1
             n_training_steps += 1
 
             episode_returns_per_epoch[idx_epoch][-1] += reward
             episode_lengths_per_epoch[idx_epoch][-1] += 1
-            if has_reset and idx_training_step < p["n_training_steps_per_epoch"]:
+            if has_reset and n_training_steps_epoch < p["n_training_steps_per_epoch"]:
                 episode_returns_per_epoch[idx_epoch].append(0)
                 episode_lengths_per_epoch[idx_epoch].append(0)
 
