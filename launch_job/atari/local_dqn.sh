@@ -4,7 +4,7 @@ source launch_job/parse_arguments.sh
 parse_arguments $@
 
 if ! tmux has-session -t slimdqn; then
-    tmux new-session -d --seed slimdqn
+    tmux new-session -d -s slimdqn
     echo "Created new tmux session - slimdqn"
 fi
 
