@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 
-from slimDQN.sample_collection.replay_buffer import ReplayBuffer
+from slimdqn.sample_collection.replay_buffer import ReplayBuffer
 
 
 def collect_single_sample(

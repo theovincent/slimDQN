@@ -6,9 +6,9 @@ import numpy as np
 
 from experiments.base.dqn import train
 from experiments.base.utils import prepare_logs
-from slimDQN.environments.atari import AtariEnv
-from slimDQN.networks.dqn import DQN
-from slimDQN.sample_collection.replay_buffer import ReplayBuffer
+from slimdqn.environments.atari import AtariEnv
+from slimdqn.networks.dqn import DQN
+from slimdqn.sample_collection.replay_buffer import ReplayBuffer
 
 
 def run(argvs=sys.argv[1:]):

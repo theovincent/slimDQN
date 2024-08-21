@@ -6,8 +6,8 @@ import sys
 
 import gymnasium as gym
 import jax.numpy as jnp
-from slimDQN.environments.atari import AtariEnv
-from slimDQN.networks.architectures.dqn import DQNNet
+from slimdqn.environments.atari import AtariEnv
+from slimdqn.networks.architectures.dqn import DQNNet
 
 
 def run(argvs=sys.argv[1:]):

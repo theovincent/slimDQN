@@ -6,8 +6,8 @@ import sys
 
 import gymnasium as gym
 import jax.numpy as jnp
-from slimDQN.environments.lunar_lander import LunarLander
-from slimDQN.networks.architectures.dqn import DQNNet
+from slimdqn.environments.lunar_lander import LunarLander
+from slimdqn.networks.architectures.dqn import DQNNet
 
 
 def run(argvs=sys.argv[1:]):

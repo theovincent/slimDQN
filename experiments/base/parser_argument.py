@@ -58,7 +58,7 @@ def add_base_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-rbc",
         "--replay_buffer_capacity",
-        help="For DQN: Replay Buffer capacity, For FQI: Dataset size to sample.",
+        help="Replay Buffer capacity.",
         type=int,
         default=10_000,
     )
