@@ -56,7 +56,12 @@ def train(
         n_episodes = len(episode_lengths_per_epoch[idx_epoch])
         print(f"\nEpoch {idx_epoch}: Return {avg_return} averaged on {n_episodes} episodes.\n", flush=True)
         p["wandb"].log(
-            {"n_training_steps": n_training_steps, "avg_return": avg_return, "avg_length_episode": avg_length_episode}
+            {
+                "epoch": idx_epoch,
+                "n_training_steps": n_training_steps,
+                "avg_return": avg_return,
+                "avg_length_episode": avg_length_episode,
+            }
         )
 
         if idx_epoch < p["n_epochs"] - 1:
