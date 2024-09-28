@@ -8,6 +8,7 @@ if ! tmux has-session -t slimdqn; then
     echo "Created new tmux session - slimdqn"
 fi
 
+tmux send-keys -t slimdqn "cd $(pwd)" ENTER
 if [[ $GPU = true ]]
 then
     tmux send-keys -t slimdqn "source env_gpu/bin/activate" ENTER
