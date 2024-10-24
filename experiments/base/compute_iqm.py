@@ -1,13 +1,12 @@
 import jax
 import jax.numpy as jnp
 import scipy.stats
-import numpy as np
 
 
-def get_iqm_and_conf_per_epoch(array: np.ndarray, n_bootstraps: int = 2000):
+def get_iqm_and_conf_per_epoch(array: jnp.ndarray, n_bootstraps: int = 2000):
     n_seeds, n_tasks, n_epochs = array.shape
     if n_tasks == 1 and n_seeds == 1:
-        return array.reshape(-1), np.stack([array.reshape(-1), array.reshape(-1)])
+        return array.reshape(-1), jnp.stack([array.reshape(-1), array.reshape(-1)])
 
     key = jax.random.key(seed=0)
     iqm = jnp.array(
