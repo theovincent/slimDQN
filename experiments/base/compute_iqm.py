@@ -10,7 +10,10 @@ def get_iqm_and_conf_per_epoch(array: jnp.ndarray, n_bootstraps: int = 2000):
 
     key = jax.random.key(seed=0)
     iqm = jnp.array(
-        [scipy.stats.trim_mean(array[..., epoch], proportiontocut=0.25, axis=None) for epoch in range(n_epochs)]
+        [
+            scipy.stats.trim_mean(array[..., epoch][~jnp.isnan(array[..., epoch])], proportiontocut=0.25, axis=None)
+            for epoch in range(n_epochs)
+        ]
     )
 
     bootstrap_key, key = jax.random.split(key=key)
@@ -18,16 +21,47 @@ def get_iqm_and_conf_per_epoch(array: jnp.ndarray, n_bootstraps: int = 2000):
     bootstrap_samples = jax.vmap(
         lambda k, a: jnp.array(
             [
-                jax.random.choice(key=k[idx_task], a=a[..., idx_task], shape=(n_seeds, n_bootstraps))
+                jax.random.choice(
+                    key=k[idx_task], a=a[..., idx_task], shape=(n_seeds, n_bootstraps), p=jnp.isfinite(a[..., idx_task])
+                )
                 for idx_task in range(n_tasks)
             ]
-        ),
+        ).reshape(-1, n_bootstraps),
         in_axes=(0, -1),
     )(bootstrap_keys, array)
 
-    bootstrap_samples = bootstrap_samples.reshape((n_epochs, -1, n_bootstraps))
-
-    bootstrap_samples = scipy.stats.trim_mean(bootstrap_samples, proportiontocut=0.25, axis=1)
-    confs = jnp.percentile(bootstrap_samples, q=jnp.array([2.5, 97.5]), axis=1)
+    bootstrap_samples = jnp.array(
+        [
+            [
+                (
+                    scipy.stats.trim_mean(
+                        bootstrap_samples[idx_epoch, :, idx_bootstrap][
+                            jnp.isfinite(bootstrap_samples[idx_epoch, :, idx_bootstrap])
+                        ],
+                        proportiontocut=0.25,
+                        axis=None,
+                    )
+                    if jnp.isfinite(bootstrap_samples[idx_epoch, :, idx_bootstrap]).sum() != 0
+                    else jnp.nan
+                )
+                for idx_bootstrap in range(n_bootstraps)
+            ]
+            for idx_epoch in range(n_epochs)
+        ]
+    )
+    confs = jnp.array(
+        [
+            (
+                jnp.percentile(
+                    bootstrap_samples[idx_epoch][jnp.isfinite(bootstrap_samples[idx_epoch])],
+                    q=jnp.array([2.5, 97.5]),
+                    axis=None,
+                )
+                if jnp.isfinite(bootstrap_samples[idx_epoch]).sum() != 0
+                else jnp.full(shape=(2,), fill_value=jnp.nan)
+            )
+            for idx_epoch in range(n_epochs)
+        ]
+    ).T
 
     return iqm, confs
