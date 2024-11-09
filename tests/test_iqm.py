@@ -1,5 +1,4 @@
 import numpy as np
-import jax.numpy as jnp
 import unittest
 
 from experiments.base.compute_iqm import get_iqm_and_conf_per_epoch
@@ -8,18 +7,18 @@ from experiments.base.compute_iqm import get_iqm_and_conf_per_epoch
 class TestIQM(unittest.TestCase):
 
     def setUp(self):
-        self._x = jnp.array(
-            [[[1, 2.2]], [[1.1, 2]], [[1, 2.5]], [[0.5, 1.5]], [[1, 2]], [[1.7, 1.1]], [[1, 2]], [[0.9, 2]]]
+        self._x = np.array(
+            [[[1, 2.2]], [[1.1, 2]], [[1, 2.9]], [[0.5, 1.9]], [[1, 2]], [[1.7, 1.1]], [[1, 2]], [[0.9, 2]]]
         )
-        self._x_nan = jnp.array(
+        self._x_nan = np.array(
             [
                 [[1, 2.2]],
-                [[1.1, jnp.nan]],
-                [[1, jnp.nan]],
-                [[jnp.nan, 1.5]],
-                [[1, jnp.nan]],
-                [[jnp.nan, jnp.nan]],
-                [[jnp.nan, 2]],
+                [[1.1, np.nan]],
+                [[1, np.nan]],
+                [[np.nan, 1.9]],
+                [[1, np.nan]],
+                [[np.nan, np.nan]],
+                [[np.nan, 2]],
                 [[0.9, 2]],
             ]
         )
