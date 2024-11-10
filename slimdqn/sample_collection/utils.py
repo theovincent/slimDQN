@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 
-from slimdqn.sample_collection.replay_buffer import ReplayBuffer
+from slimdqn.sample_collection.replay_buffer import ReplayBuffer, TransitionElement
 
 
 def collect_single_sample(
@@ -25,7 +25,9 @@ def collect_single_sample(
     reward, absorbing = env.step(action)
 
     episode_end = absorbing or env.n_steps >= p["horizon"]
-    rb.add(obs, action, reward, absorbing, episode_end=episode_end)
+    rb.add(
+        TransitionElement(observation=obs, action=action, reward=reward, is_terminal=absorbing, episode_end=episode_end)
+    )
 
     if episode_end:
         env.reset()
