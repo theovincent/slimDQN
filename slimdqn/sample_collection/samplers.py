@@ -10,6 +10,8 @@ from slimdqn.sample_collection import sum_tree
 import numpy as np
 import numpy.typing as npt
 
+import jax
+
 ReplayItemID = NewType("ReplayItemID", int)
 
 
@@ -23,7 +25,7 @@ class UniformSamplingDistribution:
 
     def __init__(self, seed: "np.random.Generator | np.random.SeedSequence | int | None") -> None:
         # RNG generator
-        self._rng = np.random.default_rng(seed)
+        self._rng_key = jax.random.PRNGKey(seed=seed)
 
         # The following two datastructures are used for efficient sampling from
         # our memory collection. It's not possible with Python only to efficiently
@@ -77,7 +79,8 @@ class UniformSamplingDistribution:
             raise ValueError("No keys to sample from.")
         if size <= 0:
             raise ValueError("Sample size must be positive.")
-        indices = self._rng.integers(len(self._key_by_index), size=size)
+        sample_key, self._rng_key = jax.random.split(self._rng_key)
+        indices = jax.random.randint(key=sample_key, shape=(size,), minval=0, maxval=len(self._key_by_index))
         return SampleMetadata(
             keys=np.fromiter(
                 (self._key_by_index[index] for index in indices),
@@ -120,12 +123,11 @@ class PrioritizedSamplingDistribution(UniformSamplingDistribution):
         priority_exponent: float = 1.0,
         max_capacity: int,
     ) -> None:
-        self._rng = np.random.default_rng(seed)
         self._max_capacity = max_capacity
         self._priority_exponent = priority_exponent
         self._sum_tree = sum_tree.SumTree(self._max_capacity)
 
-        super().__init__(self._rng)
+        super().__init__(seed=seed)
 
     def add(self, key: ReplayItemID, *, priority: float) -> None:
         super().add(key)
@@ -186,7 +188,8 @@ class PrioritizedSamplingDistribution(UniformSamplingDistribution):
                 probabilities=np.full_like(keys, 1.0 / self.size, dtype=np.float64),
             )
 
-        targets = self._rng.uniform(0.0, self._sum_tree.root, size=size)
+        sample_key, self._rng_key = jax.random.split(self._rng_key)
+        targets = jax.random.uniform(key=sample_key, shape=(size,), minval=0.0, maxval=self._sum_tree.root)
         indices = self._sum_tree.query(targets)
         return PrioritizedSampleMetadata(
             keys=np.fromiter(
