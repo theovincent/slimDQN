@@ -8,7 +8,7 @@ from flax.core import FrozenDict
 
 from slimdqn.networks.architectures.dqn import DQNNet
 from slimdqn.sample_collection import IDX_RB
-from slimdqn.sample_collection.replay_buffer import ReplayBuffer
+from slimdqn.sample_collection.replay_buffer import ReplayBuffer, ReplayElement
 
 
 class DQN:
@@ -43,7 +43,7 @@ class DQN:
 
     def update_online_params(self, step: int, replay_buffer: ReplayBuffer):
         if step % self.update_to_data == 0:
-            batch_samples = replay_buffer.sample_transition_batch()
+            batch_samples = replay_buffer.sample()
 
             self.params, self.optimizer_state, loss = self.learn_on_batch(
                 self.params, self.target_params, self.optimizer_state, batch_samples
@@ -69,17 +69,17 @@ class DQN:
     def loss_on_batch(self, params: FrozenDict, params_target: FrozenDict, samples):
         return jax.vmap(self.loss, in_axes=(None, None, 0))(params, params_target, samples).mean()
 
-    def loss(self, params: FrozenDict, params_target: FrozenDict, sample):
+    def loss(self, params: FrozenDict, params_target: FrozenDict, sample: ReplayElement):
         # computes the loss for a single sample
         target = self.compute_target(params_target, sample)
-        q_value = self.q_network.apply(params, sample[IDX_RB["state"]])[sample[IDX_RB["action"]]]
+        q_value = self.q_network.apply(params, sample.state)[sample.action]
         return jnp.square(q_value - target)
 
-    def compute_target(self, params: FrozenDict, samples):
+    def compute_target(self, params: FrozenDict, sample: ReplayElement):
         # computes the target value for single sample
-        return samples[IDX_RB["reward"]] + (1 - samples[IDX_RB["terminal"]]) * (
-            self.gamma**self.update_horizon
-        ) * jnp.max(self.q_network.apply(params, samples[IDX_RB["next_state"]]))
+        return sample.reward + (1 - sample.is_terminal) * (self.gamma**self.update_horizon) * jnp.max(
+            self.q_network.apply(params, sample.next_state)
+        )
 
     @partial(jax.jit, static_argnames="self")
     def best_action(self, params: FrozenDict, state: jnp.ndarray):
