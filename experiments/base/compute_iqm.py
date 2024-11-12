@@ -3,51 +3,33 @@ import jax
 import numpy as np
 
 
-def get_iqm_and_conf_per_epoch(scores, n_bootstraps=2000):
+def get_epoch_iqm_and_conf(key, epoch_scores, n_bootstraps=2000):
+    epoch_iqm = scipy.stats.trim_mean(epoch_scores[~np.isnan(epoch_scores)], proportiontocut=0.25, axis=None)
 
-    n_seeds, n_tasks, n_epochs = scores.shape
-
-    if n_tasks == 1 and n_seeds == 1:
-        return scores.reshape(-1), np.stack([scores.reshape(-1), scores.reshape(-1)])
-
-    iqm = np.array(
-        [
-            scipy.stats.trim_mean(scores[..., epoch][~np.isnan(scores[..., epoch])], proportiontocut=0.25, axis=None)
-            for epoch in range(n_epochs)
-        ]
-    )
-
-    key = jax.random.PRNGKey(seed=0)
-
-    def compute_ci_for_epoch(epoch_scores, key):
-        epoch_scores = epoch_scores.reshape(n_seeds, n_tasks)
-        epoch_key, key = jax.random.split(key)
-        n_successful_seeds_per_task = np.sum(~np.isnan(epoch_scores), axis=0)
-
-        if np.sum(n_successful_seeds_per_task) == 0:
-            return np.full(shape=(2,), fill_value=np.nan)
-
-        task_keys = jax.random.split(epoch_key, n_tasks)
-
-        sampled_scores = np.vstack(
-            [
-                jax.random.choice(
-                    key=task_keys[idx_task],
-                    a=epoch_scores[..., idx_task],
-                    shape=(n_successful_seeds_per_task[idx_task], n_bootstraps),
-                    p=np.isfinite(epoch_scores[..., idx_task]),
-                )
-                for idx_task in range(n_tasks)
-                if n_successful_seeds_per_task[idx_task] > 0
-            ]
+    task_keys = jax.random.split(key, epoch_scores.shape[0])
+    sampled_epoch_scores = []
+    for idx_task in range(epoch_scores.shape[0]):
+        nan_free_tasks = epoch_scores[idx_task][~np.isnan(epoch_scores[idx_task])]
+        sampled_epoch_scores.append(
+            jax.random.choice(
+                key=task_keys[idx_task],
+                a=nan_free_tasks,
+                shape=(len(nan_free_tasks), n_bootstraps),
+            )
         )
 
-        scores = scipy.stats.trim_mean(sampled_scores, proportiontocut=0.25, axis=0)
+    sampled_epoch_iqm = scipy.stats.trim_mean(np.vstack(sampled_epoch_scores), proportiontocut=0.25, axis=0)
+    lower_bound, upper_bound = np.percentile(sampled_epoch_iqm, q=np.array([2.5, 97.5]))
+    return epoch_iqm, lower_bound, upper_bound
 
-        return np.percentile(scores, q=np.array([2.5, 97.5]), axis=0)
 
-    ci_lower, ci_upper = np.apply_along_axis(
-        func1d=compute_ci_for_epoch, axis=0, arr=scores.reshape(-1, n_epochs), key=key
+def get_iqm_and_conf(scores):
+    # scores: n_seeds x n_epochs or n_tasks x n_seeds x n_epochs
+    if scores.ndim == 2:
+        scores = scores[np.newaxis]
+
+    iqm, ci_lower, ci_upper = np.vectorize(get_epoch_iqm_and_conf, signature="(j),(n,m)-> (),(),()")(
+        jax.random.split(jax.random.PRNGKey(0), scores.shape[-1]), scores.transpose((2, 0, 1))
     )
 
-    return iqm, np.stack([ci_lower, ci_upper], axis=0)
+    return iqm, np.stack([ci_lower, ci_upper])
