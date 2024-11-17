@@ -31,22 +31,10 @@ class TransitionElement(typing.NamedTuple):
 
 
 def compress(buffer: npt.NDArray) -> npt.NDArray:
-    """Compress a numpy array using snappy.
-
-    Args:
-      buffer: npt.NDArray, buffer to compress.
-
-    Returns:
-      Numpy structured array consisting of the following fields:
-        data: compressed data in bytes
-        shape: the shape of the uncompressed array
-        dtype: a string representation of the dtype
-    """
-    # Compress the numpy array using snappy
     if not buffer.flags["C_CONTIGUOUS"]:
         buffer = buffer.copy(order="C")
     compressed = np.frombuffer(snappy.compress(buffer), dtype=np.uint8)
-    # Construct the numpy structured array
+
     return np.array(
         (compressed, buffer.shape, buffer.dtype.str),
         dtype=[
@@ -58,22 +46,10 @@ def compress(buffer: npt.NDArray) -> npt.NDArray:
 
 
 def uncompress(compressed: npt.NDArray) -> npt.NDArray:
-    """Uncompress a numpy array that has been compressed via `compress`.
-
-    Args:
-      compressed: npt.NDArray, numpy structured array with data, shape, and dtype.
-
-    Returns:
-      Uncompressed npt.NDArray
-    """
-    # Create shape tuple
     shape = tuple(compressed["shape"])
-    # Get the dtype string
     dtype = compressed["dtype"].item()
-    # Get the compressed bytes and uncompress them using snappy
     compressed_bytes = compressed["data"].tobytes()
     uncompressed = snappy.uncompress(compressed_bytes)
-    # Construct the numpy array
     return np.ndarray(shape=shape, dtype=dtype, buffer=uncompressed)
 
 
@@ -88,60 +64,26 @@ class ReplayElement(struct.PyTreeNode):
     episode_end: "npt.NDArray[np.bool_] | bool"
 
     def pack(self) -> "ReplayElement":
-        # NOTE: pytype has a problem subclassing generics.
-        # This should be solved in Py311 with `typing.Self`
-        # pytype: disable=attribute-error
         return self.replace(
             state=compress(self.state),
             next_state=compress(self.next_state),
         )
-        # pytype: enable=attribute-error
 
     def unpack(self) -> "ReplayElement":
-        # NOTE: pytype has a problem subclassing generics.
-        # This should be solved in Py311 with `typing.Self`
-        # pytype: disable=attribute-error
         return self.replace(
             state=uncompress(self.state),
             next_state=uncompress(self.next_state),
         )
-        # pytype: enable=attribute-error
 
 
 ReplayElementT = TypeVar("ReplayElementT", bound=ReplayElement)
 
 
 class ReplayBuffer:
-    """A Jax re-implementation of the Dopamine Replay Buffer.
-
-    Stores transitions, state, action, reward, next_state, terminal (and any
-    extra contents specified) in a circular buffer and provides a uniform
-    sampling mechanism.
-
-    The main changes from the original Dopamine implementation are:
-    - The original Dopamine replay buffer stored the raw observations and stacked
-      them upon sampling. Although space efficient, this is time inefficient. We
-      use the same compression mechanism used by dqn_zoo to store only stacked
-      states in a space efficient manner.
-    - Similarly, n-step transitions were computed at sample time. We only store
-      n-step returns in the buffer by using an Accumulator (which is also used for
-      stacking).
-    - The above two points allow us to sample uniformly from the FIFO queue,
-      without needing to determine invalid ranges (as in the original replay
-      buffer). The computation of invalid ranges was inefficient, as it required
-      verifying each sampled index, and potentially resampling them if they fell
-      in an invalid range. This computation scales linearly with the batch size,
-      and is thus quite inefficient.
-    - The original Dopamine replay buffer maintained a static array and performed
-      modulo arithmetic when adding/sampling. This is unnecessarily complicated
-      and we can achieve the same result by maintaining a FIFO queue (using an
-      OrderedDict structure) containing only valid transitions.
-    """
 
     def __init__(
         self,
         sampling_distribution,
-        *,
         batch_size: int,
         max_capacity: int,
         stack_size: int = 4,
@@ -149,8 +91,8 @@ class ReplayBuffer:
         gamma: float = 0.99,
         checkpoint_duration: int = 4,
         compress: bool = True,
+        clipping: callable = None,
     ):
-        """Initializes the ReplayBuffer."""
         self.add_count = 0
         self._max_capacity = max_capacity
         self._compress = compress
@@ -158,18 +100,13 @@ class ReplayBuffer:
 
         self._sampling_distribution = sampling_distribution
 
-        if checkpoint_duration < 1:
-            raise ValueError(f"Invalid checkpoint_duration: {checkpoint_duration}")
-
         self._checkpoint_duration = checkpoint_duration
         self._batch_size = batch_size
-
-        assert update_horizon > 0, "update_horizon must be positive."
-        assert stack_size > 0, "stack_size must be positive."
 
         self._stack_size = stack_size
         self._update_horizon = update_horizon
         self._gamma = gamma
+        self._clipping = clipping
 
         self._trajectory = collections.deque[TransitionElement](maxlen=self._update_horizon + self._stack_size)
 
@@ -260,13 +197,9 @@ class ReplayBuffer:
 
         If the transition is terminal the iterator will yield multiple elements
         corresponding to n-step returns with n ∊ [1, n].
-
-        Args:
-          transition: TransitionElement to add.
-
-        Yields:
-          A ReplayElement if there is a valid transition.
         """
+        if self._clipping is not None:
+            transition.reward = self._clipping(transition.reward)
         self._trajectory.append(transition)
 
         # If this transition terminated a trajectory we'll yield
@@ -287,24 +220,18 @@ class ReplayBuffer:
                 self._trajectory.clear()
 
     def clear(self) -> None:
-        """Clear the accumulator."""
         self._trajectory.clear()
 
     def add(self, transition: TransitionElement, **kwargs: Any) -> None:
-        """Add a transition to the replay buffer."""
         for replay_element in self.accumulate(transition):
             if self._compress:
                 replay_element = replay_element.pack()
 
-            # Add replay element to memory
             key = ReplayItemID(self.add_count)
             self._memory[key] = replay_element
             self._sampling_distribution.add(key, **kwargs)
             self.add_count += 1
-            # If we're beyond our capacity...
             if self.add_count > self._max_capacity:
-                # Pop the oldest item from memory and keep the key
-                # so we can ask the sampling distribution to remove it
                 oldest_key, _ = self._memory.popitem(last=False)
                 self._sampling_distribution.remove(oldest_key)
 
@@ -325,10 +252,6 @@ class ReplayBuffer:
         samples = self._sampling_distribution.sample(size)
         replay_elements = operator.itemgetter(*samples.keys)(self._memory)
         if not isinstance(replay_elements, tuple):
-            # When size == 1, replay_elements will hold a single ReplayElement, as
-            # opposed to a tuple of ReplayElements (which is what is expected in the
-            # call to tree_map below). We fix this by forcing replay_elements into a
-            # tuple, if necessary.
             replay_elements = (replay_elements,)
         if self._compress:
             replay_elements = map(operator.methodcaller("unpack"), replay_elements)
