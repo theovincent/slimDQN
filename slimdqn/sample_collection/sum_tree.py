@@ -20,12 +20,6 @@ class SumTree:
         self._nodes = np.zeros((2**self._depth) - 1, dtype=np.float64)
         self.max_recorded_priority = 1.0
 
-    @typing.overload
-    def set(self, index: int, value: float) -> None: ...
-
-    @typing.overload
-    def set(self, index: npt.NDArray[np.int_], value: npt.NDArray[np.float64]) -> None: ...
-
     def set(
         self,
         indices: "npt.NDArray[np.int_] | int",
@@ -55,12 +49,6 @@ class SumTree:
         assert (node_indices == 0).all(), f"Sum tree traversal failed with {node_indices}."
         np.add.at(self._nodes, node_indices, delta_values)
 
-    @typing.overload
-    def get(self, index: int) -> float: ...
-
-    @typing.overload
-    def get(self, index: npt.NDArray[np.int_]) -> npt.NDArray[np.float64]: ...
-
     def get(self, index: "npt.NDArray[np.int_] | int") -> "npt.NDArray[np.float64] | float":
         """Get the value at a  given leaf node index."""
         return self._nodes[self._first_leaf_offset + index]
@@ -69,12 +57,6 @@ class SumTree:
     def root(self) -> float:
         """The root value (total sum) of the sum tree."""
         return self._nodes[0]
-
-    @typing.overload
-    def query(self, target: float) -> int: ...
-
-    @typing.overload
-    def query(self, target: npt.NDArray[np.float64]) -> npt.NDArray[np.int_]: ...
 
     def query(self, targets: "npt.NDArray[np.float64] | float") -> "npt.NDArray[np.int_] | int":
         """Find the smallest index where target < cumulative value up to index.

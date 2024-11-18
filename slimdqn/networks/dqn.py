@@ -7,7 +7,6 @@ import optax
 from flax.core import FrozenDict
 
 from slimdqn.networks.architectures.dqn import DQNNet
-from slimdqn.sample_collection import IDX_RB
 from slimdqn.sample_collection.replay_buffer import ReplayBuffer, ReplayElement
 
 

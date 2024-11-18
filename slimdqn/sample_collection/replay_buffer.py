@@ -1,14 +1,9 @@
 # thanks dopamine
 """Simpler implementation of the standard DQN replay memory."""
 import collections
-import functools
 import operator
-import pickle
 import typing
-from typing import Any, Generic, Literal, TypeVar, Iterable, NewType, Optional
-
-from slimdqn.sample_collection import samplers
-from slimdqn.sample_collection.samplers import ReplayItemID
+from typing import Any, Iterable, Optional
 
 import jax
 import numpy as np
@@ -17,9 +12,10 @@ import numpy.typing as npt
 # from orbax import checkpoint as orbax
 
 from flax import struct
-import numpy as np
-import numpy.typing as npt
 import snappy
+
+from slimdqn.sample_collection import ReplayItemID
+from slimdqn.sample_collection import samplers
 
 
 class TransitionElement(typing.NamedTuple):
@@ -30,53 +26,50 @@ class TransitionElement(typing.NamedTuple):
     episode_end: bool = False
 
 
-def compress(buffer: npt.NDArray) -> npt.NDArray:
-    if not buffer.flags["C_CONTIGUOUS"]:
-        buffer = buffer.copy(order="C")
-    compressed = np.frombuffer(snappy.compress(buffer), dtype=np.uint8)
-
-    return np.array(
-        (compressed, buffer.shape, buffer.dtype.str),
-        dtype=[
-            ("data", "u1", compressed.shape),
-            ("shape", "i4", (len(buffer.shape),)),
-            ("dtype", f"S{len(buffer.dtype.str)}"),
-        ],
-    )
-
-
-def uncompress(compressed: npt.NDArray) -> npt.NDArray:
-    shape = tuple(compressed["shape"])
-    dtype = compressed["dtype"].item()
-    compressed_bytes = compressed["data"].tobytes()
-    uncompressed = snappy.uncompress(compressed_bytes)
-    return np.ndarray(shape=shape, dtype=dtype, buffer=uncompressed)
-
-
 class ReplayElement(struct.PyTreeNode):
     """A single replay transition element supporting compression."""
 
     state: npt.NDArray[np.float64]
-    action: "npt.NDArray[np.int_] | npt.NDArray[np.float64] | int"
-    reward: "npt.NDArray[np.float64] | float"
+    action: int
+    reward: float
     next_state: npt.NDArray[np.float64]
-    is_terminal: "npt.NDArray[np.bool_] | bool"
-    episode_end: "npt.NDArray[np.bool_] | bool"
+    is_terminal: bool
+    episode_end: bool
+
+    @staticmethod
+    def compress(buffer: npt.NDArray) -> npt.NDArray:
+        if not buffer.flags["C_CONTIGUOUS"]:
+            buffer = buffer.copy(order="C")
+        compressed = np.frombuffer(snappy.compress(buffer), dtype=np.uint8)
+
+        return np.array(
+            (compressed, buffer.shape, buffer.dtype.str),
+            dtype=[
+                ("data", "u1", compressed.shape),
+                ("shape", "i4", (len(buffer.shape),)),
+                ("dtype", f"S{len(buffer.dtype.str)}"),
+            ],
+        )
+
+    @staticmethod
+    def uncompress(compressed: npt.NDArray) -> npt.NDArray:
+        shape = tuple(compressed["shape"])
+        dtype = compressed["dtype"].item()
+        compressed_bytes = compressed["data"].tobytes()
+        uncompressed = snappy.uncompress(compressed_bytes)
+        return np.ndarray(shape=shape, dtype=dtype, buffer=uncompressed)
 
     def pack(self) -> "ReplayElement":
         return self.replace(
-            state=compress(self.state),
-            next_state=compress(self.next_state),
+            state=ReplayElement.compress(self.state),
+            next_state=ReplayElement.compress(self.next_state),
         )
 
     def unpack(self) -> "ReplayElement":
         return self.replace(
-            state=uncompress(self.state),
-            next_state=uncompress(self.next_state),
+            state=ReplayElement.uncompress(self.state),
+            next_state=ReplayElement.uncompress(self.next_state),
         )
-
-
-ReplayElementT = TypeVar("ReplayElementT", bound=ReplayElement)
 
 
 class ReplayBuffer:
@@ -96,7 +89,7 @@ class ReplayBuffer:
         self.add_count = 0
         self._max_capacity = max_capacity
         self._compress = compress
-        self._memory = collections.OrderedDict[ReplayItemID, ReplayElementT]()
+        self._memory = collections.OrderedDict[ReplayItemID, ReplayElement]()
 
         self._sampling_distribution = sampling_distribution
 
@@ -110,7 +103,7 @@ class ReplayBuffer:
 
         self._trajectory = collections.deque[TransitionElement](maxlen=self._update_horizon + self._stack_size)
 
-    def _make_replay_element(self) -> "ReplayElementT | None":
+    def _make_replay_element(self) -> ReplayElement:
 
         trajectory_len = len(self._trajectory)
         last_transition = self._trajectory[-1]
@@ -193,34 +186,21 @@ class ReplayBuffer:
         """Add a transition to the accumulator, maybe receive valid ReplayElements.
 
         If the transition has a terminal or end of episode signal, it will create a
-        new trajectory.
-
-        If the transition is terminal the iterator will yield multiple elements
-        corresponding to n-step returns with n ∊ [1, n].
+        new trajectory and yield multiple elements.
         """
-        if self._clipping is not None:
-            transition.reward = self._clipping(transition.reward)
         self._trajectory.append(transition)
 
-        # If this transition terminated a trajectory we'll yield
-        # as many replay elements as we can before clearing the trajectory
         if transition.is_terminal:
             while replay_element := self._make_replay_element():
                 yield replay_element
                 self._trajectory.popleft()
             self._trajectory.clear()
         else:
-            # Attempt to yield a replay element
             if replay_element := self._make_replay_element():
                 yield replay_element
             # If the transition truncates the trajectory then clear it
-            # We don't yield n-1, n-2, ..., 1 step returns as
-            # this transition is not terminal.
             if transition.episode_end:
                 self._trajectory.clear()
-
-    def clear(self) -> None:
-        self._trajectory.clear()
 
     def add(self, transition: TransitionElement, **kwargs: Any) -> None:
         for replay_element in self.accumulate(transition):
@@ -235,33 +215,26 @@ class ReplayBuffer:
                 oldest_key, _ = self._memory.popitem(last=False)
                 self._sampling_distribution.remove(oldest_key)
 
-    def sample(
-        self,
-        size: "int | None" = None,
-        *,
-        with_sample_metadata: bool = False,
-    ) -> "ReplayElementT | tuple[ReplayElementT, samplers.SampleMetadata]":
+    def sample(self, size=None) -> ReplayElement | tuple[ReplayElement]:
         """Sample a batch of elements from the replay buffer."""
-        if self.add_count < 1:
-            raise ValueError("No samples in replay buffer!")
+        assert self.add_count, ValueError("No samples in replay buffer!")
+
         if size is None:
             size = self._batch_size
-        if size < 1:
-            raise ValueError(f"Invalid size: {size}, size must be >= 1.")
 
         samples = self._sampling_distribution.sample(size)
-        replay_elements = operator.itemgetter(*samples.keys)(self._memory)
+        replay_elements = operator.itemgetter(*samples)(self._memory)
         if not isinstance(replay_elements, tuple):
             replay_elements = (replay_elements,)
         if self._compress:
             replay_elements = map(operator.methodcaller("unpack"), replay_elements)
 
         batch = jax.tree_util.tree_map(lambda *xs: np.stack(xs), *replay_elements)
-        return (batch, samples) if with_sample_metadata else batch
+        return batch
 
     def update(
         self,
-        keys: "npt.NDArray[ReplayItemID] | ReplayItemID",
+        keys: npt.NDArray[ReplayItemID] | ReplayItemID,
         **kwargs: Any,
     ) -> None:
         self._sampling_distribution.update(keys, **kwargs)
