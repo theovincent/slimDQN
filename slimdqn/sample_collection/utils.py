@@ -26,7 +26,13 @@ def collect_single_sample(
 
     episode_end = absorbing or env.n_steps >= p["horizon"]
     rb.add(
-        TransitionElement(observation=obs, action=action, reward=reward, is_terminal=absorbing, episode_end=episode_end)
+        TransitionElement(
+            observation=obs,
+            action=action,
+            reward=reward if rb._clipping is None else rb._clipping(reward),
+            is_terminal=absorbing,
+            episode_end=episode_end,
+        )
     )
 
     if episode_end:
