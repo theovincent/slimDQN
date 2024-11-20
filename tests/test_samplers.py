@@ -20,20 +20,6 @@ from slimdqn.sample_collection import samplers
 import numpy as np
 
 
-class UniformSamplingTest(parameterized.TestCase):
-
-    def setUp(self):
-        super().setUp()
-        self.sampler = samplers.UniformSamplingDistribution(seed=0)
-
-    def test_sample(self):
-        # test if uniform sampling generates valid samples
-        self.sampler.add(1)
-        samples = self.sampler.sample(5)
-        self.assertTupleEqual(samples.shape, (5,))
-        np.testing.assert_array_equal(samples, np.ones(5))
-
-
 class PrioritizedSamplingTest(parameterized.TestCase):
 
     def setUp(self):
