@@ -1,3 +1,4 @@
+import time
 import jax
 import jax.numpy as jnp
 
@@ -25,6 +26,8 @@ def collect_single_sample(
     reward, absorbing = env.step(action)
 
     episode_end = absorbing or env.n_steps >= p["horizon"]
+
+    t1 = time.time()
     rb.add(
         TransitionElement(
             observation=obs,
@@ -34,8 +37,9 @@ def collect_single_sample(
             episode_end=episode_end,
         )
     )
+    t2 = time.time()
 
     if episode_end:
         env.reset()
 
-    return reward, episode_end
+    return reward, episode_end, t2 - t1

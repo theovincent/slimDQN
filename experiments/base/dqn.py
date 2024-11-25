@@ -1,3 +1,4 @@
+import time
 import jax
 import numpy as np
 import optax
@@ -25,14 +26,19 @@ def train(
     cumulated_loss = 0
 
     for idx_epoch in tqdm(range(p["n_epochs"])):
+        TIME_ADD, TIME_SAMPLE = 0, 0
+        ADD_OPS, SAMPLE_OPS = 0, 0
+        t1 = time.time()
         n_training_steps_epoch = 0
         has_reset = False
 
         while n_training_steps_epoch < p["n_training_steps_per_epoch"] or not has_reset:
             key, exploration_key = jax.random.split(key)
-            reward, has_reset = collect_single_sample(
+            reward, has_reset, curr_time_add = collect_single_sample(
                 exploration_key, env, agent, rb, p, epsilon_schedule, n_training_steps
             )
+            TIME_ADD += curr_time_add
+            ADD_OPS += 1
 
             n_training_steps_epoch += 1
             n_training_steps += 1
@@ -44,7 +50,10 @@ def train(
                 episode_lengths_per_epoch[idx_epoch].append(0)
 
             if n_training_steps > p["n_initial_samples"]:
-                cumulated_loss += agent.update_online_params(n_training_steps, rb)
+                loss, curr_sample_time = agent.update_online_params(n_training_steps, rb)
+                cumulated_loss += loss
+                TIME_SAMPLE += curr_sample_time
+                SAMPLE_OPS += curr_sample_time > 0
                 target_updated = agent.update_target_params(n_training_steps)
 
                 if target_updated:
@@ -69,3 +78,13 @@ def train(
             episode_lengths_per_epoch.append([0])
 
         save_data(p, episode_returns_per_epoch, episode_lengths_per_epoch, agent.get_model())
+        t2 = time.time()
+        print(f"Epoch {idx_epoch} took {t2 - t1:.5f} seconds.\n", flush=True)
+        print(
+            f"{ADD_OPS} add() took {TIME_ADD} s, average = {'NaN' if ADD_OPS == 0 else TIME_ADD/ADD_OPS} s\n",
+            flush=True,
+        )
+        print(
+            f"{SAMPLE_OPS} sample() took {TIME_SAMPLE} s, average = {'NaN' if SAMPLE_OPS == 0 else TIME_SAMPLE/SAMPLE_OPS} s\n",
+            flush=True,
+        )

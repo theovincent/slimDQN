@@ -1,6 +1,7 @@
 from functools import partial
 from typing import Dict
 
+import time
 import jax
 import jax.numpy as jnp
 import optax
@@ -42,14 +43,17 @@ class DQN:
 
     def update_online_params(self, step: int, replay_buffer: ReplayBuffer):
         if step % self.update_to_data == 0:
+
+            t1 = time.time()
             batch_samples = replay_buffer.sample()
+            t2 = time.time()
 
             self.params, self.optimizer_state, loss = self.learn_on_batch(
                 self.params, self.target_params, self.optimizer_state, batch_samples
             )
 
-            return loss
-        return 0
+            return loss, t2 - t1
+        return 0, 0
 
     def update_target_params(self, step: int):
         if step % self.target_update_frequency == 0:
