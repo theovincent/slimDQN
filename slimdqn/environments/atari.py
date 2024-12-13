@@ -18,7 +18,7 @@ class AtariEnv:
         self.n_stacked_frames = 4
         self.n_skipped_frames = 4
 
-        gym.register_envs(ale_py)   # To use the C++ wrapper which speeds up step()
+        gym.register_envs(ale_py)  # To use the C++ wrapper which speeds up step()
         self.env = gym.make(
             f"ALE/{self.name}-v5",
             full_action_space=False,
