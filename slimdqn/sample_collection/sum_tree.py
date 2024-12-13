@@ -1,14 +1,28 @@
-# thanks dopamine
+# coding=utf-8
+# Copyright 2024 The Dopamine Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Sum Tree."""
 
 import typing
 from typing import Any
 
+from slimdqn.sample_collection import checkpointers
 import numpy as np
 import numpy.typing as npt
 
 
-class SumTree:
+class SumTree(checkpointers.Checkpointable):
     """A vectorized sum tree in numpy."""
 
     def __init__(self, capacity: int) -> None:
@@ -19,6 +33,12 @@ class SumTree:
         self._first_leaf_offset = (2 ** (self._depth - 1)) - 1
         self._nodes = np.zeros((2**self._depth) - 1, dtype=np.float64)
         self.max_recorded_priority = 1.0
+
+    @typing.overload
+    def set(self, index: int, value: float) -> None: ...
+
+    @typing.overload
+    def set(self, index: npt.NDArray[np.int_], value: npt.NDArray[np.float64]) -> None: ...
 
     def set(
         self,
@@ -49,6 +69,12 @@ class SumTree:
         assert (node_indices == 0).all(), f"Sum tree traversal failed with {node_indices}."
         np.add.at(self._nodes, node_indices, delta_values)
 
+    @typing.overload
+    def get(self, index: int) -> float: ...
+
+    @typing.overload
+    def get(self, index: npt.NDArray[np.int_]) -> npt.NDArray[np.float64]: ...
+
     def get(self, index: "npt.NDArray[np.int_] | int") -> "npt.NDArray[np.float64] | float":
         """Get the value at a  given leaf node index."""
         return self._nodes[self._first_leaf_offset + index]
@@ -57,6 +83,12 @@ class SumTree:
     def root(self) -> float:
         """The root value (total sum) of the sum tree."""
         return self._nodes[0]
+
+    @typing.overload
+    def query(self, target: float) -> int: ...
+
+    @typing.overload
+    def query(self, target: npt.NDArray[np.float64]) -> npt.NDArray[np.int_]: ...
 
     def query(self, targets: "npt.NDArray[np.float64] | float") -> "npt.NDArray[np.int_] | int":
         """Find the smallest index where target < cumulative value up to index.
@@ -107,9 +139,9 @@ class SumTree:
     def clear(self) -> None:
         self._nodes.fill(0.0)
 
-    # def to_state_dict(self) -> dict[str, Any]:
-    #     return {"nodes": self._nodes}
+    def to_state_dict(self) -> dict[str, Any]:
+        return {"nodes": self._nodes}
 
-    # def from_state_dict(self, state_dict: dict[str, Any]):
-    #     assert self._nodes.shape == state_dict["nodes"].shape
-    #     self._nodes = state_dict["nodes"]
+    def from_state_dict(self, state_dict: dict[str, Any]):
+        assert self._nodes.shape == state_dict["nodes"].shape
+        self._nodes = state_dict["nodes"]

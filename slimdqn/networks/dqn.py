@@ -8,7 +8,8 @@ import optax
 from flax.core import FrozenDict
 
 from slimdqn.networks.architectures.dqn import DQNNet
-from slimdqn.sample_collection.replay_buffer import ReplayBuffer, ReplayElement
+from slimdqn.sample_collection.replay_buffer import ReplayBuffer
+from slimdqn.sample_collection.elements import ReplayElement
 
 
 class DQN:
@@ -44,25 +45,33 @@ class DQN:
     def update_online_params(self, step: int, replay_buffer: ReplayBuffer):
         if step % self.update_to_data == 0:
 
-            t1 = time.time()
+            t_s = time.time()
             batch_samples = replay_buffer.sample()
-            t2 = time.time()
+            time_sample = time.time() - t_s
 
+            t_s = time.time()
             self.params, self.optimizer_state, loss = self.learn_on_batch(
                 self.params, self.target_params, self.optimizer_state, batch_samples
             )
+            time_grad = time.time() - t_s
 
-            return loss, t2 - t1
-        return 0, 0
+            return loss, time_sample, time_grad
+        return 0, 0, 0
 
     def update_target_params(self, step: int):
         if step % self.target_update_frequency == 0:
-            self.target_params = self.params.copy()
+            self.target_params = self.params
             return True
         return False
 
     @partial(jax.jit, static_argnames="self")
-    def learn_on_batch(self, params: FrozenDict, params_target: FrozenDict, optimizer_state, batch_samples):
+    def learn_on_batch(
+        self,
+        params: FrozenDict,
+        params_target: FrozenDict,
+        optimizer_state,
+        batch_samples,
+    ):
         loss, grad_loss = jax.value_and_grad(self.loss_on_batch)(params, params_target, batch_samples)
         updates, optimizer_state = self.optimizer.update(grad_loss, optimizer_state)
         params = optax.apply_updates(params, updates)
@@ -87,7 +96,7 @@ class DQN:
     @partial(jax.jit, static_argnames="self")
     def best_action(self, params: FrozenDict, state: jnp.ndarray):
         # computes the best action for a single state
-        return jnp.argmax(self.q_network.apply(params, state)).astype(jnp.int8)
+        return jnp.argmax(self.q_network.apply(params, state))
 
     def get_model(self) -> Dict:
         return {"params": self.params}

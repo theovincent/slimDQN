@@ -2,7 +2,9 @@
 The environment is inspired from https://github.com/google/dopamine/blob/master/dopamine/discrete_domains/atari_lib.py
 """
 
-from typing import Tuple, Dict
+import ale_py
+from typing import Tuple
+from functools import partial
 import gymnasium as gym
 import numpy as np
 import jax.numpy as jnp
@@ -16,13 +18,14 @@ class AtariEnv:
         self.n_stacked_frames = 4
         self.n_skipped_frames = 4
 
+        gym.register_envs(ale_py)   # To use the C++ wrapper which speeds up step()
         self.env = gym.make(
             f"ALE/{self.name}-v5",
             full_action_space=False,
             frameskip=1,
             repeat_action_probability=0.25,
             render_mode="rgb_array",
-        ).env
+        ).env.env
 
         self.n_actions = self.env.action_space.n
         self.original_state_height, self.original_state_width, _ = self.env.observation_space._shape
@@ -50,7 +53,7 @@ class AtariEnv:
         self.state_ = np.zeros((self.state_height, self.state_width, self.n_stacked_frames), dtype=np.uint8)
         self.state_[:, :, -1] = self.resize()
 
-    def step(self, action: jnp.int8) -> Tuple[float, bool, Dict]:
+    def step(self, action: jnp.int8) -> Tuple[float, bool]:
         reward = 0
 
         for idx_frame in range(self.n_skipped_frames):
