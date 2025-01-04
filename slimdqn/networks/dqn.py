@@ -58,6 +58,7 @@ class DQN:
             self.params, self.optimizer_state, loss = self.learn_on_batch(
                 self.params, self.target_params, self.optimizer_state, batch_samples
             )
+            jax.block_until_ready(loss)
             time_grad = time.time() - t_s
 
             return loss, time_sample, time_grad
