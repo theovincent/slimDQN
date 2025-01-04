@@ -30,15 +30,7 @@ def select_action(
     )
 
 
-def collect_single_sample(
-    key,
-    env,
-    agent,
-    rb: ReplayBuffer,
-    p,
-    n_training_steps: int,
-    epsilon_schedule
-):
+def collect_single_sample(key, env, agent, rb: ReplayBuffer, p, n_training_steps: int, epsilon_schedule):
 
     t1 = time.time()
     action = select_action(
@@ -59,19 +51,13 @@ def collect_single_sample(
     # else:
     #     action = agent.best_action(agent.params, env.state).item()
 
-    obs = env.observation.squeeze()
+    obs = env.observation
 
     t_s = time.time()
     reward, absorbing = env.step(action)
     time_step = time.time() - t_s
 
     episode_end = absorbing or env.n_steps >= p["horizon"]
-    
-    if episode_end:
-        agent.state.fill(0)
-    else:
-        agent.state = np.roll(agent.state, -1, axis=-1)
-        agent.state[..., -1] = env.observation.squeeze()
 
     t_s = time.time()
     rb.add(
