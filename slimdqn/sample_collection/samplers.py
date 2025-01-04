@@ -22,7 +22,6 @@ from absl import logging
 from slimdqn.sample_collection import checkpointers
 from slimdqn.sample_collection import elements
 from slimdqn.sample_collection import sum_tree
-import gin
 import numpy as np
 import numpy.typing as npt
 
@@ -168,7 +167,6 @@ class PrioritizedSampleMetadata(SampleMetadata):
     probabilities: npt.NDArray[np.float64]
 
 
-@gin.configurable
 class PrioritizedSamplingDistribution(UniformSamplingDistribution):
     """A prioritized sampling distribution."""
 

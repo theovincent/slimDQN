@@ -24,7 +24,6 @@ from slimdqn.sample_collection import checkpointers
 from slimdqn.sample_collection import accumulator
 from slimdqn.sample_collection import elements
 from slimdqn.sample_collection import samplers
-import gin
 import jax
 import numpy as np
 import numpy.typing as npt
@@ -34,7 +33,6 @@ ReplayItemID = elements.ReplayItemID
 ReplayElementT = TypeVar("ReplayElementT", bound=elements.ReplayElementProtocol)
 
 
-@gin.configurable
 class ReplayBuffer(checkpointers.Checkpointable, Generic[ReplayElementT]):
     """A Jax re-implementation of the Dopamine Replay Buffer.
 

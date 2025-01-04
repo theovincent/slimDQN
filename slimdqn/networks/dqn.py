@@ -4,10 +4,11 @@ from typing import Dict
 import time
 import jax
 import jax.numpy as jnp
+import numpy as np
 import optax
 from flax.core import FrozenDict
 
-from slimdqn.networks.architectures.dqn import DQNNet
+from slimdqn.networks.architectures.dqn import DQNNet, DQNNetNature
 from slimdqn.sample_collection.replay_buffer import ReplayBuffer
 from slimdqn.sample_collection.elements import ReplayElement
 
@@ -29,12 +30,16 @@ class DQN:
         adam_eps: float = 1e-8,
     ):
         self.q_key = q_key
-        self.q_network = DQNNet(features, cnn, n_actions)
+        # self.q_network = DQNNet(features, cnn, n_actions)
+        self.q_network = DQNNetNature(n_actions=n_actions)
         self.params = self.q_network.init(self.q_key, jnp.zeros(observation_dim, dtype=jnp.float32))
-        self.target_params = self.params.copy()
+        
+        self.state = np.zeros(observation_dim)
+        # self.target_params = self.params.copy()
 
         self.optimizer = optax.adam(learning_rate, eps=adam_eps)
         self.optimizer_state = self.optimizer.init(self.params)
+        self.target_params = self.params
 
         self.gamma = gamma
         self.update_horizon = update_horizon

@@ -17,6 +17,9 @@ def train(
     env,
     rb: ReplayBuffer,
 ):
+    
+    epsilon_schedule = optax.linear_schedule(1.0, p["epsilon_end"], p["epsilon_duration"])
+    
     n_training_steps = 0
     env.reset()
     episode_returns_per_epoch = [[0]]
@@ -45,7 +48,7 @@ def train(
                 curr_time_add,
                 curr_time_step,
                 curr_time_action_selection,
-            ) = collect_single_sample(exploration_key, env, agent, rb, p, n_training_steps)
+            ) = collect_single_sample(exploration_key, env, agent, rb, p, n_training_steps, epsilon_schedule)
             TIME_ADD += curr_time_add
             ADD_OPS += 1
 
