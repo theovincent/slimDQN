@@ -8,9 +8,8 @@ from experiments.base.dqn import train
 from experiments.base.utils import prepare_logs
 from slimdqn.environments.atari import AtariEnv
 from slimdqn.networks.dqn import DQN
-from slimdqn.sample_collection import accumulator
-from slimdqn.sample_collection import replay_buffer
-from slimdqn.sample_collection import samplers
+from slimdqn.sample_collection.replay_buffer import ReplayBuffer
+from slimdqn.sample_collection.samplers import UniformSamplingDistribution
 
 
 def run(argvs=sys.argv[1:]):
@@ -20,18 +19,28 @@ def run(argvs=sys.argv[1:]):
     q_key, train_key = jax.random.split(jax.random.PRNGKey(p["seed"]))
 
     env = AtariEnv(p["experiment_name"].split("_")[-1])
-    transition_accumulator = accumulator.TransitionAccumulator(
-        stack_size=4,
+    # transition_accumulator = accumulator.TransitionAccumulator(
+    #     stack_size=4,
+    #     update_horizon=p["update_horizon"],
+    #     gamma=p["gamma"],
+    # )
+    # sampling_distribution = samplers.UniformSamplingDistribution(seed=p["seed"])
+    # rb = replay_buffer.ReplayBuffer(
+    #     transition_accumulator=transition_accumulator,
+    #     sampling_distribution=sampling_distribution,
+    #     batch_size=p["batch_size"],
+    #     max_capacity=p["replay_buffer_capacity"],
+    #     clipping=lambda x: np.clip(x, -1, 1),
+    # )
+    rb = ReplayBuffer(
+        sampling_distribution=UniformSamplingDistribution(p["seed"]),
+        max_capacity=p["replay_buffer_capacity"],
+        batch_size=p["batch_size"],
         update_horizon=p["update_horizon"],
         gamma=p["gamma"],
-    )
-    sampling_distribution = samplers.UniformSamplingDistribution(seed=p["seed"])
-    rb = replay_buffer.ReplayBuffer(
-        transition_accumulator=transition_accumulator,
-        sampling_distribution=sampling_distribution,
-        batch_size=p["batch_size"],
-        max_capacity=p["replay_buffer_capacity"],
         clipping=lambda x: np.clip(x, -1, 1),
+        stack_size=4,
+        compress=True,
     )
     # rb = ReplayBuffer(
     #     transition_accumulator=Acc,

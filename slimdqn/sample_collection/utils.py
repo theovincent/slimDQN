@@ -5,8 +5,7 @@ import jax.numpy as jnp
 import numpy as np
 from functools import partial
 
-from slimdqn.sample_collection.replay_buffer import ReplayBuffer
-from slimdqn.sample_collection.elements import TransitionElement
+from slimdqn.sample_collection.replay_buffer import ReplayBuffer, TransitionElement
 
 
 @partial(jax.jit, static_argnums=(0, 4, 6))

@@ -10,7 +10,7 @@ from flax.core import FrozenDict
 
 from slimdqn.networks.architectures.dqn import DQNNet, DQNNetNature
 from slimdqn.sample_collection.replay_buffer import ReplayBuffer
-from slimdqn.sample_collection.elements import ReplayElement
+from slimdqn.sample_collection.replay_buffer import ReplayElement
 
 
 class DQN:
@@ -33,7 +33,7 @@ class DQN:
         # self.q_network = DQNNet(features, cnn, n_actions)
         self.q_network = DQNNetNature(n_actions=n_actions)
         self.params = self.q_network.init(self.q_key, jnp.zeros(observation_dim, dtype=jnp.float32))
-        
+
         self.state = np.zeros(observation_dim)
         # self.target_params = self.params.copy()
 
