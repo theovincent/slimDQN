@@ -2,63 +2,38 @@ from functools import partial
 import time
 import jax
 import jax.numpy as jnp
-import numpy as np
 from functools import partial
 
 from slimdqn.sample_collection.replay_buffer import ReplayBuffer, TransitionElement
 
 
-@partial(jax.jit, static_argnums=(0, 4, 6))
-def select_action(
-    network_def,
-    params,
-    state,
-    rng,
-    n_actions,
-    n_training_steps,
-    epsilon_fn,
-):
-    epsilon = epsilon_fn(n_training_steps)
-
-    rng1, rng2 = jax.random.split(rng, num=2)
-    p = jax.random.uniform(rng1)
+@partial(jax.jit, static_argnames=("q", "n_actions", "epsilon_fn"))
+def select_action(q, params, state, key, n_actions, epsilon_fn, n_training_steps):
+    uniform_key, action_key = jax.random.split(key)
     return jnp.where(
-        p <= epsilon,
-        jax.random.randint(rng2, (), 0, n_actions),
-        jnp.argmax(network_def.apply(params, state)),
+        jax.random.uniform(uniform_key) <= epsilon_fn(n_training_steps),  # if uniform < epsilon,
+        jax.random.randint(action_key, (), 0, n_actions),  # take random action
+        jnp.argmax(q.apply(params, state)),  # otherwise, take a greedy action
     )
 
 
-def collect_single_sample(key, env, agent, rb: ReplayBuffer, p, n_training_steps: int, epsilon_schedule):
-
-    t1 = time.time()
+def collect_single_sample(key, env, agent, rb: ReplayBuffer, p, epsilon_schedule, n_training_steps: int):
+    time_being_action_selection = time.time()
     action = select_action(
-        network_def=agent.q_network,
-        params=agent.params,
-        state=agent.state,
-        rng=key,
-        n_actions=env.n_actions,
-        n_training_steps=n_training_steps,
-        epsilon_fn=epsilon_schedule,
+        agent.q_network, agent.params, agent.state, key, env.n_actions, epsilon_schedule, n_training_steps
     )
-    time_action_selection = time.time() - t1
-    # print(action)
-
-    # if jax.random.uniform(epsilon_key) < epsilon_schedule(n_training_steps):
-    #     key, sample_key = jax.random.split(key)
-    #     action = jax.random.choice(sample_key, jnp.arange(env.n_actions)).item()
-    # else:
-    #     action = agent.best_action(agent.params, env.state).item()
+    jax.block_until_ready(action)
+    time_action_selection = time.time() - time_being_action_selection
 
     obs = env.observation
 
-    t_s = time.time()
+    time_begin_step = time.time()
     reward, absorbing = env.step(action)
-    time_step = time.time() - t_s
+    time_step = time.time() - time_begin_step
 
     episode_end = absorbing or env.n_steps >= p["horizon"]
 
-    t_s = time.time()
+    time_begin_add = time.time()
     rb.add(
         TransitionElement(
             observation=obs,
@@ -68,9 +43,9 @@ def collect_single_sample(key, env, agent, rb: ReplayBuffer, p, n_training_steps
             episode_end=episode_end,
         )
     )
-    time_add = time.time() - t_s
+    time_add = time.time() - time_begin_add
 
     if episode_end:
         env.reset()
 
-    return reward, episode_end, time_add, time_step, time_action_selection
+    return reward, episode_end, time_action_selection, time_step, time_add

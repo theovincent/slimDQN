@@ -27,16 +27,15 @@ def train(
     cumulated_loss = 0
 
     for idx_epoch in tqdm(range(p["n_epochs"])):
-        TIME_ADD, TIME_SAMPLE, TIME_GRAD, TIME_STEP, TIME_ACTION_SELECTION = (
+        TIME_ACTION_SELECTION, TIME_STEP, TIME_ADD, TIME_SAMPLE, TIME_GRAD = (
             0,
             0,
             0,
             0,
             0,
         )
-        ADD_OPS, SAMPLE_OPS, GRAD_OPS, STEP_OPS, ACTION_SELECTION_OPS = 0, 0, 0, 0, 0
 
-        t1 = time.time()
+        time_begin_epoch = time.time()
         n_training_steps_epoch = 0
         has_reset = False
 
@@ -45,18 +44,14 @@ def train(
             (
                 reward,
                 has_reset,
-                curr_time_add,
-                curr_time_step,
-                curr_time_action_selection,
-            ) = collect_single_sample(exploration_key, env, agent, rb, p, n_training_steps, epsilon_schedule)
-            TIME_ADD += curr_time_add
-            ADD_OPS += 1
+                time_action_selection,
+                time_step,
+                time_add,
+            ) = collect_single_sample(exploration_key, env, agent, rb, p, epsilon_schedule, n_training_steps)
 
-            TIME_STEP += curr_time_step
-            STEP_OPS += 1
-
-            TIME_ACTION_SELECTION += curr_time_action_selection
-            ACTION_SELECTION_OPS += 1
+            TIME_ACTION_SELECTION += time_action_selection
+            TIME_STEP += time_step
+            TIME_ADD += time_add
 
             n_training_steps_epoch += 1
             n_training_steps += 1
@@ -68,12 +63,12 @@ def train(
                 episode_lengths_per_epoch[idx_epoch].append(0)
 
             if n_training_steps > p["n_initial_samples"]:
-                loss, curr_sample_time, curr_grad_time = agent.update_online_params(n_training_steps, rb)
+                loss, sample_time, grad_time = agent.update_online_params(n_training_steps, rb)
                 cumulated_loss += loss
-                TIME_SAMPLE += curr_sample_time
-                SAMPLE_OPS += curr_sample_time > 0
-                TIME_GRAD += curr_grad_time
-                GRAD_OPS += curr_grad_time > 0
+
+                TIME_SAMPLE += sample_time
+                TIME_GRAD += grad_time
+
                 target_updated = agent.update_target_params(n_training_steps)
 
                 if target_updated:
@@ -83,10 +78,7 @@ def train(
         avg_return = np.mean(episode_returns_per_epoch[idx_epoch])
         avg_length_episode = np.mean(episode_lengths_per_epoch[idx_epoch])
         n_episodes = len(episode_lengths_per_epoch[idx_epoch])
-        print(
-            f"\nEpoch {idx_epoch}: Return {avg_return} averaged on {n_episodes} episodes.\n",
-            flush=True,
-        )
+        print(f"\nEpoch {idx_epoch}: Return {avg_return} averaged on {n_episodes} episodes.\n", flush=True)
         p["wandb"].log(
             {
                 "epoch": idx_epoch,
@@ -100,28 +92,17 @@ def train(
             episode_returns_per_epoch.append([0])
             episode_lengths_per_epoch.append([0])
 
-        time_delta = time.time() - t1
+        TIME_EPOCH = time.time() - time_begin_epoch
 
         save_data(p, episode_returns_per_epoch, episode_lengths_per_epoch, agent.get_model())
 
-        print(f"Total time for the epoch: {time_delta} s\n", flush=True)
         print(
-            f"{ADD_OPS} add() took {TIME_ADD} s, average = {'NaN' if ADD_OPS == 0 else TIME_ADD/ADD_OPS} s\n",
-            flush=True,
-        )
-        print(
-            f"{SAMPLE_OPS} sample() took {TIME_SAMPLE} s, average = {'NaN' if SAMPLE_OPS == 0 else TIME_SAMPLE/SAMPLE_OPS} s\n",
-            flush=True,
-        )
-        print(
-            f"{STEP_OPS} step() took {TIME_STEP} s, average = {'NaN' if STEP_OPS == 0 else TIME_STEP/STEP_OPS} s\n",
-            flush=True,
-        )
-        print(
-            f"{GRAD_OPS} grad() took {TIME_GRAD} s, average = {'NaN' if GRAD_OPS == 0 else TIME_GRAD/GRAD_OPS} s\n",
-            flush=True,
-        )
-        print(
-            f"{ACTION_SELECTION_OPS} select_action() took {TIME_ACTION_SELECTION} s, average = {'NaN' if ACTION_SELECTION_OPS == 0 else TIME_ACTION_SELECTION/ACTION_SELECTION_OPS} s\n",
+            f"Total time for the epoch: {TIME_EPOCH} s\n",
+            f"add() took {TIME_ADD} s\n",
+            f"sample() took {TIME_SAMPLE} s\n",
+            f"step() took {TIME_STEP} s\n",
+            f"grad() took {TIME_GRAD} s\n",
+            f"select_action() took {TIME_ACTION_SELECTION} s\n",
+            f"remaining operations took {TIME_EPOCH - TIME_ACTION_SELECTION - TIME_STEP - TIME_ADD - TIME_SAMPLE - TIME_GRAD}\n",
             flush=True,
         )

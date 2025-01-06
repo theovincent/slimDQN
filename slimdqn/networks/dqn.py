@@ -50,16 +50,17 @@ class DQN:
     def update_online_params(self, step: int, replay_buffer: ReplayBuffer):
         if step % self.update_to_data == 0:
 
-            t_s = time.time()
+            time_start_sample = time.time()
             batch_samples = replay_buffer.sample()
-            time_sample = time.time() - t_s
+            jax.block_until_ready(batch_samples)
+            time_sample = time.time() - time_start_sample
 
-            t_s = time.time()
+            time_start_grad = time.time()
             self.params, self.optimizer_state, loss = self.learn_on_batch(
                 self.params, self.target_params, self.optimizer_state, batch_samples
             )
             jax.block_until_ready(loss)
-            time_grad = time.time() - t_s
+            time_grad = time.time() - time_start_grad
 
             return loss, time_sample, time_grad
         return 0, 0, 0
