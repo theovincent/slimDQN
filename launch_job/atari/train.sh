@@ -8,6 +8,7 @@ LAST_SEED=$((N_PARALLEL_SEEDS * SLURM_ARRAY_TASK_ID))
 if [[ $GPU = true ]]
 then
     source env_gpu/bin/activate
+    export XLA_PYTHON_CLIENT_MEM_FRACTION=$(echo "scale=2 ; 1 / ($LAST_SEED - $FIRST_SEED + 1)" | bc)
 else
     source env_cpu/bin/activate
 fi

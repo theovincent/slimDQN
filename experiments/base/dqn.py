@@ -22,7 +22,6 @@ def train(
     env.reset()
     episode_returns_per_epoch = [[0]]
     episode_lengths_per_epoch = [[0]]
-    cumulated_loss = 0
 
     for idx_epoch in tqdm(range(p["n_epochs"])):
         n_training_steps_epoch = 0
@@ -44,12 +43,11 @@ def train(
                 episode_lengths_per_epoch[idx_epoch].append(0)
 
             if n_training_steps > p["n_initial_samples"]:
-                cumulated_loss += agent.update_online_params(n_training_steps, rb)
-                target_updated = agent.update_target_params(n_training_steps)
+                agent.update_online_params(n_training_steps, rb)
+                target_updated, logs = agent.update_target_params(n_training_steps)
 
                 if target_updated:
-                    p["wandb"].log({"n_training_steps": n_training_steps, "loss": cumulated_loss})
-                    cumulated_loss = 0
+                    p["wandb"].log({"n_training_steps": n_training_steps, **logs})
 
         avg_return = np.mean(episode_returns_per_epoch[idx_epoch])
         avg_length_episode = np.mean(episode_lengths_per_epoch[idx_epoch])
@@ -68,4 +66,4 @@ def train(
             episode_returns_per_epoch.append([0])
             episode_lengths_per_epoch.append([0])
 
-        save_data(p, episode_returns_per_epoch, episode_lengths_per_epoch, agent.get_model())
+        save_data(p, episode_returns_per_epoch, episode_lengths_per_epoch, agent.params)
