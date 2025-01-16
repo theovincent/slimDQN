@@ -6,17 +6,16 @@ import time
 from typing import List
 import wandb
 
-from experiments import DISPLAY_NAME
 from experiments.base import parser_argument
 
 
 def prepare_logs(env_name: str, algo_name: str, argvs: List[str]):
     print(
-        f"---- Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]} {time.strftime('%d-%m-%Y %H:%M:%S')} ----",
+        f"---- Train {algo_name} on {env_name} {time.strftime('%d-%m-%Y %H:%M:%S')} ----",
         flush=True,
     )
 
-    parser = argparse.ArgumentParser(f"Train {DISPLAY_NAME[algo_name]} on {DISPLAY_NAME[env_name]}.")
+    parser = argparse.ArgumentParser(f"Train {algo_name} on {env_name}.")
     shared_params = parser_argument.__dict__["add_base_arguments"](parser)
     agent_params = parser_argument.__dict__[f"add_{algo_name}_arguments"](parser)
     p = vars(parser.parse_args(argvs))
