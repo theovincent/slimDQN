@@ -13,7 +13,7 @@ from slimdqn.sample_collection.replay_buffer import ReplayBuffer
 class DQN:
     def __init__(
         self,
-        q_key: jax.random.PRNGKey,
+        key: jax.random.PRNGKey,
         observation_dim,
         n_actions,
         features: list,
@@ -25,9 +25,8 @@ class DQN:
         target_update_frequency: int,
         adam_eps: float = 1e-8,
     ):
-        self.q_key = q_key
         self.network = DQNNet(features, cnn, n_actions)
-        self.params = self.network.init(self.q_key, jnp.zeros(observation_dim, dtype=jnp.float32))
+        self.params = self.network.init(key, jnp.zeros(observation_dim, dtype=jnp.float32))
         self.target_params = self.params.copy()
 
         self.optimizer = optax.adam(learning_rate, eps=adam_eps)
