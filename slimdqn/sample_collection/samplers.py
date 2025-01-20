@@ -18,7 +18,8 @@ class UniformSamplingDistribution:
     """A uniform sampling distribution."""
 
     def __init__(self, seed: int) -> None:
-        self._rng_key = jax.random.PRNGKey(seed=seed)
+        # self._rng_key = jax.random.PRNGKey(seed=seed)
+        self._rng_key = np.random.default_rng(seed)
 
         self._key_to_index = {}
         self._index_to_key = []
@@ -44,8 +45,11 @@ class UniformSamplingDistribution:
 
         assert self._index_to_key, ValueError("No keys to sample from.")
 
-        sample_key, self._rng_key = jax.random.split(self._rng_key)
-        indices = jax.random.randint(key=sample_key, shape=(size,), minval=0, maxval=len(self._index_to_key))
+        # sample_key, self._rng_key = jax.random.split(self._rng_key)
+        # indices = jax.random.randint(key=sample_key, shape=(size,), minval=0, maxval=len(self._index_to_key))
+        
+        indices = self._rng_key.integers(len(self._index_to_key), size=size)
+        
         return np.fromiter(
             (self._index_to_key[index] for index in indices),
             dtype=np.int32,
