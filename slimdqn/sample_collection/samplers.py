@@ -45,11 +45,8 @@ class UniformSamplingDistribution:
 
         assert self._index_to_key, ValueError("No keys to sample from.")
 
-        # sample_key, self._rng_key = jax.random.split(self._rng_key)
-        # indices = jax.random.randint(key=sample_key, shape=(size,), minval=0, maxval=len(self._index_to_key))
-        
         indices = self._rng_key.integers(len(self._index_to_key), size=size)
-        
+
         return np.fromiter(
             (self._index_to_key[index] for index in indices),
             dtype=np.int32,
@@ -59,20 +56,6 @@ class UniformSamplingDistribution:
     def clear(self) -> None:
         self._key_to_index.clear()
         self._index_to_key.clear()
-
-    # def to_state_dict(self) -> dict[str, Any]:
-    #     return {
-    #         "key_by_index": self._index_to_key,
-    #         "index_by_key": self._key_to_index,
-    #         "rng_state": self._rng.bit_generator.state,
-    #     }
-
-    # def from_state_dict(self, state_dict: dict[str, Any]) -> None:
-    #     self._index_to_key = state_dict["key_by_index"]
-    #     self._key_to_index = state_dict["index_by_key"]
-
-    #     # Restore rng state
-    #     self._rng.bit_generator.state = state_dict["rng_state"]
 
 
 class PrioritizedSamplingDistribution(UniformSamplingDistribution):
@@ -145,13 +128,3 @@ class PrioritizedSamplingDistribution(UniformSamplingDistribution):
     def clear(self) -> None:
         self._sum_tree.clear()
         super().clear()
-
-    # def to_state_dict(self) -> dict[str, Any]:
-    #     return {
-    #         "sum_tree": self._sum_tree.to_state_dict(),
-    #         **super().to_state_dict(),
-    #     }
-
-    # def from_state_dict(self, state_dict: dict[str, Any]):
-    #     super().from_state_dict(state_dict)
-    #     self._sum_tree.from_state_dict(state_dict["sum_tree"])
