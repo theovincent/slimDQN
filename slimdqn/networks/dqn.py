@@ -14,7 +14,7 @@ from slimdqn.sample_collection.replay_buffer import ReplayElement
 class DQN:
     def __init__(
         self,
-        q_key: jax.random.PRNGKey,
+        key: jax.random.PRNGKey,
         observation_dim,
         n_actions,
         features: list,
@@ -24,12 +24,10 @@ class DQN:
         update_horizon: int,
         update_to_data: int,
         target_update_frequency: int,
-        loss_type: str = "huber",
         adam_eps: float = 1e-8,
     ):
-        self.q_key = q_key
-        self.q_network = DQNNet(features, cnn, n_actions)
-        self.params = self.q_network.init(self.q_key, jnp.zeros(observation_dim, dtype=jnp.float32))
+        self.network = DQNNet(features, cnn, n_actions)
+        self.params = self.network.init(key, jnp.zeros(observation_dim, dtype=jnp.float32))
 
         self.state = np.zeros(observation_dim)
 
@@ -42,7 +40,6 @@ class DQN:
         self.update_to_data = update_to_data
         self.target_update_frequency = target_update_frequency
         self.cumulated_loss = 0
-        self.loss_type = loss_type
 
     def update_online_params(self, step: int, replay_buffer: ReplayBuffer):
         if step % self.update_to_data == 0:
@@ -83,16 +80,19 @@ class DQN:
     def loss(self, params: FrozenDict, params_target: FrozenDict, sample: ReplayElement):
         # computes the loss for a single sample
         target = self.compute_target(params_target, sample)
-        q_value = self.q_network.apply(params, sample.state)[sample.action]
+        q_value = self.network.apply(params, sample.state)[sample.action]
         return jnp.square(q_value - target)
 
     def compute_target(self, params: FrozenDict, sample: ReplayElement):
         # computes the target value for single sample
         return sample.reward + (1 - sample.is_terminal) * (self.gamma**self.update_horizon) * jnp.max(
-            self.q_network.apply(params, sample.next_state)
+            self.network.apply(params, sample.next_state)
         )
 
     @partial(jax.jit, static_argnames="self")
     def best_action(self, params: FrozenDict, state: jnp.ndarray):
         # computes the best action for a single state
-        return jnp.argmax(self.q_network.apply(params, state))
+        return jnp.argmax(self.network.apply(params, state))
+
+    def get_model(self):
+        return {"params": self.params}
