@@ -9,6 +9,7 @@ from experiments.base.utils import prepare_logs
 from slimdqn.environments.atari import AtariEnv
 from slimdqn.networks.dqn import DQN
 from slimdqn.sample_collection.replay_buffer import ReplayBuffer
+from slimdqn.sample_collection.samplers import UniformSamplingDistribution
 
 
 def run(argvs=sys.argv[1:]):
@@ -19,17 +20,14 @@ def run(argvs=sys.argv[1:]):
 
     env = AtariEnv(p["experiment_name"].split("_")[-1])
     rb = ReplayBuffer(
-        observation_shape=(env.state_height, env.state_width),
-        replay_capacity=p["replay_buffer_capacity"],
+        sampling_distribution=UniformSamplingDistribution(p["seed"]),
+        max_capacity=p["replay_buffer_capacity"],
         batch_size=p["batch_size"],
         update_horizon=p["update_horizon"],
         gamma=p["gamma"],
         clipping=lambda x: np.clip(x, -1, 1),
         stack_size=4,
-        observation_dtype=np.uint8,
-        terminal_dtype=np.uint8,
-        action_dtype=np.int32,
-        reward_dtype=np.float32,
+        compress=True,
     )
     agent = DQN(
         q_key,

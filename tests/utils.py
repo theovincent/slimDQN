@@ -3,6 +3,8 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
+from slimdqn.sample_collection.replay_buffer import ReplayElement
+
 
 class Generator:
     def __init__(self, batch_size: int, observation_dim: Tuple[int], n_actions: int) -> None:
@@ -15,21 +17,19 @@ class Generator:
         self,
         key: jax.random.PRNGKey,
     ) -> Tuple[jnp.ndarray]:
-        states = jax.random.uniform(key, self.observation_dim)
-        actions = jax.random.randint(key, (), minval=0, maxval=self.n_actions, dtype=jnp.int8)
+        state = jax.random.uniform(key, self.observation_dim)
+        action = jax.random.randint(key, (), minval=0, maxval=self.n_actions, dtype=jnp.int8)
         _, key_ = jax.random.split(key)
-        rewards = jax.random.uniform(key_)
-        terminals = jax.random.randint(key_, (), 0, 2)
-        next_states = jax.random.uniform(key_, self.observation_dim)
-        return (
-            jnp.array(states, dtype=jnp.float32),  # state
-            jnp.array(actions, dtype=jnp.int8),  # action
-            jnp.array(rewards, dtype=jnp.float32),  # reward
-            jnp.array(next_states, dtype=jnp.float32),  # next_state
-            jnp.ones(1),  # next_action
-            jnp.ones(1),  # next_reward
-            jnp.array(terminals, dtype=jnp.bool_),  # terminal
-            jnp.ones(1),  # indices
+        reward = jax.random.uniform(key_)
+        terminal = jax.random.randint(key_, (), 0, 2)
+        next_state = jax.random.uniform(key_, self.observation_dim)
+        return ReplayElement(
+            state,  # state
+            action,  # action
+            reward,  # reward
+            next_state,  # next_state
+            terminal,  # terminal
+            False,  # episode_end
         )
 
     @partial(jax.jit, static_argnames="self")
