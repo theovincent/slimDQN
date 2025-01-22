@@ -7,8 +7,7 @@ import optax
 from flax.core import FrozenDict
 
 from slimdqn.networks.architectures.dqn import DQNNet
-from slimdqn.sample_collection.replay_buffer import ReplayBuffer
-from slimdqn.sample_collection.replay_buffer import ReplayElement
+from slimdqn.sample_collection.replay_buffer import ReplayBuffer, ReplayElement
 
 
 class DQN:
@@ -28,8 +27,6 @@ class DQN:
     ):
         self.network = DQNNet(features, cnn, n_actions)
         self.params = self.network.init(key, jnp.zeros(observation_dim, dtype=jnp.float32))
-
-        self.state = np.zeros(observation_dim)
 
         self.optimizer = optax.adam(learning_rate, eps=adam_eps)
         self.optimizer_state = self.optimizer.init(self.params)

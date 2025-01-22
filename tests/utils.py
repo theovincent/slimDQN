@@ -16,7 +16,7 @@ class Generator:
     def sample(
         self,
         key: jax.random.PRNGKey,
-    ) -> Tuple[jnp.ndarray]:
+    ) -> ReplayElement:
         state = jax.random.uniform(key, self.observation_dim)
         action = jax.random.randint(key, (), minval=0, maxval=self.n_actions, dtype=jnp.int8)
         _, key_ = jax.random.split(key)
@@ -34,7 +34,7 @@ class Generator:
 
     @partial(jax.jit, static_argnames="self")
     def samples(self, key: jax.random.PRNGKey) -> Tuple[jnp.ndarray]:
-        return jax.vmap(self.generate_sample)(jax.random.split(key, self.batch_size))
+        return jax.vmap(self.sample)(jax.random.split(key, self.batch_size))
 
     @partial(jax.jit, static_argnames="self")
     def state(self, key: jax.random.PRNGKey) -> jnp.ndarray:
