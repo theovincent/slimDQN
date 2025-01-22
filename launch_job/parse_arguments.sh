@@ -41,12 +41,7 @@ function parse_arguments() {
                 GPU=true
                 shift
                 ;;
-            -?*)
-                ARGS="$ARGS $1 $2"
-                shift
-                shift
-                ;;
-            ?*)
+            -?* | ?*)
                 ARGS="$ARGS $1"
                 shift
                 ;;
@@ -61,6 +56,10 @@ function parse_arguments() {
     then
         echo "you need to specify --first_seed and --last_seed and make to sure that first_seed <= last_seed" >&2
         exit 1
+    fi
+    if [[ $N_PARALLEL_SEEDS == "" ]]
+    then
+        N_PARALLEL_SEEDS=1
     fi
     if [[ $GPU == "" ]]
     then

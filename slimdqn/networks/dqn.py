@@ -1,5 +1,4 @@
 from functools import partial
-from typing import Dict
 
 import jax
 import jax.numpy as jnp
@@ -15,7 +14,7 @@ from slimdqn.sample_collection.replay_buffer import ReplayElement
 class DQN:
     def __init__(
         self,
-        q_key: jax.random.PRNGKey,
+        key: jax.random.PRNGKey,
         observation_dim,
         n_actions,
         features: list,
@@ -25,14 +24,11 @@ class DQN:
         update_horizon: int,
         update_to_data: int,
         target_update_frequency: int,
-        loss_type: str = "huber",
         adam_eps: float = 1e-8,
     ):
-        self.q_key = q_key
-        self.q_network = DQNNet(features, cnn, n_actions)
-        self.params = self.q_network.init(self.q_key, jnp.zeros(observation_dim, dtype=jnp.float32))
-
-        self.state = np.zeros(observation_dim)
+        self.network = DQNNet(features, cnn, n_actions)
+        self.params = self.network.init(key, jnp.zeros(observation_dim, dtype=jnp.float32))
+        self.target_params = self.params.copy()
 
         self.optimizer = optax.adam(learning_rate, eps=adam_eps)
         self.optimizer_state = self.optimizer.init(self.params)
@@ -42,7 +38,7 @@ class DQN:
         self.update_horizon = update_horizon
         self.update_to_data = update_to_data
         self.target_update_frequency = target_update_frequency
-        self.loss_type = loss_type
+        self.cumulated_loss = 0
 
     def update_online_params(self, step: int, replay_buffer: ReplayBuffer):
         if step % self.update_to_data == 0:
@@ -51,15 +47,17 @@ class DQN:
             self.params, self.optimizer_state, loss = self.learn_on_batch(
                 self.params, self.target_params, self.optimizer_state, batch_samples
             )
-
-            return loss
-        return 0
+            self.cumulated_loss += loss
 
     def update_target_params(self, step: int):
         if step % self.target_update_frequency == 0:
-            self.target_params = self.params
-            return True
-        return False
+            self.target_params = self.params.copy()
+
+            logs = {"loss": self.cumulated_loss / (self.target_update_frequency / self.update_to_data)}
+            self.cumulated_loss = 0
+
+            return True, logs
+        return False, {}
 
     @partial(jax.jit, static_argnames="self")
     def learn_on_batch(
@@ -93,7 +91,4 @@ class DQN:
     @partial(jax.jit, static_argnames="self")
     def best_action(self, params: FrozenDict, state: jnp.ndarray):
         # computes the best action for a single state
-        return jnp.argmax(self.q_network.apply(params, state))
-
-    def get_model(self) -> Dict:
-        return {"params": self.params}
+        return jnp.argmax(self.network.apply(params, state)).astype(jnp.int8)
