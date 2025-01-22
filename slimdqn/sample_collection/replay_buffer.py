@@ -13,7 +13,6 @@ from flax import struct
 import snappy
 
 from slimdqn.sample_collection import ReplayItemID
-from slimdqn.sample_collection import samplers
 
 
 class TransitionElement(typing.NamedTuple):
@@ -236,10 +235,3 @@ class ReplayBuffer:
         **kwargs: Any,
     ) -> None:
         self._sampling_distribution.update(keys, **kwargs)
-
-    def clear(self) -> None:
-        """Clear the replay buffer."""
-        self.add_count = 0
-        self._memory.clear()
-        self._transition_accumulator.clear()
-        self._sampling_distribution.clear()
