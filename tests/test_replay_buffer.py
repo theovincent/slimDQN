@@ -1,4 +1,4 @@
-# thanks dopamine
+# Inspired by dopamine implementation: https://github.com/google/dopamine/blob/master/tests/dopamine/jax/replay_memory/replay_buffer_test.py
 
 from absl.testing import absltest
 from absl.testing import parameterized

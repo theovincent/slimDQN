@@ -1,4 +1,4 @@
-# Inspired from dopamine: https://github.com/google/dopamine
+# Inspired by dopamine implementation: https://github.com/google/dopamine/blob/master/dopamine/jax/replay_memory/sum_tree.py
 """Sum Tree."""
 
 import numpy as np

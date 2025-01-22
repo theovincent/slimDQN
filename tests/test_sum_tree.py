@@ -1,4 +1,4 @@
-# thanks dopamine
+# Inspired by dopamine implementation: https://github.com/google/dopamine/blob/master/tests/dopamine/jax/replay_memory/sum_tree_test.py
 """Tests for vectorized sum tree."""
 
 from absl.testing import absltest

@@ -1,4 +1,4 @@
-# thanks dopamine
+# Inspired by dopamine implementation: https://github.com/google/dopamine/blob/master/dopamine/jax/replay_memory/samplers.py
 """Sampling distributions."""
 
 import numpy as np
