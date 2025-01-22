@@ -14,7 +14,7 @@ from slimdqn.sample_collection.replay_buffer import ReplayElement
 class DQN:
     def __init__(
         self,
-        key: jax.random.PRNGKey,
+        q_key: jax.random.PRNGKey,
         observation_dim,
         n_actions,
         features: list,
@@ -24,11 +24,14 @@ class DQN:
         update_horizon: int,
         update_to_data: int,
         target_update_frequency: int,
+        loss_type: str = "huber",
         adam_eps: float = 1e-8,
     ):
-        self.network = DQNNet(features, cnn, n_actions)
-        self.params = self.network.init(key, jnp.zeros(observation_dim, dtype=jnp.float32))
-        self.target_params = self.params.copy()
+        self.q_key = q_key
+        self.q_network = DQNNet(features, cnn, n_actions)
+        self.params = self.q_network.init(self.q_key, jnp.zeros(observation_dim, dtype=jnp.float32))
+
+        self.state = np.zeros(observation_dim)
 
         self.optimizer = optax.adam(learning_rate, eps=adam_eps)
         self.optimizer_state = self.optimizer.init(self.params)
@@ -39,6 +42,7 @@ class DQN:
         self.update_to_data = update_to_data
         self.target_update_frequency = target_update_frequency
         self.cumulated_loss = 0
+        self.loss_type = loss_type
 
     def update_online_params(self, step: int, replay_buffer: ReplayBuffer):
         if step % self.update_to_data == 0:
@@ -91,4 +95,4 @@ class DQN:
     @partial(jax.jit, static_argnames="self")
     def best_action(self, params: FrozenDict, state: jnp.ndarray):
         # computes the best action for a single state
-        return jnp.argmax(self.network.apply(params, state)).astype(jnp.int8)
+        return jnp.argmax(self.q_network.apply(params, state))
