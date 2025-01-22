@@ -42,7 +42,7 @@ class TestDQN(unittest.TestCase):
 
         computed_target = self.q.compute_target(self.q.params, sample)
 
-        next_q_values = self.q.q_network.apply(self.q.params, sample.next_state)
+        next_q_values = self.q.network.apply(self.q.params, sample.next_state)
         target = sample.reward + (1 - sample.is_terminal) * self.q.gamma * jnp.max(next_q_values)
 
         self.assertEqual(next_q_values.shape, (self.n_actions,))
@@ -55,7 +55,7 @@ class TestDQN(unittest.TestCase):
         computed_loss = self.q.loss(self.q.params, self.q.params, sample)
 
         target = self.q.compute_target(self.q.params, sample)
-        prediction = self.q.q_network.apply(self.q.params, sample.state)[sample.action]
+        prediction = self.q.network.apply(self.q.params, sample.state)[sample.action]
         loss = np.square(target - prediction)
 
         self.assertEqual(loss, computed_loss)
@@ -66,7 +66,7 @@ class TestDQN(unittest.TestCase):
 
         computed_best_action = self.q.best_action(self.q.params, state)
 
-        q_values = self.q.q_network.apply(self.q.params, state)
+        q_values = self.q.network.apply(self.q.params, state)
         best_action = jnp.argmax(q_values)
 
         self.assertEqual(q_values.shape, (self.n_actions,))
