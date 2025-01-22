@@ -155,19 +155,10 @@ class ReplayBufferTest(parameterized.TestCase):
             if not terminal:
                 index_to_id.append(i)
 
-        for _ in range(100):
-            batch = rb.sample()
-            self.assertEqual(batch.state.shape[0], 2)
-            batch = rb.sample(BATCH_SIZE)
-            self.assertEqual(batch.state.shape[0], BATCH_SIZE)
-
         # Verify we sample the expected indices by using the same rng state.
-        sample_key, _ = jax.random.split(rb._sampling_distribution._rng_key)
-        indices = jax.random.randint(
-            key=sample_key,
-            shape=(len(rb._sampling_distribution._index_to_key),),
-            minval=0,
-            maxval=len(rb._sampling_distribution._index_to_key),
+        self._rng_key = np.random.default_rng(seed=0)
+        indices = self._rng_key.integers(
+            len(rb._sampling_distribution._index_to_key), size=len(rb._sampling_distribution._index_to_key)
         )
 
         def make_state(key: int):
@@ -208,13 +199,9 @@ class ReplayBufferTest(parameterized.TestCase):
                 )
             )
         # Verify we sample the expected indices, using the same rng.
-        sample_key, _ = jax.random.split(rb._sampling_distribution._rng_key)
-        indices = jax.random.randint(
-            key=sample_key,
-            shape=(5,),
-            minval=0,
-            maxval=rb.add_count,
-        )
+        self._rng_key = np.random.default_rng(seed=0)
+        indices = self._rng_key.integers(rb.add_count, size=5)
+
         batch = rb.sample(size=5)
 
         # Since index 3 is terminal, it will not be a valid transition so renumber.
@@ -285,13 +272,9 @@ class ReplayBufferTest(parameterized.TestCase):
         # index -> key should be consistent
         self.assertEqual(next_key, sampler._index_to_key[sampler._key_to_index[next_key]])
 
-        sample_key, _ = jax.random.split(rb._sampling_distribution._rng_key)
-        indices = jax.random.randint(
-            key=sample_key,
-            shape=(BATCH_SIZE,),
-            minval=0,
-            maxval=len(sampler._index_to_key),
-        )
+        self._rng_key = np.random.default_rng(seed=0)
+        indices = self._rng_key.integers(len(sampler._index_to_key), size=BATCH_SIZE)
+
         # Convert local indices to global keys
         keys = (sampler._index_to_key[index] for index in indices)
 

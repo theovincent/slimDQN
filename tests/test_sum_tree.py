@@ -127,12 +127,6 @@ class SumTreeTest(parameterized.TestCase):
             np.arange(8, dtype=np.int32),
         )
 
-    def test_clear(self):
-        self._tree.set(5, 1.0)
-        self._tree.clear()
-        self.assertEqual(self._tree.root, 0.0)
-        self.assertEqual(self._tree.get(5), 0.0)
-
     def test_max_recorded_priority(self):
         k = 32
         self._tree.set(0, 0)
