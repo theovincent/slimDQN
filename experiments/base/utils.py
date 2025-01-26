@@ -20,6 +20,8 @@ def prepare_logs(env_name: str, algo_name: str, argvs: List[str]):
     agent_params = parser_argument.__dict__[f"add_{algo_name}_arguments"](parser)
     p = vars(parser.parse_args(argvs))
     p["env_name"] = env_name
+    if env_name == "atari":
+        p["game_name"] = p["experiment_name"].split("_")[-1]
     p["algo_name"] = algo_name
     p["save_path"] = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
