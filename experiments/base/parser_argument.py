@@ -97,6 +97,14 @@ def add_base_arguments(parser: argparse.ArgumentParser):
         type=int,
         default=1000,
     )
+    parser.add_argument(
+        "-at",
+        "--architecture_type",
+        help="Type of architecture.",
+        type=str,
+        default="fc",
+        choices=["cnn", "impala", "fc"],
+    )
 
 
 @output_added_arguments

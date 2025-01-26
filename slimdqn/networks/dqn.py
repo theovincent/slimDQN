@@ -17,7 +17,7 @@ class DQN:
         observation_dim,
         n_actions,
         features: list,
-        cnn: bool,
+        architecture_type: str,
         learning_rate: float,
         gamma: float,
         update_horizon: int,
@@ -25,7 +25,7 @@ class DQN:
         target_update_frequency: int,
         adam_eps: float = 1e-8,
     ):
-        self.network = DQNNet(features, cnn, n_actions)
+        self.network = DQNNet(features, architecture_type, n_actions)
         self.params = self.network.init(key, jnp.zeros(observation_dim, dtype=jnp.float32))
 
         self.optimizer = optax.adam(learning_rate, eps=adam_eps)

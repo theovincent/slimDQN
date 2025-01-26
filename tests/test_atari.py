@@ -52,6 +52,8 @@ class TestAtari(unittest.TestCase):
                 "0.01",
                 "--epsilon_duration",
                 "4",
+                "--architecture_type",
+                "cnn",
             ]
         ).returncode
         assert returncode == 0, "The command should not have raised an error."

@@ -32,7 +32,7 @@ def run(argvs=sys.argv[1:]):
         env.observation_shape[0],
         env.n_actions,
         features=p["features"],
-        cnn=False,
+        architecture_type=p["architecture_type"],
         learning_rate=p["learning_rate"],
         gamma=p["gamma"],
         update_horizon=p["update_horizon"],

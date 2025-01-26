@@ -26,7 +26,7 @@ class TestDQN(unittest.TestCase):
                 jax.random.randint(key_feature_3, (), minval=1, maxval=10),
                 jax.random.randint(key_feature_4, (), minval=1, maxval=10),
             ],
-            True,
+            "impala",
             0.001,
             0.94,
             1,
