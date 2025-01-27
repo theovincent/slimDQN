@@ -33,20 +33,27 @@ def run(argvs=sys.argv[1:]):
         type=int,
         required=True,
     )
+    parser.add_argument(
+        "-nspe",
+        "--n_steps_per_episode",
+        help="Maximum steps to run each episode for.",
+        type=int,
+        default=27_000,
+    )
     args = parser.parse_args(argvs)
 
     env_name = os.path.abspath(__file__).split("/")[-2]
     p_path = f"experiments/{env_name}/exp_output/{args.experiment_name}/parameters.json"
     p = json.load(open(p_path, "rb"))
 
-    env = AtariEnv(p["shared_parameters"]["experiment_name"].split("_")[-1])
+    env = AtariEnv(p["shared_parameters"]["experiment_name"].split("_")[-1], render_mode="rgb_array")
     env.env = gym.wrappers.RecordVideo(
-        env=env.env,
+        env=env.env.env,
         video_folder=f"experiments/{env_name}/exp_output/{args.experiment_name}/{args.algo_name}",
         name_prefix="",
     )
 
-    q_network = DQNNet(p["shared_parameters"]["features"], True, env.n_actions)
+    q_network = DQNNet(p["shared_parameters"]["features"], "cnn", env.n_actions)
 
     model_path = f"experiments/{env_name}/exp_output/{args.experiment_name}/{args.algo_name}/models/{args.seed}"
     model = pickle.load(open(model_path, "rb"))
@@ -56,7 +63,7 @@ def run(argvs=sys.argv[1:]):
         absorbing = False
         env.reset()
 
-        while not absorbing:
+        while not absorbing and env.n_steps <= args.n_steps_per_episode:
             env.env.render()
 
             action = jnp.argmax(q_network.apply(model["params"], env.state)).item()
@@ -66,10 +73,8 @@ def run(argvs=sys.argv[1:]):
 
         print("Total reward: ", total_reward, flush=True)
 
-    env.env.close_video_recorder()
+    env.env.stop_recording()
     env.env.close()
-    os.remove(f"experiments/{env_name}/exp_output/{args.experiment_name}/{args.algo_name}/-episode-0.meta.json")
-    os.remove(f"experiments/{env_name}/exp_output/{args.experiment_name}/{args.algo_name}/-episode-1.meta.json")
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ import cv2
 
 
 class AtariEnv:
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, render_mode=None) -> None:
         self.name = name
         self.state_height, self.state_width = (84, 84)
         self.n_stacked_frames = 4
@@ -26,6 +26,7 @@ class AtariEnv:
             max_num_frames_per_episode=100_000,
             continuous=False,
             continuous_action_threshold=0.0,
+            render_mode=render_mode,
         ).env
 
         self.n_actions = self.env.action_space.n
