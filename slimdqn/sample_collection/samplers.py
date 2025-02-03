@@ -1,16 +1,18 @@
 # Inspired by dopamine implementation: https://github.com/google/dopamine/blob/master/dopamine/jax/replay_memory/samplers.py
 """Sampling distributions."""
 
+from typing import Any, Protocol
 import numpy as np
 import numpy.typing as npt
 
 import jax
 
+from slimdqn.sample_collection import checkpointers
 from slimdqn.sample_collection import ReplayItemID
 from slimdqn.sample_collection import sum_tree
 
 
-class UniformSamplingDistribution:
+class UniformSamplingDistribution(checkpointers.Checkpointable):
     """A uniform sampling distribution."""
 
     def __init__(self, seed: int) -> None:
@@ -47,7 +49,25 @@ class UniformSamplingDistribution:
             dtype=np.int32,
             count=size,
         )
+    def clear(self) -> None:
+        self._key_to_index.clear()
+        self._index_to_key.clear()
+        
+    def to_state_dict(self) -> dict[str, Any]:
+        return {
+            'key_to_index': self._key_to_index,
+            'index_to_key': self._index_to_key,
+            'rng_state': self._rng_key.bit_generator.state,
+        }
 
+    def from_state_dict(self, state_dict: dict[str, Any]) -> None:
+        self._key_to_index = state_dict['key_to_index']
+        self._index_to_key = state_dict['index_to_key']
+
+        # Restore rng state
+        self._rng_key.bit_generator.state = state_dict['rng_state']
+
+    
 
 class PrioritizedSamplingDistribution(UniformSamplingDistribution):
     """A prioritized sampling distribution."""
@@ -114,3 +134,17 @@ class PrioritizedSamplingDistribution(UniformSamplingDistribution):
             count=size,
             dtype=np.int32,
         )
+
+    def clear(self) -> None:
+        self._sum_tree.clear()
+        super().clear()
+
+    def to_state_dict(self) -> dict[str, Any]:
+        return {
+            'sum_tree': self._sum_tree.to_state_dict(),
+            **super().to_state_dict(),
+        }
+
+    def from_state_dict(self, state_dict: dict[str, Any]):
+        super().from_state_dict(state_dict)
+        self._sum_tree.from_state_dict(state_dict['sum_tree'])

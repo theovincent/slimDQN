@@ -2,6 +2,9 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
+from absl import flags
+from etils import epath
+import msgpack
 import numpy as np
 import jax
 
@@ -15,9 +18,17 @@ OBSERVATION_SHAPE = (84, 84)
 STACK_SIZE = 4
 BATCH_SIZE = 32
 
+flags.FLAGS(['--test_tmpdir', '/tmpdir'])
+
 
 class ReplayBufferTest(parameterized.TestCase):
-
+    def setUp(self):
+        super().setUp()
+        self._tmpdir = epath.Path(self.create_tempdir('checkpoint').full_path)
+        self._obs = np.ones((4, 3))
+       
+        self._sampling_distribution = samplers.UniformSamplingDistribution(seed=0)
+        
     def test_element_pack_unpack(self) -> None:
         """Simple test case that packs and unpacks a replay element."""
         state = np.zeros(OBSERVATION_SHAPE + (STACK_SIZE,), dtype=np.uint8)
@@ -297,6 +308,163 @@ class ReplayBufferTest(parameterized.TestCase):
             self.assertEqual(samples.reward[i], key)
             self.assertEqual(samples.is_terminal[i], 0)
             self.assertEqual(samples.episode_end[i], 0)
+
+    @parameterized.parameters((True,), (False,))
+    def testSave(self, compress):
+        stack_size = 4
+        replay_capacity = 50
+        batch_size = 32
+        update_horizon = 3
+        gamma = 0.9
+        checkpoint_duration = 7
+        replay = replay_buffer.ReplayBuffer(
+            sampling_distribution=self._sampling_distribution,
+            batch_size=batch_size,
+            max_capacity=replay_capacity,
+            stack_size=stack_size,
+            update_horizon=update_horizon,
+            gamma=gamma,
+            checkpoint_duration=checkpoint_duration,
+            compress=compress,
+        )
+        # Store a few transitions in memory. Since update_horizon is 3, only
+        # num_adds - 3 elements will actually be in the replay buffer memory.
+        transitions = []
+        num_adds = 15
+        for i in range(num_adds):
+            transitions.append(
+                TransitionElement(self._obs * i, i, i, False, False)
+            )
+            replay.add(transitions[-1])
+
+        replay.save(self._tmpdir, 1)
+        path = self._tmpdir / '1' / 'replay' / 'checkpoint.msgpack'
+        self.assertTrue(path.exists())
+        replay_pack = msgpack.unpackb(
+            path.read_bytes(),
+            raw=False,
+            strict_map_key=False,
+        )
+        self.assertEqual(num_adds - update_horizon, replay_pack['add_count'])
+
+    @parameterized.parameters((1,), (3,), (5,))
+    def testGarbageCollection(self, cd):
+        replay = replay_buffer.ReplayBuffer(
+            sampling_distribution=self._sampling_distribution,
+            batch_size=8,
+            max_capacity=10,
+            checkpoint_duration=cd,
+        )
+        num_adds = 20
+        # Store transitions and call save each time.
+        for i in range(num_adds):
+            replay.add(TransitionElement(self._obs * i, i, i, False, False))
+            replay.save(self._tmpdir, i)
+        for i in range(num_adds):
+            path = self._tmpdir / f'{i}' / 'replay'
+            if i < num_adds - cd:
+                self.assertFalse(path.exists())
+            else:
+                self.assertTrue(path.exists())
+
+    def testLoad(self):
+        update_horizon = 3
+        replay = replay_buffer.ReplayBuffer(
+            sampling_distribution=self._sampling_distribution,
+            batch_size=8,
+            max_capacity=10,
+            stack_size=4,
+            update_horizon=update_horizon,
+            gamma=0.99,
+            checkpoint_duration=10,
+            compress=False,
+        )
+        num_adds = 20
+        # Store transitions and call save each time.
+        for i in range(num_adds):
+            replay.add(TransitionElement(self._obs * i, i, i, False, False))
+            replay.save(self._tmpdir, i)
+        # add_count should be equal to num_adds - update_horizon now.
+        self.assertEqual(num_adds - update_horizon, replay.add_count)
+        # Load a checkpoint from 5 iterations ago (it is zero-indexed so we
+        # substract 6).
+        replay.load(self._tmpdir, num_adds - 6)
+        # add_count should now be equal to num_adds - update_horizon  - 5.
+        self.assertEqual(num_adds - update_horizon - 5, replay.add_count)
+
+    def testSaveAndLoad(self):
+        # This is similar to testSample, but saves and loads after every addition.
+        # The resulting behaviour should be identical.
+        capacity = 100
+        batch_size = 32
+        
+        replay = replay_buffer.ReplayBuffer(
+            sampling_distribution=self._sampling_distribution,
+            batch_size=batch_size,
+            max_capacity=capacity,
+            stack_size=2,
+            update_horizon=1,
+            gamma=0.99
+        )
+        transitions = []
+        for i in range(100):
+            transitions.append(
+                TransitionElement(self._obs * i, i, i, False, False)
+            )
+            replay.add(transitions[-1])
+            # The first call to add() will not actually produce anything in the
+            # memory, as there are not yet any valid transitions.
+            if i > 0:
+                _ = replay.sample()
+            replay.save(self._tmpdir, i)
+            # We reinitialize the memory to ensure it's loading properly.
+            replay = replay_buffer.ReplayBuffer(
+                sampling_distribution=self._sampling_distribution,
+                batch_size=batch_size,
+                max_capacity=capacity,
+                stack_size=2,
+                update_horizon=1,
+                gamma=0.99
+            )
+            replay.load(self._tmpdir, i)
+        expected_keys = list(range(99))  # The last transition is invalid.
+        self.assertEqual(list(replay._memory.keys()), expected_keys)
+        # Save the rng state before sampling for reprodcibility.
+        rng_state = replay._sampling_distribution._rng_key.bit_generator.state
+        batches = replay.sample()
+        self.assertEqual(batches.state.shape[0], batch_size)
+        self.assertEqual(batches.next_state.shape[0], batch_size)
+        self.assertEqual(batches.action.shape[0], batch_size)
+        self.assertEqual(batches.reward.shape[0], batch_size)
+        self.assertLen(batches.is_terminal, batch_size)
+        self.assertLen(batches.episode_end, batch_size)
+
+        rng = np.random.default_rng(0)
+        # Set the state to that of the replay before sampling.
+        rng.bit_generator.state = rng_state
+        indices = rng.choice(99, size=(batch_size,))
+        for i, idx in enumerate(indices):
+            # We need to stack the observations for proper comparison.
+            if idx == 0:
+                stacked_state = [np.zeros_like(self._obs), transitions[idx].observation]
+            else:
+                stacked_state = [
+                    transitions[idx - 1].observation,
+                    transitions[idx].observation,
+                ]
+            stacked_next_state = [
+                transitions[idx].observation,
+                transitions[idx + 1].observation,
+            ]
+            stacked_state = np.moveaxis(stacked_state, 0, -1)
+            stacked_next_state = np.moveaxis(stacked_next_state, 0, -1)
+            np.testing.assert_array_equal(batches.state[i], stacked_state)
+            np.testing.assert_array_equal(batches.next_state[i], stacked_next_state)
+            self.assertEqual(batches.action[i], idx)
+            self.assertEqual(batches.reward[i], idx)
+            self.assertEqual(batches.is_terminal[i], 0)
+            self.assertEqual(batches.episode_end[i], 0)
+
 
 
 if __name__ == "__main__":

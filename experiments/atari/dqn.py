@@ -28,6 +28,7 @@ def run(argvs=sys.argv[1:]):
         clipping=lambda x: np.clip(x, -1, 1),
         stack_size=4,
         compress=True,
+        checkpoint_duration=4
     )
     agent = DQN(
         q_key,
