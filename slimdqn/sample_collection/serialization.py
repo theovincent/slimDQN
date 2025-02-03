@@ -1,3 +1,4 @@
+# Inspired by dopamine implementation: https://github.com/google/dopamine/blob/master/dopamine/jax/serialization.py
 """MessagePack serialization hooks.
 
 This is necesarry as Orbax doesn't support serializing Numpy structured arrays.
@@ -7,9 +8,7 @@ and use Orbax to serialize things like the replay buffer without requiring
 a custom checkpoint handler (jax/checkpointers.py).
 """
 
-import ast
 import functools
-import typing
 from typing import Any, Callable, Optional, Tuple, Union
 
 import numpy as np
@@ -78,29 +77,3 @@ def _(
         return {"integer": str(integer)}
 
     return integer
-
-
-@typing.overload
-def decode(obj: NumpyEncoding, chain: Optional[Callable[[Any], Any]] = None) -> np.ndarray:
-    ...
-
-
-@typing.overload
-def decode(obj: LongIntegerEncoding, chain: Optional[Callable[[Any], Any]] = None) -> int:
-    ...
-
-
-def decode(obj: Any, chain: Optional[Callable[[Any], Any]] = None) -> Any:
-    """Decode encoded object types."""
-    # Would be really nice if TypedDict supported isinstance
-    if isinstance(obj, dict) and ("dtype" in obj and "shape" in obj and "data" in obj):
-        return np.ndarray(
-            shape=obj["shape"],
-            dtype=np.dtype(ast.literal_eval(obj["dtype"])),
-            buffer=obj["data"],
-            order=obj.get("order", None),
-        )
-    elif isinstance(obj, dict) and "integer" in obj:
-        return int(obj.get("integer"))
-    else:
-        return obj if chain is None else chain(obj)

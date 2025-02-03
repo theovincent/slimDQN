@@ -42,10 +42,6 @@ class SamplersTest(parameterized.TestCase):
         self.assertIn("index_to_key", state_dict)
         self.assertIn("rng_state", state_dict)
 
-        sampler = samplers.UniformSamplingDistribution(0)
-        sampler.from_state_dict(state_dict)
-        self.assertEqual(sampler.sample(1), 1)
-
     def test_clear_uniform_sampler(self):
         self.uniform_sampler.add(1)
         self.assertNotEmpty(self.uniform_sampler._key_to_index)

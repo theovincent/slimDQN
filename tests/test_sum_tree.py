@@ -130,10 +130,6 @@ class SumTreeTest(parameterized.TestCase):
         self._tree.set(5, 1.0)
         state_dict = self._tree.to_state_dict()
         np.testing.assert_array_equal(state_dict["nodes"], self._tree._nodes)
-        self._tree.from_state_dict(state_dict)
-        np.testing.assert_array_equal(state_dict["nodes"], self._tree._nodes)
-        self.assertEqual(self._tree.root, 1.0)
-        self.assertEqual(self._tree.get(5), 1.0)
 
     def test_clear(self):
         self._tree.set(5, 1.0)

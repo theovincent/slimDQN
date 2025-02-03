@@ -275,31 +275,6 @@ class ReplayBuffer(checkpointers.Checkpointable):
             "transitions": {"trajectory": trajectory_steps, "treedef": pickle.dumps(trajectory_treedef)},
         }
 
-    def from_state_dict(self, state_dict: dict[str, Any]) -> None:
-        """Deserialize and mutate replay buffer using state dictionary."""
-        self.add_count = state_dict["add_count"]
-        self._sampling_distribution.from_state_dict(state_dict["sampling_distribution"])
-
-        trajectory_treedef: jax.tree_util.PyTreeDef = pickle.loads(state_dict["transitions"]["treedef"])
-        transitions = map(trajectory_treedef.unflatten, state_dict["transitions"]["trajectory"])
-        self._trajectory.clear()
-        self._trajectory.extend(transitions)
-
-        # Restore memory
-        memory_keys = state_dict["memory"]["keys"]
-        # Each element of the list is a flattened replay element, unflatten them
-        # i.e., we have storage like:
-        #   [[state, action, reward, next_state, is_terminal, episode_end], ...]
-        # and after unflattening we'll have:
-        #   [ReplayElementT(...), ...]
-        memory_treedef: jax.tree_util.PyTreeDef = pickle.loads(state_dict["memory"]["treedef"])
-        memory_values = map(memory_treedef.unflatten, state_dict["memory"]["values"])
-
-        # Create our new ordered dictionary from the restored keys and values
-        self._memory = collections.OrderedDict[ReplayItemID, ReplayElement](
-            zip(memory_keys, memory_values, strict=True)
-        )
-
     @functools.lru_cache
     def _make_checkpoint_manager(self, checkpoint_dir: str) -> orbax.CheckpointManager:
         """Create orbax checkpoint manager, cache the manager based on path."""
@@ -326,18 +301,3 @@ class ReplayBuffer(checkpointers.Checkpointable):
         """
         checkpoint_manager = self._make_checkpoint_manager(checkpoint_dir)
         checkpoint_manager.save(iteration_number, {"replay": self})
-
-    def load(self, checkpoint_dir: str, iteration_number: int):
-        """Restores from a checkpoint.
-
-        Args:
-        checkpoint_dir: the directory where to read the checkpoint.
-        iteration_number: iteration_number to use as a suffix in naming.
-        """
-        checkpoint_manager = self._make_checkpoint_manager(checkpoint_dir)
-        # NOTE: Make sure not to pass in `items={'replay': self}` as this will
-        # create a deep copy and we want to mutate in-place.
-        # If we don't pass items then we get back a state dictionary
-        # that we can use to mutate in-place.
-        state_dict = checkpoint_manager.restore(iteration_number)
-        self.from_state_dict(state_dict["replay"])

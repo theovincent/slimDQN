@@ -2,12 +2,10 @@
 """Checkpointer using Orbax and MessagePack.
 
 Usage:
-  1) Implement `to_state_dict` and `from_state_dict` on your class.
+  1) Implement `to_state_dict` to save.
   2) Create an `orbax.CheckpointManager` and use the `CheckpointHandler`.
 
   To save: call `save` on your checkpoint manager passing the class instance.
-  To restore: call `restore` on your checkpoint manager passing the class
-              instance.
 
 """
 
@@ -24,12 +22,9 @@ from orbax import checkpoint
 
 @typing.runtime_checkable
 class Checkpointable(Protocol):
-    """Checkpointable protocol. Must implement to_state_dict, from_state_dict."""
+    """Checkpointable protocol. Must implement to_state_dict."""
 
     def to_state_dict(self) -> Dict[str, Any]:
-        ...
-
-    def from_state_dict(self, state_dict: Dict[str, Any]) -> None:
         ...
 
 
@@ -79,9 +74,7 @@ class CheckpointHandler(checkpoint.CheckpointHandler, Generic[CheckpointableT]):
         return None
 
 
-# pylint: disable=g-long-lambda
 # Orbax requires a `Checkpointer` object. This wraps a `CheckpointHandler`.
 # To make it easier for end-users we'll supply a `Checkpointer` that already
 # performs this instantiation.
 Checkpointer = functools.partial(checkpoint.Checkpointer, CheckpointHandler())
-# pylint: enable=g-long-lambda

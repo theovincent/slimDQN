@@ -37,9 +37,6 @@ class SerializationTest(parameterized.TestCase):
         self.assertIn("data", encoded)
         self.assertIsInstance(encoded["data"], bytes)
 
-        decoded = serialization.decode(encoded)
-        np.testing.assert_array_equal(array, decoded, strict=True)
-
     @parameterized.parameters((1,), (1234567891011121314151617181920,))
     def testEncodeLongIntegers(self, integer: int):
         encoded = serialization.encode(integer)
@@ -51,9 +48,6 @@ class SerializationTest(parameterized.TestCase):
         else:
             assert isinstance(encoded, int)
             assert encoded == integer
-
-        decoded = serialization.decode(encoded)
-        assert decoded == integer
 
 
 if __name__ == "__main__":

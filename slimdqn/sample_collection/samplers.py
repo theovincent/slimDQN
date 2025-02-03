@@ -60,13 +60,6 @@ class UniformSamplingDistribution(checkpointers.Checkpointable):
             "rng_state": self._rng_key.bit_generator.state,
         }
 
-    def from_state_dict(self, state_dict: dict[str, Any]) -> None:
-        self._key_to_index = state_dict["key_to_index"]
-        self._index_to_key = state_dict["index_to_key"]
-
-        # Restore rng state
-        self._rng_key.bit_generator.state = state_dict["rng_state"]
-
 
 class PrioritizedSamplingDistribution(UniformSamplingDistribution):
     """A prioritized sampling distribution."""
@@ -143,7 +136,3 @@ class PrioritizedSamplingDistribution(UniformSamplingDistribution):
             "sum_tree": self._sum_tree.to_state_dict(),
             **super().to_state_dict(),
         }
-
-    def from_state_dict(self, state_dict: dict[str, Any]):
-        super().from_state_dict(state_dict)
-        self._sum_tree.from_state_dict(state_dict["sum_tree"])
