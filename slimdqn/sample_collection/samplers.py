@@ -39,7 +39,6 @@ class UniformSamplingDistribution(checkpointers.Checkpointable):
         self._key_to_index.pop(self._index_to_key.pop())
 
     def sample(self, size: int):
-
         assert self._index_to_key, ValueError("No keys to sample from.")
 
         indices = self._rng_key.integers(len(self._index_to_key), size=size)
@@ -49,25 +48,25 @@ class UniformSamplingDistribution(checkpointers.Checkpointable):
             dtype=np.int32,
             count=size,
         )
+
     def clear(self) -> None:
         self._key_to_index.clear()
         self._index_to_key.clear()
-        
+
     def to_state_dict(self) -> dict[str, Any]:
         return {
-            'key_to_index': self._key_to_index,
-            'index_to_key': self._index_to_key,
-            'rng_state': self._rng_key.bit_generator.state,
+            "key_to_index": self._key_to_index,
+            "index_to_key": self._index_to_key,
+            "rng_state": self._rng_key.bit_generator.state,
         }
 
     def from_state_dict(self, state_dict: dict[str, Any]) -> None:
-        self._key_to_index = state_dict['key_to_index']
-        self._index_to_key = state_dict['index_to_key']
+        self._key_to_index = state_dict["key_to_index"]
+        self._index_to_key = state_dict["index_to_key"]
 
         # Restore rng state
-        self._rng_key.bit_generator.state = state_dict['rng_state']
+        self._rng_key.bit_generator.state = state_dict["rng_state"]
 
-    
 
 class PrioritizedSamplingDistribution(UniformSamplingDistribution):
     """A prioritized sampling distribution."""
@@ -141,10 +140,10 @@ class PrioritizedSamplingDistribution(UniformSamplingDistribution):
 
     def to_state_dict(self) -> dict[str, Any]:
         return {
-            'sum_tree': self._sum_tree.to_state_dict(),
+            "sum_tree": self._sum_tree.to_state_dict(),
             **super().to_state_dict(),
         }
 
     def from_state_dict(self, state_dict: dict[str, Any]):
         super().from_state_dict(state_dict)
-        self._sum_tree.from_state_dict(state_dict['sum_tree'])
+        self._sum_tree.from_state_dict(state_dict["sum_tree"])

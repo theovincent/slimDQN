@@ -18,17 +18,17 @@ OBSERVATION_SHAPE = (84, 84)
 STACK_SIZE = 4
 BATCH_SIZE = 32
 
-flags.FLAGS(['--test_tmpdir', '/tmpdir'])
+flags.FLAGS(["--test_tmpdir", "/tmpdir"])
 
 
 class ReplayBufferTest(parameterized.TestCase):
     def setUp(self):
         super().setUp()
-        self._tmpdir = epath.Path(self.create_tempdir('checkpoint').full_path)
+        self._tmpdir = epath.Path(self.create_tempdir("checkpoint").full_path)
         self._obs = np.ones((4, 3))
-       
+
         self._sampling_distribution = samplers.UniformSamplingDistribution(seed=0)
-        
+
     def test_element_pack_unpack(self) -> None:
         """Simple test case that packs and unpacks a replay element."""
         state = np.zeros(OBSERVATION_SHAPE + (STACK_SIZE,), dtype=np.uint8)
@@ -332,20 +332,18 @@ class ReplayBufferTest(parameterized.TestCase):
         transitions = []
         num_adds = 15
         for i in range(num_adds):
-            transitions.append(
-                TransitionElement(self._obs * i, i, i, False, False)
-            )
+            transitions.append(TransitionElement(self._obs * i, i, i, False, False))
             replay.add(transitions[-1])
 
         replay.save(self._tmpdir, 1)
-        path = self._tmpdir / '1' / 'replay' / 'checkpoint.msgpack'
+        path = self._tmpdir / "1" / "replay" / "checkpoint.msgpack"
         self.assertTrue(path.exists())
         replay_pack = msgpack.unpackb(
             path.read_bytes(),
             raw=False,
             strict_map_key=False,
         )
-        self.assertEqual(num_adds - update_horizon, replay_pack['add_count'])
+        self.assertEqual(num_adds - update_horizon, replay_pack["add_count"])
 
     @parameterized.parameters((1,), (3,), (5,))
     def testGarbageCollection(self, cd):
@@ -361,7 +359,7 @@ class ReplayBufferTest(parameterized.TestCase):
             replay.add(TransitionElement(self._obs * i, i, i, False, False))
             replay.save(self._tmpdir, i)
         for i in range(num_adds):
-            path = self._tmpdir / f'{i}' / 'replay'
+            path = self._tmpdir / f"{i}" / "replay"
             if i < num_adds - cd:
                 self.assertFalse(path.exists())
             else:
@@ -397,20 +395,18 @@ class ReplayBufferTest(parameterized.TestCase):
         # The resulting behaviour should be identical.
         capacity = 100
         batch_size = 32
-        
+
         replay = replay_buffer.ReplayBuffer(
             sampling_distribution=self._sampling_distribution,
             batch_size=batch_size,
             max_capacity=capacity,
             stack_size=2,
             update_horizon=1,
-            gamma=0.99
+            gamma=0.99,
         )
         transitions = []
         for i in range(100):
-            transitions.append(
-                TransitionElement(self._obs * i, i, i, False, False)
-            )
+            transitions.append(TransitionElement(self._obs * i, i, i, False, False))
             replay.add(transitions[-1])
             # The first call to add() will not actually produce anything in the
             # memory, as there are not yet any valid transitions.
@@ -424,7 +420,7 @@ class ReplayBufferTest(parameterized.TestCase):
                 max_capacity=capacity,
                 stack_size=2,
                 update_horizon=1,
-                gamma=0.99
+                gamma=0.99,
             )
             replay.load(self._tmpdir, i)
         expected_keys = list(range(99))  # The last transition is invalid.
@@ -464,7 +460,6 @@ class ReplayBufferTest(parameterized.TestCase):
             self.assertEqual(batches.reward[i], idx)
             self.assertEqual(batches.is_terminal[i], 0)
             self.assertEqual(batches.episode_end[i], 0)
-
 
 
 if __name__ == "__main__":

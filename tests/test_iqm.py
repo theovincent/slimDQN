@@ -5,7 +5,6 @@ from experiments.base.compute_iqm import get_iqm_and_conf
 
 
 class TestIQM(unittest.TestCase):
-
     def setUp(self):
         # scores: n_seeds x n_epochs or n_tasks x n_seeds x n_epochs
         self.scores = np.array([[20.4, -20.2], [9, 3], [2.2, 4], [11, 24]])

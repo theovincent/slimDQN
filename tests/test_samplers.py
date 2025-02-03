@@ -8,7 +8,6 @@ import numpy as np
 
 
 class SamplersTest(parameterized.TestCase):
-
     def setUp(self):
         super().setUp()
         self.uniform_sampler = samplers.UniformSamplingDistribution(seed=0)
@@ -34,7 +33,7 @@ class SamplersTest(parameterized.TestCase):
         self.prioritized_sampler.remove(0)
         samples = self.prioritized_sampler.sample(5)
         np.testing.assert_array_almost_equal(samples, 1)
-    
+
     def test_serializes(self):
         sampler = samplers.UniformSamplingDistribution(0)
         sampler.add(1)
@@ -46,7 +45,7 @@ class SamplersTest(parameterized.TestCase):
         sampler = samplers.UniformSamplingDistribution(0)
         sampler.from_state_dict(state_dict)
         self.assertEqual(sampler.sample(1), 1)
-        
+
     def test_clear_uniform_sampler(self):
         self.uniform_sampler.add(1)
         self.assertNotEmpty(self.uniform_sampler._key_to_index)

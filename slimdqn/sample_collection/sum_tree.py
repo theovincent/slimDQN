@@ -108,8 +108,8 @@ class SumTree(checkpointers.Checkpointable):
         self._nodes.fill(0.0)
 
     def to_state_dict(self) -> dict[str, Any]:
-        return {'nodes': self._nodes}
+        return {"nodes": self._nodes}
 
     def from_state_dict(self, state_dict: dict[str, Any]):
-        assert self._nodes.shape == state_dict['nodes'].shape
-        self._nodes = state_dict['nodes']
+        assert self._nodes.shape == state_dict["nodes"].shape
+        self._nodes = state_dict["nodes"]

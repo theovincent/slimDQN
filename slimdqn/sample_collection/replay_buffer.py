@@ -74,7 +74,6 @@ class ReplayElement(struct.PyTreeNode):
 
 
 class ReplayBuffer(checkpointers.Checkpointable):
-
     def __init__(
         self,
         sampling_distribution,
@@ -105,7 +104,6 @@ class ReplayBuffer(checkpointers.Checkpointable):
         self._trajectory = collections.deque[TransitionElement](maxlen=self._update_horizon + self._stack_size)
 
     def _make_replay_element(self) -> ReplayElement:
-
         trajectory_len = len(self._trajectory)
         last_transition = self._trajectory[-1]
         # Check if we have a valid transition, i.e. we either
@@ -239,7 +237,7 @@ class ReplayBuffer(checkpointers.Checkpointable):
         **kwargs: Any,
     ) -> None:
         self._sampling_distribution.update(keys, **kwargs)
-        
+
     def clear(self) -> None:
         """Clear the replay buffer."""
         self.add_count = 0
@@ -257,62 +255,58 @@ class ReplayBuffer(checkpointers.Checkpointable):
         memory_values = iter(self._memory.values())
         memory_leaves, memory_treedef = jax.tree_util.tree_flatten(next(memory_values, None))
         memory_values = [] if not memory_leaves else [memory_leaves, *map(memory_treedef.flatten_up_to, memory_values)]
-        
+
         trajectory_steps = iter(self._trajectory)
         trajectory_leaves, trajectory_treedef = jax.tree_util.tree_flatten(next(trajectory_steps, None))
-        trajectory_steps = [] if not trajectory_leaves else [trajectory_leaves, *map(trajectory_treedef.flatten_up_to, trajectory_steps)]
+        trajectory_steps = (
+            []
+            if not trajectory_leaves
+            else [trajectory_leaves, *map(trajectory_treedef.flatten_up_to, trajectory_steps)]
+        )
 
         return {
-            'add_count': self.add_count,
-            'memory': {
-                'keys': memory_keys,
-                'values': memory_values,
-                'treedef': pickle.dumps(memory_treedef),
+            "add_count": self.add_count,
+            "memory": {
+                "keys": memory_keys,
+                "values": memory_values,
+                "treedef": pickle.dumps(memory_treedef),
             },
-            'sampling_distribution': self._sampling_distribution.to_state_dict(),
-            'transitions':  {'trajectory': trajectory_steps, 'treedef': pickle.dumps(trajectory_treedef)}
+            "sampling_distribution": self._sampling_distribution.to_state_dict(),
+            "transitions": {"trajectory": trajectory_steps, "treedef": pickle.dumps(trajectory_treedef)},
         }
-    
+
     def from_state_dict(self, state_dict: dict[str, Any]) -> None:
         """Deserialize and mutate replay buffer using state dictionary."""
-        self.add_count = state_dict['add_count']
-        self._sampling_distribution.from_state_dict(
-            state_dict['sampling_distribution']
-        )
-        
-        trajectory_treedef: jax.tree_util.PyTreeDef = pickle.loads(state_dict['transitions']['treedef'])
-        transitions = map(trajectory_treedef.unflatten, state_dict['transitions']['trajectory'])
+        self.add_count = state_dict["add_count"]
+        self._sampling_distribution.from_state_dict(state_dict["sampling_distribution"])
+
+        trajectory_treedef: jax.tree_util.PyTreeDef = pickle.loads(state_dict["transitions"]["treedef"])
+        transitions = map(trajectory_treedef.unflatten, state_dict["transitions"]["trajectory"])
         self._trajectory.clear()
         self._trajectory.extend(transitions)
 
         # Restore memory
-        memory_keys = state_dict['memory']['keys']
+        memory_keys = state_dict["memory"]["keys"]
         # Each element of the list is a flattened replay element, unflatten them
         # i.e., we have storage like:
         #   [[state, action, reward, next_state, is_terminal, episode_end], ...]
         # and after unflattening we'll have:
         #   [ReplayElementT(...), ...]
-        memory_treedef: jax.tree_util.PyTreeDef = pickle.loads(
-            state_dict['memory']['treedef']
-        )
-        memory_values = map(
-            memory_treedef.unflatten, state_dict['memory']['values']
-        )
+        memory_treedef: jax.tree_util.PyTreeDef = pickle.loads(state_dict["memory"]["treedef"])
+        memory_values = map(memory_treedef.unflatten, state_dict["memory"]["values"])
 
         # Create our new ordered dictionary from the restored keys and values
         self._memory = collections.OrderedDict[ReplayItemID, ReplayElement](
             zip(memory_keys, memory_values, strict=True)
         )
-    
+
     @functools.lru_cache
-    def _make_checkpoint_manager(
-        self, checkpoint_dir: str
-    ) -> orbax.CheckpointManager:
+    def _make_checkpoint_manager(self, checkpoint_dir: str) -> orbax.CheckpointManager:
         """Create orbax checkpoint manager, cache the manager based on path."""
         return orbax.CheckpointManager(
             checkpoint_dir,
             checkpointers={
-                'replay': orbax.Checkpointer(
+                "replay": orbax.Checkpointer(
                     checkpointers.CheckpointHandler[ReplayBuffer](),
                 )
             },
@@ -321,7 +315,7 @@ class ReplayBuffer(checkpointers.Checkpointable):
                 create=True,
             ),
         )
-    
+
     def save(self, checkpoint_dir: str, iteration_number: int):
         """Save the ReplayBuffer attributes into a file.
 
@@ -331,7 +325,7 @@ class ReplayBuffer(checkpointers.Checkpointable):
         iteration_number: iteration_number to use as a suffix in naming.
         """
         checkpoint_manager = self._make_checkpoint_manager(checkpoint_dir)
-        checkpoint_manager.save(iteration_number, {'replay': self})
+        checkpoint_manager.save(iteration_number, {"replay": self})
 
     def load(self, checkpoint_dir: str, iteration_number: int):
         """Restores from a checkpoint.
@@ -346,4 +340,4 @@ class ReplayBuffer(checkpointers.Checkpointable):
         # If we don't pass items then we get back a state dictionary
         # that we can use to mutate in-place.
         state_dict = checkpoint_manager.restore(iteration_number)
-        self.from_state_dict(state_dict['replay'])
+        self.from_state_dict(state_dict["replay"])
