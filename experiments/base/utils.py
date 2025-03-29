@@ -61,7 +61,7 @@ def check_experiment(p: dict):
         try:
             loaded_old_params = json.load(open(params_path, "r"))
             old_params = loaded_old_params["shared_parameters"]
-            if p["algo_name"] in list(old_params.keys()):
+            if p["algo_name"] in list(loaded_old_params.keys()):
                 old_params.update(loaded_old_params[p["algo_name"]])
 
             for param in p:
