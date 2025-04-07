@@ -31,6 +31,7 @@ class ReplayElement(struct.PyTreeNode):
     reward: float
     next_state: npt.NDArray[np.float64]
     is_terminal: bool
+    episode_end: bool
 
     @staticmethod
     def compress(buffer: npt.NDArray) -> npt.NDArray:
