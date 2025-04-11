@@ -66,4 +66,4 @@ def train(
             episode_returns_per_epoch.append([0])
             episode_lengths_per_epoch.append([0])
 
-        save_data(p, episode_returns_per_epoch, episode_lengths_per_epoch, agent.get_model())
+        save_data(p, episode_returns_per_epoch, episode_lengths_per_epoch, agent.get_model(), rb, idx_epoch)

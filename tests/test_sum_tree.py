@@ -8,7 +8,6 @@ import numpy as np
 
 
 class SumTreeTest(parameterized.TestCase):
-
     def setUp(self):
         super(SumTreeTest, self).setUp()
         self._tree = sum_tree.SumTree(capacity=100)
@@ -126,6 +125,17 @@ class SumTreeTest(parameterized.TestCase):
             tree.query(np.arange(8, dtype=np.int32)),
             np.arange(8, dtype=np.int32),
         )
+
+    def test_serialization(self):
+        self._tree.set(5, 1.0)
+        state_dict = self._tree.to_state_dict()
+        np.testing.assert_array_equal(state_dict["nodes"], self._tree._nodes)
+
+    def test_clear(self):
+        self._tree.set(5, 1.0)
+        self._tree.clear()
+        self.assertEqual(self._tree.root, 0.0)
+        self.assertEqual(self._tree.get(5), 0.0)
 
     def test_max_recorded_priority(self):
         k = 32

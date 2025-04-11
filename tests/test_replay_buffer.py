@@ -2,6 +2,9 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
+from absl import flags
+from etils import epath
+import msgpack
 import numpy as np
 import jax
 
@@ -15,8 +18,16 @@ OBSERVATION_SHAPE = (84, 84)
 STACK_SIZE = 4
 BATCH_SIZE = 32
 
+flags.FLAGS(["--test_tmpdir", "/tmpdir"])
+
 
 class ReplayBufferTest(parameterized.TestCase):
+    def setUp(self):
+        super().setUp()
+        self._tmpdir = epath.Path(self.create_tempdir("checkpoint").full_path)
+        self._obs = np.ones((4, 3))
+
+        self._sampling_distribution = samplers.UniformSamplingDistribution(seed=0)
 
     def test_element_pack_unpack(self) -> None:
         """Simple test case that packs and unpacks a replay element."""
@@ -297,6 +308,42 @@ class ReplayBufferTest(parameterized.TestCase):
             self.assertEqual(samples.reward[i], key)
             self.assertEqual(samples.is_terminal[i], 0)
             self.assertEqual(samples.episode_end[i], 0)
+
+    @parameterized.parameters((True,), (False,))
+    def testSave(self, compress):
+        stack_size = 4
+        replay_capacity = 50
+        batch_size = 32
+        update_horizon = 3
+        gamma = 0.9
+        checkpoint_duration = 7
+        replay = replay_buffer.ReplayBuffer(
+            sampling_distribution=self._sampling_distribution,
+            batch_size=batch_size,
+            max_capacity=replay_capacity,
+            stack_size=stack_size,
+            update_horizon=update_horizon,
+            gamma=gamma,
+            checkpoint_duration=checkpoint_duration,
+            compress=compress,
+        )
+        # Store a few transitions in memory. Since update_horizon is 3, only
+        # num_adds - 3 elements will actually be in the replay buffer memory.
+        transitions = []
+        num_adds = 15
+        for i in range(num_adds):
+            transitions.append(TransitionElement(self._obs * i, i, i, False, False))
+            replay.add(transitions[-1])
+
+        replay.save(self._tmpdir, 1)
+        path = self._tmpdir / "1" / "replay" / "checkpoint.msgpack"
+        self.assertTrue(path.exists())
+        replay_pack = msgpack.unpackb(
+            path.read_bytes(),
+            raw=False,
+            strict_map_key=False,
+        )
+        self.assertEqual(num_adds - update_horizon, replay_pack["add_count"])
 
 
 if __name__ == "__main__":

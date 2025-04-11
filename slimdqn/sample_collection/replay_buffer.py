@@ -4,14 +4,18 @@ import collections
 import operator
 import typing
 from typing import Any, Iterable, Optional
+import functools
+import pickle
 
 import jax
+from orbax import checkpoint as orbax
 import numpy as np
 import numpy.typing as npt
 
 from flax import struct
 import snappy
 
+from slimdqn.sample_collection import checkpointers
 from slimdqn.sample_collection import ReplayItemID
 
 
@@ -69,8 +73,7 @@ class ReplayElement(struct.PyTreeNode):
         )
 
 
-class ReplayBuffer:
-
+class ReplayBuffer(checkpointers.Checkpointable):
     def __init__(
         self,
         sampling_distribution,
@@ -101,7 +104,6 @@ class ReplayBuffer:
         self._trajectory = collections.deque[TransitionElement](maxlen=self._update_horizon + self._stack_size)
 
     def _make_replay_element(self) -> ReplayElement:
-
         trajectory_len = len(self._trajectory)
         last_transition = self._trajectory[-1]
         # Check if we have a valid transition, i.e. we either
@@ -235,3 +237,67 @@ class ReplayBuffer:
         **kwargs: Any,
     ) -> None:
         self._sampling_distribution.update(keys, **kwargs)
+
+    def clear(self) -> None:
+        """Clear the replay buffer."""
+        self.add_count = 0
+        self._memory.clear()
+        self._sampling_distribution.clear()
+        self._trajectory.clear()
+
+    def to_state_dict(self) -> dict[str, Any]:
+        """Serialize replay buffer to a state dictionary."""
+        # Serialize memory. We'll serialize keys and values separately.
+        memory_keys = list(self._memory.keys())
+        # To serialize values we'll flatten each transition element.
+        # This will serialize replay elements as:
+        #   [[state, action, reward, next_state, is_terminal, episode_end], ...]
+        memory_values = iter(self._memory.values())
+        memory_leaves, memory_treedef = jax.tree_util.tree_flatten(next(memory_values, None))
+        memory_values = [] if not memory_leaves else [memory_leaves, *map(memory_treedef.flatten_up_to, memory_values)]
+
+        trajectory_steps = iter(self._trajectory)
+        trajectory_leaves, trajectory_treedef = jax.tree_util.tree_flatten(next(trajectory_steps, None))
+        trajectory_steps = (
+            []
+            if not trajectory_leaves
+            else [trajectory_leaves, *map(trajectory_treedef.flatten_up_to, trajectory_steps)]
+        )
+
+        return {
+            "add_count": self.add_count,
+            "memory": {
+                "keys": memory_keys,
+                "values": memory_values,
+                "treedef": pickle.dumps(memory_treedef),
+            },
+            "sampling_distribution": self._sampling_distribution.to_state_dict(),
+            "transitions": {"trajectory": trajectory_steps, "treedef": pickle.dumps(trajectory_treedef)},
+        }
+
+    @functools.lru_cache
+    def _make_checkpoint_manager(self, checkpoint_dir: str) -> orbax.CheckpointManager:
+        """Create orbax checkpoint manager, cache the manager based on path."""
+        return orbax.CheckpointManager(
+            checkpoint_dir,
+            checkpointers={
+                "replay": orbax.Checkpointer(
+                    checkpointers.CheckpointHandler[ReplayBuffer](),
+                )
+            },
+            options=orbax.CheckpointManagerOptions(
+                max_to_keep=self._checkpoint_duration,
+                create=True,
+            ),
+        )
+
+    def save(self, checkpoint_dir: str, iteration_number: int):
+        """Save the ReplayBuffer attributes into a file.
+
+        Args:
+        checkpoint_dir: the directory where numpy checkpoint files should be
+            saved. Must already exist.
+        iteration_number: iteration_number to use as a suffix in naming.
+        """
+        checkpoint_manager = self._make_checkpoint_manager(checkpoint_dir)
+        checkpoint_manager.save(iteration_number, {"replay": self})

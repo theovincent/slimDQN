@@ -1,0 +1,54 @@
+# Inspired by dopamine implementation: https://github.com/google/dopamine/blob/master/tests/dopamine/jax/serialization_test.py
+"""Serialization test."""
+
+from typing import Union
+
+from absl.testing import absltest
+from absl.testing import parameterized
+from slimdqn.sample_collection import serialization
+import numpy as np
+
+
+class SerializationTest(parameterized.TestCase):
+    @parameterized.parameters(
+        (np.array([1, 2, 3], order="F"),),
+        (np.array([1, 2, 3], order="C"),),
+        (np.array([1, 2, 3]),),
+        (np.zeros((4, 4, 4), order="F"),),
+        (np.zeros((4, 4, 4), order="C"),),
+        (np.zeros((4, 4, 4)),),
+        # Structured array
+        (
+            np.array(
+                [("A", 1, 1.0), ("B", 2, 2.0)],
+                dtype=[("string", "U1"), ("int", "i4"), ("float", "f4")],
+            ),
+        ),
+        (np.bool_(True),),
+        (np.int_(1),),
+        (np.float64(1.0),),
+    )
+    def testEncodeNumpy(self, array: Union[np.ndarray, np.bool_, np.number]):
+        encoded = serialization.encode(array)
+        self.assertIn("dtype", encoded)
+        self.assertIsInstance(encoded["dtype"], str)
+        self.assertIn("shape", encoded)
+        self.assertIsInstance(encoded["shape"], tuple)
+        self.assertIn("data", encoded)
+        self.assertIsInstance(encoded["data"], bytes)
+
+    @parameterized.parameters((1,), (1234567891011121314151617181920,))
+    def testEncodeLongIntegers(self, integer: int):
+        encoded = serialization.encode(integer)
+
+        if integer.bit_length() > 32:
+            self.assertIsInstance(encoded, dict)
+            self.assertIn("integer", encoded)
+            self.assertIsInstance(encoded["integer"], str)
+        else:
+            assert isinstance(encoded, int)
+            assert encoded == integer
+
+
+if __name__ == "__main__":
+    absltest.main()
