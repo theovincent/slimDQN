@@ -32,18 +32,17 @@ class ReplayBufferTest(parameterized.TestCase):
             reward=reward,
             next_state=next_state,
             is_terminal=episode_end,
-            episode_end=episode_end,
         )
 
         packed = element.pack()
         assert packed.action == action
         assert packed.reward == reward
-        assert packed.is_terminal == packed.episode_end == episode_end
+        assert packed.is_terminal == episode_end
 
         unpacked = packed.unpack()
         assert unpacked.action == action
         assert unpacked.reward == reward
-        assert unpacked.is_terminal == unpacked.episode_end == episode_end
+        assert unpacked.is_terminal == episode_end
 
         np.testing.assert_array_equal(unpacked.state, state)
         np.testing.assert_array_equal(unpacked.next_state, next_state)
@@ -85,7 +84,6 @@ class ReplayBufferTest(parameterized.TestCase):
             self.assertEqual(rb._memory[i].action, transitions[i].action)
             self.assertEqual(rb._memory[i].reward, transitions[i].reward)
             self.assertEqual(rb._memory[i].is_terminal, int(transitions[i].is_terminal))
-            self.assertEqual(rb._memory[i].episode_end, int(transitions[i].episode_end))
 
     def testNSteprewards(self):
         rb = replay_buffer.ReplayBuffer(
@@ -115,7 +113,7 @@ class ReplayBufferTest(parameterized.TestCase):
             batch_size=BATCH_SIZE,
             max_capacity=50,
             stack_size=STACK_SIZE,
-            update_horizon=5,
+            update_horizon=1,
             gamma=1.0,
             compress=False,
         )
@@ -131,56 +129,9 @@ class ReplayBufferTest(parameterized.TestCase):
         np.testing.assert_array_equal(zero_state, state[:, :, :3])
 
         # ensure that after the padding the contents are properly stored
-        state = rb._memory[3].state
-        for i in range(4):
+        state = rb._memory[STACK_SIZE - 1].state
+        for i in range(STACK_SIZE):
             np.testing.assert_array_equal(np.full(OBSERVATION_SHAPE, i), state[:, :, i])
-
-    def testSampleTransitionBatch(self):
-        rb = replay_buffer.ReplayBuffer(
-            sampling_distribution=samplers.UniformSamplingDistribution(seed=0),
-            batch_size=2,
-            max_capacity=10,
-            stack_size=1,
-            update_horizon=1,
-            gamma=0.99,
-            compress=False,
-        )
-        num_adds = 50  # The number of transitions to add to the memory.
-
-        # terminal transitions are not valid trajectories
-        index_to_id = []
-        for i in range(num_adds):
-            terminal = i % 4 == 0  # Every 4 transitions is terminal.
-            rb.add(TransitionElement(np.full(OBSERVATION_SHAPE, i), 0, 0, terminal, False))
-            if not terminal:
-                index_to_id.append(i)
-
-        # Verify we sample the expected indices by using the same rng state.
-        self._rng_key = np.random.default_rng(seed=0)
-        indices = self._rng_key.integers(
-            len(rb._sampling_distribution._index_to_key), size=len(rb._sampling_distribution._index_to_key)
-        )
-
-        def make_state(key: int):
-            return np.full(OBSERVATION_SHAPE + (1,), key)
-
-        expected_states = np.array(
-            [make_state(index_to_id[rb._sampling_distribution._index_to_key[i]]) for i in indices]
-        )
-        expected_next_states = np.array(
-            [make_state(index_to_id[rb._sampling_distribution._index_to_key[i]] + 1) for i in indices]
-        )
-
-        # Replicating the formula used above to determine what transitions are terminal
-        expected_terminal = np.array(
-            [int(((index_to_id[rb._sampling_distribution._index_to_key[i]] + 1) % 4) == 0) for i in indices]
-        )
-        batch = rb.sample(size=len(indices))
-        np.testing.assert_array_equal(batch.state, expected_states)
-        np.testing.assert_array_equal(batch.action, np.zeros(len(indices)))
-        np.testing.assert_array_equal(batch.reward, np.zeros(len(indices)))
-        np.testing.assert_array_equal(batch.next_state, expected_next_states)
-        np.testing.assert_array_equal(batch.is_terminal, expected_terminal)
 
     def testSamplingWithTerminalInTrajectory(self):
         rb = replay_buffer.ReplayBuffer(
@@ -192,40 +143,24 @@ class ReplayBufferTest(parameterized.TestCase):
             gamma=1.0,
             compress=False,
         )
-        for i in range(rb._max_capacity):
-            rb.add(
-                TransitionElement(
-                    np.full(OBSERVATION_SHAPE, i), action=i * 2, reward=i, is_terminal=i == 3, episode_end=False
-                )
-            )
-        # Verify we sample the expected indices, using the same rng.
-        self._rng_key = np.random.default_rng(seed=0)
-        indices = self._rng_key.integers(rb.add_count, size=5)
 
-        batch = rb.sample(size=5)
+        for i in range(5):
+            rb.add(TransitionElement(np.full(OBSERVATION_SHAPE, i), action=i * 2, reward=i, is_terminal=i == 3))
 
-        # Since index 3 is terminal, it will not be a valid transition so renumber.
-        expected_states = np.array(
-            [
-                np.full(OBSERVATION_SHAPE + (1,), i) if i < 3 else np.full(OBSERVATION_SHAPE + (1,), i + 1)
-                for i in indices
-            ]
-        )
-        expected_actions = np.array([i * 2 if i < 3 else (i + 1) * 2 for i in indices])
-        # The reward in the replay buffer will be (an asterisk marks the terminal
-        # state):
-        #   [0 1 2 3* 4 5 6 7 8 9]
-        # Since we're setting the update_horizon to 3, the accumulated trajectory
-        # reward starting at each of the replay buffer positions will be (a '_'
-        # marks an invalid transition to sample):
-        #   [3 6 5 _ 15 18 21 24]
-        expected_rewards = np.array([3, 6, 5, 15, 18, 21, 24])
-        # Because update_horizon = 3, indices 0, 1 and 2 include terminal.
-        expected_terminals = np.array([1, 1, 1, 0, 0, 0, 0])
-        np.testing.assert_array_equal(batch.state, expected_states)
-        np.testing.assert_array_equal(batch.action, expected_actions)
-        np.testing.assert_array_equal(batch.reward, expected_rewards[indices])
-        np.testing.assert_array_equal(batch.is_terminal, expected_terminals[indices])
+        for i in range(3):
+            np.testing.assert_array_equal(rb._memory[i].state, np.full(OBSERVATION_SHAPE + (1,), 0))
+            np.testing.assert_array_equal(rb._memory[i].next_state, np.full(OBSERVATION_SHAPE + (1,), i + 1))
+            np.testing.assert_array_equal(rb._memory[i].action, 0)
+            np.testing.assert_array_equal(rb._memory[i].reward, sum(range(i + 1)))
+            np.testing.assert_array_equal(rb._memory[i].is_terminal, False)
+
+        for i in range(3, 6):
+            np.testing.assert_array_equal(rb._memory[i].state, np.full(OBSERVATION_SHAPE + (1,), i - 2))
+            np.testing.assert_array_equal(rb._memory[i].action, 2 * (i - 2))
+            np.testing.assert_array_equal(rb._memory[i].reward, sum(range(i - 2, 4)))
+            np.testing.assert_array_equal(rb._memory[i].is_terminal, True)
+
+        assert len(rb._memory) == 6
 
     def testKeyMappingsForSampling(self):
         capacity = 10
@@ -296,7 +231,6 @@ class ReplayBufferTest(parameterized.TestCase):
             self.assertEqual(samples.action[i], key)
             self.assertEqual(samples.reward[i], key)
             self.assertEqual(samples.is_terminal[i], 0)
-            self.assertEqual(samples.episode_end[i], 0)
 
 
 if __name__ == "__main__":

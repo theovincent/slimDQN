@@ -31,7 +31,6 @@ class ReplayElement(struct.PyTreeNode):
     reward: float
     next_state: npt.NDArray[np.float64]
     is_terminal: bool
-    episode_end: bool
 
     @staticmethod
     def compress(buffer: npt.NDArray) -> npt.NDArray:
@@ -100,78 +99,70 @@ class ReplayBuffer:
 
         self._trajectory = collections.deque[TransitionElement](maxlen=self._update_horizon + self._stack_size)
 
-    def _make_replay_element(self) -> ReplayElement:
-
+    def _terminal_replay_element(self, has_popped_left: bool) -> ReplayElement:
+        # --- Only called if self._trajectory[-1] leads to a terminal state (self._trajectory[-1].terminal is True) ---
         trajectory_len = len(self._trajectory)
-        if trajectory_len == 0:
-            return None
-        last_transition = self._trajectory[-1]
-        # Check if we have a valid transition, i.e. we either
-        #   1) have accumulated more transitions than the update horizon and the
-        #      last element is not terminal
-        #   2) have a trajectory shorter than the update horizon, but the
-        #      last element is terminal and we have enough frames to stack
-        #      (including the terminating case, where there is s, but no s')
-        if not (
-            (trajectory_len > self._update_horizon and not last_transition.is_terminal)
-            or (trajectory_len >= self._stack_size and last_transition.is_terminal)
-        ):
-            return None
-
-        # Calculate effective horizon, this can differ from the update horizon
-        # when we have n-step transitions where the last observation is terminal.
-        # In the latter case, it simply includes all rewards from s_t (stack size
-        # frames to be excluded here) upto termination
-        effective_horizon = self._update_horizon
-        if last_transition.is_terminal and trajectory_len < self._update_horizon + self._stack_size:
+        if has_popped_left:
+            # We need at least stack size observations to construct the state, the next state is irrelevant.
+            if trajectory_len < self._stack_size:
+                return None
+            is_terminal = True
+            # The trajectory is composed of stack_size observations + effective_horizon observations, the next state is irrelevant.
             effective_horizon = trajectory_len - self._stack_size
+        else:
+            if trajectory_len == 0:
+                return None
+            # special case where the episode starts with an observation leading to a terminal state.
+            elif trajectory_len == 1:
+                is_terminal = True
+            # first time that the terminal flag is True, the state does not lead to a terminal state (only the next state does).
+            else:
+                is_terminal = False
+            # If not enough transitions are available, the largest possible update horizon is the trajectory length minus 1.
+            if trajectory_len < self._update_horizon:
+                effective_horizon = trajectory_len - 1
+            else:
+                effective_horizon = self._update_horizon
 
-        # pytype: disable=attribute-error
-        observation_shape = last_transition.observation.shape + (self._stack_size,)
-        observation_dtype = last_transition.observation.dtype
-        # pytype: enable=attribute-error
+        return self._replay_element_from_effective_horizon(effective_horizon, is_terminal)
 
+    def _non_terminal_replay_element(self) -> ReplayElement:
+        # --- Only called if self._trajectory[-1] does not lead to a terminal state (self._trajectory[-1].terminal is False) ---
+        trajectory_len = len(self._trajectory)
+        # 2 observations are needed (state and next state)
+        if trajectory_len < 2:
+            return None
+        # If not enough transitions are available, the largest possible update horizon is the trajectory length minus 1.
+        if trajectory_len < self._update_horizon + 1:
+            effective_horizon = trajectory_len - 1
+        else:
+            effective_horizon = self._update_horizon
+
+        return self._replay_element_from_effective_horizon(effective_horizon, False)
+
+    def _replay_element_from_effective_horizon(self, effective_horizon, is_terminal):
+        trajectory_len = len(self._trajectory)
+
+        observation_shape = self._trajectory[0].observation.shape + (self._stack_size,)
+        observation_dtype = self._trajectory[0].observation.dtype
+        # The state stops at the end of the trajectory minus the effective horizon.
+        # Note: if the first index is negative, black observations will be taken.
         o_tm1 = np.zeros(observation_shape, observation_dtype)
-        # Initialize the slice for which this observation is valid.
-        # The start index for o_tm1 is the start of the n-step trajectory.
-        # The end index for o_tm1 is just moving over `stack size`.
         o_tm1_slice = slice(
-            trajectory_len - effective_horizon - self._stack_size,
-            trajectory_len - effective_horizon - 1,
+            trajectory_len - self._stack_size - effective_horizon, trajectory_len - 1 - effective_horizon
         )
-        # The action chosen will be the last transition in the stack.
+        # The chosen action is the action of the last transition of the state.
         a_tm1 = self._trajectory[o_tm1_slice.stop].action
-
+        # The next state is the last stack size observations.
+        # +1 is added if the last transition leads to a terminal state as the next state also include the following observation.
+        # Note: if the first index is negative, black observations will be taken.
         o_t = np.zeros(observation_shape, observation_dtype)
-        # Initialize the slice for which this observation is valid.
-        # The start index for o_t is just moving backwards `stack size`.
-        # The end index for o_t is just the last index of the n-step trajectory.
-        o_t_slice = slice(
-            trajectory_len - self._stack_size,
-            trajectory_len - 1,
-        )
-        # Terminal information will come from the last transition in the stack
-        # when all non-terminating samples are added (trajectory_len < update_horizon + stack_size),
-        # else it comes from the 2nd last transition (cf. update_horizon = stack_size = 1 case).
-        is_terminal = (
-            self._trajectory[o_t_slice.stop].is_terminal
-            if trajectory_len < self._update_horizon + self._stack_size
-            else self._trajectory[o_t_slice.stop - 1].is_terminal
-        )
+        o_t_slice = slice(trajectory_len - self._stack_size + int(is_terminal), trajectory_len - 1 + int(is_terminal))
 
-        # Slice to accumulate n-step returns. This will be the end
-        # transition of o_tm1 plus the effective horizon.
-        # This might over-run the trajectory length in the case of n-step
-        # returns where the last transition is terminal.
-        gamma_slice = slice(
-            o_tm1_slice.stop,
-            o_tm1_slice.stop + self._update_horizon - 1,
-        )
-        assert o_t_slice.stop - o_tm1_slice.stop == effective_horizon
-        assert o_t_slice.stop >= o_tm1_slice.stop
+        # Slice to accumulate n-step returns. Starts where o_tm1 stops and finishes one step before o_t stops
+        gamma_slice = slice(o_tm1_slice.stop, o_t_slice.stop - 1)
 
-        # Now we'll iterate through the n-step trajectory and compute the
-        # cumulant and insert the observations into the appropriate stacks
+        # We iterate through the n-step trajectory and compute the cumulant and insert the observations into the appropriate stacks
         r_t = 0.0
         for t, transition_t in enumerate(self._trajectory):
             # If we should be accumulating reward for an n-step return?
@@ -184,13 +175,7 @@ class ReplayBuffer:
             if o_t_slice.start <= t <= o_t_slice.stop:
                 o_t[..., t - o_t_slice.start] = transition_t.observation
 
-        return ReplayElement(
-            state=o_tm1,
-            action=a_tm1,
-            reward=r_t,
-            next_state=o_t,
-            is_terminal=is_terminal,
-        )
+        return ReplayElement(state=o_tm1, action=a_tm1, reward=r_t, next_state=o_t, is_terminal=is_terminal)
 
     def accumulate(self, transition: TransitionElement) -> Iterable[ReplayElement]:
         """Add a transition to the accumulator, maybe receive valid ReplayElements.
@@ -201,12 +186,14 @@ class ReplayBuffer:
         self._trajectory.append(transition)
 
         if transition.is_terminal:
-            while replay_element := self._make_replay_element():
+            has_popped_left = False
+            while replay_element := self._terminal_replay_element(has_popped_left):
                 yield replay_element
                 self._trajectory.popleft()
+                has_popped_left = True
             self._trajectory.clear()
         else:
-            if replay_element := self._make_replay_element():
+            if replay_element := self._non_terminal_replay_element():
                 yield replay_element
             # If the transition truncates the trajectory then clear it
             if transition.episode_end:
