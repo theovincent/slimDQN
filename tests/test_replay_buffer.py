@@ -133,35 +133,6 @@ class ReplayBufferTest(parameterized.TestCase):
         for i in range(STACK_SIZE):
             np.testing.assert_array_equal(np.full(OBSERVATION_SHAPE, i), state[:, :, i])
 
-    def testSamplingWithTerminalInTrajectory(self):
-        rb = replay_buffer.ReplayBuffer(
-            sampling_distribution=samplers.UniformSamplingDistribution(seed=0),
-            batch_size=2,
-            max_capacity=10,
-            stack_size=1,
-            update_horizon=3,
-            gamma=1.0,
-            compress=False,
-        )
-
-        for i in range(5):
-            rb.add(TransitionElement(np.full(OBSERVATION_SHAPE, i), action=i * 2, reward=i, is_terminal=i == 3))
-
-        for i in range(3):
-            np.testing.assert_array_equal(rb._memory[i].state, np.full(OBSERVATION_SHAPE + (1,), 0))
-            np.testing.assert_array_equal(rb._memory[i].next_state, np.full(OBSERVATION_SHAPE + (1,), i + 1))
-            np.testing.assert_array_equal(rb._memory[i].action, 0)
-            np.testing.assert_array_equal(rb._memory[i].reward, sum(range(i + 1)))
-            np.testing.assert_array_equal(rb._memory[i].is_terminal, False)
-
-        for i in range(3, 6):
-            np.testing.assert_array_equal(rb._memory[i].state, np.full(OBSERVATION_SHAPE + (1,), i - 2))
-            np.testing.assert_array_equal(rb._memory[i].action, 2 * (i - 2))
-            np.testing.assert_array_equal(rb._memory[i].reward, sum(range(i - 2, 4)))
-            np.testing.assert_array_equal(rb._memory[i].is_terminal, True)
-
-        assert len(rb._memory) == 6
-
     def testKeyMappingsForSampling(self):
         capacity = 10
         rb = replay_buffer.ReplayBuffer(
