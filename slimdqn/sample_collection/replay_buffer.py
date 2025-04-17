@@ -158,11 +158,9 @@ class ReplayBuffer:
 
         if transition.is_terminal:
             trajectory_len = len(self._trajectory)
-            beginning_of_trajectory = trajectory_len < self._stack_size + self._update_horizon
-
             # Special case where the terminal flag is raised before seeing update_horizon + stack_size observations.
-            if beginning_of_trajectory:
-                # In this case, we create all possible samples starting from the first plausible index.
+            if trajectory_len < self._stack_size + self._update_horizon:
+                # In this case, we create all possible samples starting from the first not yet considered observation.
                 start_index = max(trajectory_len - 1 - self._update_horizon, 0)
                 for o_tm1_slice_stop in range(start_index, trajectory_len):
                     o_tm1_slice = slice(o_tm1_slice_stop - self._stack_size + 1, o_tm1_slice_stop)
