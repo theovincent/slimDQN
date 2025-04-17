@@ -140,7 +140,7 @@ class ReplayBuffer:
             if gamma_slice.start <= t <= gamma_slice.stop:
                 r_t += transition_t.reward * (self._gamma ** (t - gamma_slice.start))
 
-            # If we should be accumulating frames for the frame-stack?
+            # If we should be accumulating the observations?
             if o_tm1_slice.start <= t <= o_tm1_slice.stop:
                 o_tm1[..., t - o_tm1_slice.start] = transition_t.observation
             if o_t_slice.start <= t <= o_t_slice.stop:
@@ -161,9 +161,10 @@ class ReplayBuffer:
             beginning_of_trajectory = trajectory_len < self._stack_size + self._update_horizon
 
             # Special case where the terminal flag is raised before seeing update_horizon + stack_size observations.
-            # In this case, we create all possible samples.
             if beginning_of_trajectory:
-                for o_tm1_slice_stop in range(0, trajectory_len):
+                # In this case, we create all possible samples starting from the first plausible index.
+                start_index = max(trajectory_len - 1 - self._update_horizon, 0)
+                for o_tm1_slice_stop in range(start_index, trajectory_len):
                     o_tm1_slice = slice(o_tm1_slice_stop - self._stack_size + 1, o_tm1_slice_stop)
                     # The next state is located udpate_horizon observations after the state
                     o_t_slice = slice(o_tm1_slice.start + self._update_horizon, o_tm1_slice.stop + self._update_horizon)
