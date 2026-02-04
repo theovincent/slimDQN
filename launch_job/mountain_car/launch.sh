@@ -7,7 +7,7 @@ RB=10000
 NT=10000
 TUP=200
 
-FIRST_SEED=0
+FIRST_SEED=1
 LAST_SEED=5
 N_PARALLEL_SEEDS=1
 
@@ -33,8 +33,6 @@ LAUNCHER_SCRIPT="launch_job/${ENV_NAME}/cluster_dqn.sh"
 echo "----------------------------------------------------------------"
 echo "Launching Job"
 echo "Experiment: $EXPERIMENT_TAG"
-echo "Algorithm:  $ALGO"
-echo "Policy Expertise Args: $EXPERTISE"
 echo "----------------------------------------------------------------"
 
 bash $LAUNCHER_SCRIPT \
