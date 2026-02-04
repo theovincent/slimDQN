@@ -5,7 +5,7 @@ EXPERTISE="rookie"
 FEATURES="5 5"
 BATCH_SIZE=6
 
-ENV_NAME="lunar_lander"
+ENV_NAME="mountain_car"
 ALGO="dqn"
 
 EXPERIMENT_TAG="${EXPERTISE}_${ALGO}_${ENV_NAME}"
