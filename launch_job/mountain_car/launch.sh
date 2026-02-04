@@ -23,7 +23,7 @@ ARGS="--architecture_type fc \
     --n_epochs 20 \
     --target_update_period $TUP \
     "
-EXPERIMENT_TAG="DQN_F${FEATURES}_RB${RB}_NT${NT}_T${TUP}_${ENV_NAME}"
+FULL_EXPERIMENT_NAME="DQN_F${FEATURES}_RB${RB}_NT${NT}_T${TUP}_${ENV_NAME}"
 
 ####################################################################################
 
