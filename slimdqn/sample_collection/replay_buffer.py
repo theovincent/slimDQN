@@ -172,18 +172,8 @@ class ReplayBuffer:
         else:
             if replay_element := self.make_replay_element():
                 yield replay_element
+            # If the transition truncates the trajectory then clear it
             if transition.episode_end:
-                #if last state reaches horizon (episode_end), use it also as s'
-                last_element = self.subtrajectory_tail[-1]
-                last_element_obs = np.expand_dims(last_element.observation, axis=-1) #only for stack_size=1
-                replay_element = ReplayElement(
-                    state=last_element_obs,
-                    action=last_element.action,
-                    reward=last_element.reward,
-                    next_state=last_element_obs,
-                    is_terminal=False,
-                )
-                yield replay_element
                 self.subtrajectory_tail.clear()
                 self.beginning_trajectory = True
 
