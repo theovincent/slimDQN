@@ -28,7 +28,7 @@ EXPERIMENT_TAG="DQN_F${FEATURES}_RB${RB}_NT${NT}_T${TUP}_${ENV_NAME}"
 ####################################################################################
 
 
-LAUNCHER_SCRIPT="launch_job/${ENV_NAME}/cluster_${ALGO}.sh"
+LAUNCHER_SCRIPT="launch_job/${ENV_NAME}/cluster_dqn.sh"
 
 echo "----------------------------------------------------------------"
 echo "Launching Job"
