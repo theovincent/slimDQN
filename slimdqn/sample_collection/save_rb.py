@@ -26,7 +26,6 @@ def save_rb(p, rb, epoch_idx):
     rewards = []
     is_terminals = []
 
-    # randomly select a subset of keys based on save_ratio
     current_obs_ptr = 0
 
     for k in tqdm(rb.memory.keys(), desc=f"Saving Epoch {epoch_idx}"):
